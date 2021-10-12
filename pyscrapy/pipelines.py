@@ -10,4 +10,6 @@ from itemadapter import ItemAdapter
 
 class PyscrapyPipeline:
     def process_item(self, item, spider):
+        print('========start==PyscrapyPipeline===process_item===')
+        print(item)
         return item
