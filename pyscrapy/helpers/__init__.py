@@ -7,4 +7,4 @@ from . import JsonFile
 from Timer import Timer
 '''
 from .Logger import Logger
-from .Image import Image
+from .JsonFile import JsonFile

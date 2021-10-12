@@ -1,23 +1,25 @@
 import scrapy
 from scrapy.http import TextResponse
-from ..items import GympluscoffeeItem
+from ..items import GympluscoffeeGoodsItem, GympluscoffeeCategoryItem
 from ..helpers import Logger
 
 
 class GympluscoffeeSpider(scrapy.Spider):
     name = 'gympluscoffee'
+    site_id = 0
+    domain = 'gympluscoffee.com'
+    base_url = 'https://gympluscoffee.com'
     allowed_domains = ['gympluscoffee.com']
     start_urls = [
         'https://gympluscoffee.com/collections/merch?page=1',
         'https://gympluscoffee.com/collections/mens?page=1',
         'https://gympluscoffee.com/collections/womens?page=1'
     ]
-    # page = 1
-    # spider_state = {
-    #     "https://gympluscoffee.com/collections/merch": True,
-    #     'https://gympluscoffee.com/collections/mens': True,
-    #     'https://gympluscoffee.com/collections/womens': True
-    # }
+    categories_info = {
+        'merch': {'id': 0},
+        'mens': {'id': 0},
+        'womens': {'id': 0}
+    }
 
     def __init__(self, name=None, **kwargs):
         super(GympluscoffeeSpider, self).__init__(name=name, **kwargs)
@@ -32,14 +34,25 @@ class GympluscoffeeSpider(scrapy.Spider):
         self.mylogger.debug("request_url: " + request_url)
         url_info = request_url.split('?')
         current_page = int(url_info[1].split('=')[1])
+        category_name = ''
+        categories = ['merch', 'mens', 'womens']
+        for category in categories:
+            if request_url.find(category) > 0:
+                category_name = category
+                # category_item = GympluscoffeeCategoryItem()
+                # category_item['name'] = category_name
+                # yield category_item
+                break
 
-        items = GympluscoffeeItem()
+        items = GympluscoffeeGoodsItem()
         for goods in goods_list:
             # href = goods.xpath('@href').extract()[0]
             href = goods.xpath('@href').get()
             title = goods.xpath('.//div/span[1]/text()').get()
             items['goods_title'] = title
             items['goods_url'] = href
+            items['category_name'] = category_name
+            items['category_id'] = self.categories_info[category_name]['id']
             # self.mylogger.debug('GOODS: ' + title + " : " + href)
             yield items
 

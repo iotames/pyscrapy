@@ -1,6 +1,8 @@
 from scrapy import cmdline
-from pyscrapy.spiders.gympluscoffee import GympluscoffeeSpider
+from pyscrapy.spiders import GympluscoffeeSpider
 from Config import Config
+from service import DB
+from pyscrapy.models import Table
 
 
 class Spider:
@@ -14,6 +16,15 @@ class Spider:
             cmd_list.extend(['-o', output])
         cmdline.execute(cmd_list)
 
+    @staticmethod
+    def create_all_tables():
+        config = Config()
+        db = DB(config.get_database())
+        db.ROOT_PATH = config.ROOT_PATH
+        engine = db.get_db_engine()
+        Table.create_all_tables(engine)
+
 
 if __name__ == '__main__':
-    Spider.crawl(GympluscoffeeSpider.name, Config.ROOT_PATH + '/runtime/spider.csv')
+    # Spider.create_all_tables()
+    Spider.crawl(GympluscoffeeSpider.name)
