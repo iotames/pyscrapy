@@ -1,3 +1,4 @@
 scrapy
 sqlalchemy
 pymysql
+openpyxl

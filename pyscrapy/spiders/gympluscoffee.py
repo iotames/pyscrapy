@@ -33,24 +33,27 @@ class GympluscoffeeSpider(scrapy.Spider):
         db.ROOT_PATH = Config.ROOT_PATH
         self.db_session = db.get_db_session()
 
-        if 'spider_child' in kwargs:
-            if kwargs['spider_child'] == self.CHILD_GOODS_DETAIL:
-                self.spider_child = self.CHILD_GOODS_DETAIL
-                # 12小时内的商品不会再更新
-                before_time = time.time() - (12 * 3600)
-                goods_list = self.db_session.query(Goods).filter(or_(and_(
-                    Goods.site_id == self.site_id,
-                    Goods.updated_at < before_time
-                ), Goods.status == Goods.STATUS_UNKNOWN)).all()
-                for goods in goods_list:
-                    self.start_urls.append(goods.url)
-                    self.goods_url_to_model_map[goods.url] = goods
-                    # spider.request_goods_detail(gd.url, gd)
-        else:
+        if 'spider_child' not in kwargs:
+            raise SystemExit('lost param spider_child')
+
+        if kwargs['spider_child'] == self.CHILD_GOODS_DETAIL:
+            self.spider_child = self.CHILD_GOODS_DETAIL
+            # 12小时内的商品不会再更新
+            before_time = time.time() - (12 * 3600)
+            goods_list = self.db_session.query(Goods).filter(or_(and_(
+                Goods.site_id == self.site_id,
+                Goods.updated_at < before_time
+            ), Goods.status == Goods.STATUS_UNKNOWN)).all()
+            for goods in goods_list:
+                self.start_urls.append(goods.url)
+                self.goods_url_to_model_map[goods.url] = goods
+
+        if kwargs['spider_child'] == self.CHILD_GOODS_LIST:
             for category in self.start_categories:
                 self.start_urls.append("{}/collections/{}?page=1".format(self.base_url, category))
                 self.categories_info[category] = {'id': 0}
                 self.url_to_category_name_map["{}/collections/{}".format(self.base_url, category)] = category
+
         logs_dir = ''
         if 'logs_dir' in kwargs:
             logs_dir = kwargs['logs_dir']
@@ -97,6 +100,16 @@ class GympluscoffeeSpider(scrapy.Spider):
             next_url = url_info[0] + "?page=" + str(current_page + 1)
             yield scrapy.Request(url=next_url, callback=self.parse)
 
+    @staticmethod
+    def get_variants_by_html(html: str) -> list:
+        cc = html.split('window.wn.product')
+        vv = cc[1].split('variants:')
+        variants_str = vv[1].replace('};', '').strip()
+        # dd = cc[1][70:]
+        # ff = dd[0:(len(dd) - 10)]
+        # variants_str = ff.strip()
+        return json.loads(variants_str)
+
     def save_goods_detail(self, response: TextResponse, goods_model: Goods):
         if response.status != 200:
             self.mylogger.debug("Warning: " + response.url + " : status = " + str(response.status))
@@ -111,15 +124,17 @@ class GympluscoffeeSpider(scrapy.Spider):
             self.mylogger.debug("Warning: STATUS_SOLD_OUT: " + response.url)
         if btn_text == 'Add to Cart':
             goods_model.status = Goods.STATUS_AVAILABLE
-        cc = response.text.split('window.wn.product')
-        dd = cc[1][70:]
-        ff = dd[0:(len(dd) - 10)]
-        skus = json.loads(ff.strip())
+
+        skus = self.get_variants_by_html(response.text)
         for sku in skus:
             sku_code = sku['id']
             sku_model = self.db_session.query(GoodsSku).filter(
                 GoodsSku.goods_id == goods_model.id, GoodsSku.code == sku_code).first()
             update_data = {
+                'site_id': self.site_id,
+                'goods_id': goods_model.id,
+                'category_id': goods_model.category_id,
+                'category_name': goods_model.category_name,
                 'code': sku_code,
                 'option1': sku['option1'],
                 'option2': sku['option2'],
