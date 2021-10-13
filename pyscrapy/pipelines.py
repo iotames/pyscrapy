@@ -9,7 +9,7 @@ from itemadapter import ItemAdapter
 from .spiders import GympluscoffeeSpider
 from .items import GympluscoffeeGoodsItem, GympluscoffeeCategoryItem
 from .database import Database
-from .models import Site, Goods, GoodsSku, GoodsCategory
+from .models import Site, Goods, GoodsCategory
 from Config import Config
 
 db = Database(Config().get_database())
@@ -51,6 +51,8 @@ class PyscrapyPipeline:
                     db_session.add(model)
                     db_session.commit()
                     print('SUCCESS save goods ' + title)
+                else:
+                    print('Skip goods ' + title)
 
     def open_spider(self, spider):
         if isinstance(spider, GympluscoffeeSpider):
@@ -65,3 +67,6 @@ class PyscrapyPipeline:
                 db_session.add(site)
                 db_session.commit()
             spider.site_id = site.id
+
+    # def close_spider(self, spider):
+    #     if isinstance(spider, GympluscoffeeSpider):

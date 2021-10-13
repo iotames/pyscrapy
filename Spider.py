@@ -8,12 +8,15 @@ from pyscrapy.models import Table
 class Spider:
 
     @staticmethod
-    def crawl(name: str = GympluscoffeeSpider.name, output=None):
-        dirpath = Config.get_logs_dir()
-        cmd_list = ['scrapy', 'crawl', name, '-a', 'logs_dir='+dirpath]
+    def crawl(name: str = GympluscoffeeSpider.name, output=None, spider_args=None):
+
+        cmd_list = ['scrapy', 'crawl', name]
         if output:
             # 输出爬虫结果到文件
             cmd_list.extend(['-o', output])
+        if spider_args:
+            for key, value in spider_args.items():
+                cmd_list.extend(['-a', key + "=" + value])
         cmdline.execute(cmd_list)
 
     @staticmethod
@@ -27,4 +30,9 @@ class Spider:
 
 if __name__ == '__main__':
     # Spider.create_all_tables()
-    Spider.crawl(GympluscoffeeSpider.name)
+    dirpath = Config.get_logs_dir()
+    args = {
+        'logs_dir': dirpath,
+        'spider_child': GympluscoffeeSpider.CHILD_GOODS_DETAIL
+    }
+    Spider.crawl(GympluscoffeeSpider.name, spider_args=args)

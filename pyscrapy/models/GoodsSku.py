@@ -22,7 +22,7 @@ class GoodsSku(BaseModel):
 
     inventory_quantity = Column(Integer, default=0, comment='库存数')
     barcode = Column(String(64), comment='条形码')
-    price = Column(Float(6, 2), comment='价格')
+    price = Column(Float(8, 2), comment='价格')
 
     # local_image = Column(String(255), comment='本地图片地址')
     # reviews_num = Column(Integer, default=0, comment='评论数')
