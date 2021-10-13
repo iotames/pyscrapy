@@ -20,10 +20,18 @@ class GympluscoffeeSpider(scrapy.Spider):
         'mens': {'id': 0},
         'womens': {'id': 0}
     }
+    url_to_category_name_map = {
+        'https://gympluscoffee.com/collections/merch': 'merch',
+        'https://gympluscoffee.com/collections/mens': 'mens',
+        'https://gympluscoffee.com/collections/womens': 'womens'
+    }
 
     def __init__(self, name=None, **kwargs):
         super(GympluscoffeeSpider, self).__init__(name=name, **kwargs)
-        self.mylogger = Logger(kwargs['logs_dir'])
+        logs_dir = ''
+        if 'logs_dir' in kwargs:
+            logs_dir = kwargs['logs_dir']
+        self.mylogger = Logger(logs_dir)
 
     def parse(self, response: TextResponse):
         goods_list = response.xpath('//a[@class="product-info__caption "]')
@@ -35,14 +43,11 @@ class GympluscoffeeSpider(scrapy.Spider):
         url_info = request_url.split('?')
         current_page = int(url_info[1].split('=')[1])
         category_name = ''
-        categories = ['merch', 'mens', 'womens']
-        for category in categories:
-            if request_url.find(category) > 0:
-                category_name = category
-                # category_item = GympluscoffeeCategoryItem()
-                # category_item['name'] = category_name
-                # yield category_item
-                break
+        if url_info[0] in self.url_to_category_name_map:
+            category_name = self.url_to_category_name_map[url_info[0]]
+            category_item = GympluscoffeeCategoryItem()
+            category_item['name'] = category_name
+            yield category_item
 
         items = GympluscoffeeGoodsItem()
         for goods in goods_list:

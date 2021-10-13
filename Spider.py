@@ -26,5 +26,5 @@ class Spider:
 
 
 if __name__ == '__main__':
-    Spider.create_all_tables()
-    # Spider.crawl(GympluscoffeeSpider.name)
+    # Spider.create_all_tables()
+    Spider.crawl(GympluscoffeeSpider.name)
