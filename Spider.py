@@ -33,6 +33,6 @@ if __name__ == '__main__':
     dirpath = Config.get_logs_dir()
     args = {
         'logs_dir': dirpath,
-        'spider_child': GympluscoffeeSpider.CHILD_GOODS_LIST
+        # 'spider_child': GympluscoffeeSpider.CHILD_GOODS_LIST
     }
-    Spider.crawl(GympluscoffeeSpider.name, spider_args=args)
+    Spider.crawl('strongerlabel', spider_args=args)
