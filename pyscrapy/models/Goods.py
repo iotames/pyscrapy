@@ -15,6 +15,7 @@ class Goods(BaseModel):
     url = Column(String(500), comment='链接地址')
     local_image = Column(String(255), comment='本地图片地址')
     price = Column(Float(8, 2), comment='价格')
+    quantity = Column(Integer, default=0)
     status = Column(Integer, default=0, comment='状态。 0:Unknown; 1:Available; 2:SOLD OUT; 3:Unavailable')
     # reviews_num = Column(Integer, default=0, comment='评论数')
     # reviews_url = Column(String(500), comment='评论列表地址')

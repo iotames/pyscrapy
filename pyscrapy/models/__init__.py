@@ -4,3 +4,4 @@ from .Goods import Goods
 from .GoodsSku import GoodsSku
 from .tables import Table
 from .GoodsCategory import GoodsCategory
+from .GoodsCategoryX import GoodsCategoryX

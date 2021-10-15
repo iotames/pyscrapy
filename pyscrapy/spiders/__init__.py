@@ -3,3 +3,4 @@
 # Please refer to the documentation for information on how to create and manage
 # your spiders.
 from .gympluscoffee import GympluscoffeeSpider
+from .strongerlabel import StrongerlabelSpider

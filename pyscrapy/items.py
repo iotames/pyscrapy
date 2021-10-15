@@ -13,6 +13,18 @@ class GympluscoffeeGoodsItem(scrapy.Item):
     category_name = scrapy.Field()
 
 
+class StrongerlabelGoodsItem(scrapy.Item):
+    code = scrapy.Field()  # id
+    title = scrapy.Field()
+    url = scrapy.Field()
+    quantity = scrapy.Field()  # quantity inventory_quantity
+    categories = scrapy.Field()
+    created_at = scrapy.Field()
+    stickers = scrapy.Field()  # { in-stock: true, out-of-stock: false}
+    price = scrapy.Field()
+    image = scrapy.Field()
+
+
 class GympluscoffeeCategoryItem(scrapy.Item):
     site_id = scrapy.Field()
     parent_id = scrapy.Field()

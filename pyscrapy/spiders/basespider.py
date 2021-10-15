@@ -11,6 +11,7 @@ class BaseSpider(scrapy.Spider):
     name: str
     start_urls = []
     db_session = None
+    site_id: int
 
     def __init__(self, name=None, **kwargs):
         super(BaseSpider, self).__init__(name=name, **kwargs)

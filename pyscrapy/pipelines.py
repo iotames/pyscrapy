@@ -6,11 +6,13 @@
 
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
-from .spiders import GympluscoffeeSpider
-from .items import GympluscoffeeGoodsItem, GympluscoffeeCategoryItem
+from .spiders import GympluscoffeeSpider, StrongerlabelSpider
+from pyscrapy.spiders.basespider import BaseSpider
+from .items import GympluscoffeeGoodsItem, GympluscoffeeCategoryItem, StrongerlabelGoodsItem
 from .database import Database
 from .models import Site, Goods, GoodsCategory
 from Config import Config
+import scrapy
 
 db = Database(Config().get_database())
 db.ROOT_PATH = Config.ROOT_PATH
@@ -19,7 +21,51 @@ db_session = db.get_db_session()
 
 class PyscrapyPipeline:
 
-    def process_item(self, item, spider):
+    def process_item(self, item: scrapy.Item, spider):
+        if isinstance(spider, StrongerlabelSpider):
+            if isinstance(item, StrongerlabelGoodsItem):
+                category_name = ''
+                category_id = 0
+                if item['categories']:
+                    # TODO 一个商品属于多个类别
+                    category_name = item['categories'][0]
+                if category_name != '':
+                    category_model = db_session.query(GoodsCategory).filter(
+                        GoodsCategory.site_id == spider.site_id, GoodsCategory.name == category_name).first()
+                    if category_model:
+                        category_id = category_model.id
+                    else:
+                        category_model = GoodsCategory(name=category_name, site_id=spider.site_id)
+                        db_session.add(category_model)
+                # { in-stock: true, out-of-stock: false}
+                status = Goods.STATUS_AVAILABLE
+                # TODO stickers 包含多个标签 待发现
+                if ('out-of-stock' in item['stickers']) and (item['stickers']['out-of-stock'] is True):
+                    status = Goods.STATUS_SOLD_OUT
+                attrs = {
+                    'site_id': spider.site_id,
+                    'code': item['code'],
+                    'title': item['title'],
+                    'url': item['url'],
+                    'quantity': item['quantity'],
+                    'price': item['price'],
+                    'image': item['image'],
+                    'category_id': category_id,
+                    'category_name': category_name,
+                    'status': status
+                }
+                goods = db_session.query(Goods).filter(
+                    Goods.code == item['code'], Goods.url == item['url']).first()
+                if not goods:
+                    goods = Goods(**attrs)
+                    db_session.add(goods)
+                    print('SUCCESS ADD GOODS')
+                else:
+                    db_session.query(Goods).filter(
+                        Goods.code == item['code'], Goods.url == item['url']).update(attrs)
+                    print('SUCCESS UPDATE GOODS')
+                db_session.commit()
+
         if isinstance(spider, GympluscoffeeSpider):
             if isinstance(item, GympluscoffeeCategoryItem):
                 attrs = {
@@ -55,13 +101,13 @@ class PyscrapyPipeline:
                     print('Skip goods ' + title)
 
     def open_spider(self, spider):
-        if isinstance(spider, GympluscoffeeSpider):
-            site = db_session.query(Site).filter(Site.name == GympluscoffeeSpider.name).first()
+        if isinstance(spider, BaseSpider):
+            site = db_session.query(Site).filter(Site.name == spider.name).first()
             if not site:
                 attrs = {
-                    'name': GympluscoffeeSpider.name,
-                    'domain': GympluscoffeeSpider.domain,
-                    'home_url': GympluscoffeeSpider.base_url
+                    'name': spider.name,
+                    'domain': spider.domain,
+                    'home_url': spider.base_url
                 }
                 site = Site(**attrs)
                 db_session.add(site)

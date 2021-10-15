@@ -4,4 +4,4 @@ __pycache__/
 *.db
 build/
 dist/
-config/database.json
+config/*.json

@@ -2,6 +2,7 @@ import time
 
 from scrapy.http import TextResponse, request
 from .basespider import BaseSpider
+from ..items import StrongerlabelGoodsItem
 import json
 
 
@@ -62,20 +63,28 @@ class StrongerlabelSpider(BaseSpider):
         json_response = json.loads(text)
         items_list = json_response['items']
         output = ''
+        goods_item = StrongerlabelGoodsItem()
         for item in items_list:
+            categories = []
             if 'category' in item:
-                categories = []
                 for categoryl in item['category']:
                     categories.append(categoryl['category1'])
-                print(categories)
+            goods_item['categories'] = categories
             created_at = int(item['created_at']/1000)
-            print(created_at)
-            # stickers: { in-stock: true, out-of-stock: false}
-            print(item['stickers'])
+            goods_item['created_at'] = created_at
+            if 'stickers' in item:
+                goods_item['stickers'] = item['stickers']  # stickers: { in-stock: true, out-of-stock: false}
+                for stkey, stkvalue in item['stickers'].items():
+                    if stkvalue and stkey != 'in-stock':
+                        self.mylogger.debug('stickers!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TRUE ' + stkey)
+
             price = item['price'][0]
-            image = item['image_url']
-            output_format = "id={} title={} {}USD url={} quantity={} image={} \r\n"
+            goods_item['price'] = price
+            goods_item['image'] = item['image_url']
+            goods_item['code'] = item['id']
+            goods_item['title'] = item['title']
             url = item['product_url'] if 'product_url' in item else 'unknown========================='
-            output = output + output_format.format(item['id'], item['title'], price, url, item['quantity'], image)
-        self.mylogger.debug(output)
-        self.logger.debug(text)
+            goods_item['url'] = url
+            quantity = item['quantity']
+            goods_item['quantity'] = quantity
+            yield goods_item
