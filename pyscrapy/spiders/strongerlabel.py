@@ -15,6 +15,7 @@ class StrongerlabelSpider(BaseSpider):
 
     def __init__(self, name=None, **kwargs):
         super(StrongerlabelSpider, self).__init__(name=name, **kwargs)
+        self.allowed_domains.append('api-v3.findify.io')
         self.start_urls = [
             "https://api-v3.findify.io/v3/search"
             # 'https://www.strongerlabel.com/'
@@ -24,7 +25,11 @@ class StrongerlabelSpider(BaseSpider):
         self.sl_key = '16d7a766-26a5-4394-9fac-846d0404f434'
 
     def start_requests(self):
-        t_client = int(time.time()*1000)
+        for url in self.start_urls:
+            yield self.request_goods_list(url, offset=0)
+
+    def request_goods_list(self, url, offset):
+        t_client = int(time.time() * 1000)
         headers = {
             # 'content-length': 608,
             'content-type': 'application/json',  # content-type 必填
@@ -36,29 +41,30 @@ class StrongerlabelSpider(BaseSpider):
             # 'user-agent': '',
             'x-key': self.sl_key  # x-key 必填
         }
-        for url in self.start_urls:
-            user = {'uid': self.sl_uid, 'sid': self.sl_sid}
-            request_body = {
-                'user': user,
-                't_client': t_client,
-                'key': self.sl_key,
-                "filters": [
-                    {"name": "market_stock_1", "type": "range", "values": [{"from": -1000}], "action": "include"}
-                ],
-                "limit": 20,
-                "offset": 40,
-                "q": ""
-            }
-            request_body = json.dumps(request_body)
-            yield request.Request(
+        user = {'uid': self.sl_uid, 'sid': self.sl_sid}
+        request_body = {
+            'user': user,
+            't_client': t_client,
+            'key': self.sl_key,
+            "filters": [
+                {"name": "market_stock_1", "type": "range", "values": [{"from": -1000}], "action": "include"}
+            ],
+            "limit": 20,
+            "offset": offset,
+            "q": ""
+        }
+        request_body = json.dumps(request_body)
+        return request.Request(
                 url,
                 callback=self.parse,
                 method='POST',
                 headers=headers,
-                body=request_body
+                body=request_body,
+                meta={'offset': offset}
             )
 
     def parse(self, response: TextResponse, **kwargs):
+        time.sleep(3)
         text = response.text
         json_response = json.loads(text)
         items_list = json_response['items']
@@ -83,8 +89,16 @@ class StrongerlabelSpider(BaseSpider):
             goods_item['image'] = item['image_url']
             goods_item['code'] = item['id']
             goods_item['title'] = item['title']
-            url = item['product_url'] if 'product_url' in item else 'unknown========================='
+            url = item['product_url'] if 'product_url' in item else ''
             goods_item['url'] = url
+            # print(item['title'] + " : " + url)
             quantity = item['quantity']
             goods_item['quantity'] = quantity
             yield goods_item
+
+        offset = response.meta['offset']
+        print('offset {} SUCCESS. response status {} '.format(str(offset), str(response.status)))
+
+        if offset < 500:
+            offset += 20
+            yield self.request_goods_list(response.url, offset)
