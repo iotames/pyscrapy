@@ -79,7 +79,8 @@ class PyscrapyPipeline:
             if isinstance(item, GympluscoffeeCategoryItem):
                 attrs = {
                     'name': item['name'],
-                    'site_id': spider.site_id
+                    'site_id': spider.site_id,
+                    'url': item['url']
                 }
                 model = db_session.query(GoodsCategory).filter_by(**attrs).first()
                 if not model:
@@ -110,18 +111,4 @@ class PyscrapyPipeline:
                     print('Skip goods ' + title)
 
     def open_spider(self, spider):
-        if isinstance(spider, BaseSpider):
-            site = db_session.query(Site).filter(Site.name == spider.name).first()
-            if not site:
-                attrs = {
-                    'name': spider.name,
-                    'domain': spider.domain,
-                    'home_url': spider.base_url
-                }
-                site = Site(**attrs)
-                db_session.add(site)
-                db_session.commit()
-            spider.site_id = site.id
-
-    # def close_spider(self, spider):
-    #     if isinstance(spider, GympluscoffeeSpider):
+        pass

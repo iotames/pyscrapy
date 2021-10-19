@@ -5,3 +5,6 @@ from .GoodsSku import GoodsSku
 from .tables import Table
 from .GoodsCategory import GoodsCategory
 from .GoodsCategoryX import GoodsCategoryX
+from .SpiderRunLog import SpiderRunLog
+from .GoodsQuantityLog import GoodsQuantityLog
+from .GoodsSkuQuantityLog import GoodsSkuQuantityLog
