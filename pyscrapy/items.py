@@ -9,7 +9,9 @@ from pyscrapy.models import BaseModel
 
 class GympluscoffeeCategoryItem(scrapy.Item):
     site_id = scrapy.Field()
-    parent_id = scrapy.Field()
+    model = scrapy.Field()
+    parent_name = scrapy.Field()
+    parent_url = scrapy.Field()
     name = scrapy.Field()
     url = scrapy.Field()
 

@@ -10,7 +10,7 @@ from .spiders import GympluscoffeeSpider, StrongerlabelSpider
 from pyscrapy.spiders.basespider import BaseSpider
 from .items import GympluscoffeeGoodsItem, GympluscoffeeCategoryItem, StrongerlabelGoodsItem, GympluscoffeeGoodsSkuItem
 from .database import Database
-from .models import Site, Goods, GoodsCategory, GoodsCategoryX
+from .models import Site, Goods, GoodsCategory, GoodsCategoryX, GoodsSku
 from Config import Config
 import scrapy
 import json
@@ -78,18 +78,36 @@ class PyscrapyPipeline:
 
         if isinstance(spider, GympluscoffeeSpider):
             if isinstance(item, GympluscoffeeCategoryItem):
-                attrs = {
-                    'name': item['name'],
-                    'site_id': spider.site_id,
-                    'url': item['url']
-                }
-                model = db_session.query(GoodsCategory).filter_by(**attrs).first()
+                attrs = {'site_id': spider.site_id, 'parent_id': 0}
+                url = item['url']
+                if url.startswith('/'):
+                    url = spider.base_url + url
+                attrs['url'] = url
+                attrs['name'] = item['name']
+
+                if item['parent_url'] and item['parent_name']:
+                    p_url = spider.base_url + item['parent_url']
+                    p_name = item['parent_name']
+                    p_model = db_session.query(GoodsCategory).filter(
+                        GoodsCategory.site_id == spider.site_id,
+                        GoodsCategory.name == p_name,
+                        GoodsCategory.url == p_url
+                    ).first()
+                    if not p_model:
+                        p_model = GoodsCategory(site_id=spider.site_id, name=p_name, url=p_url)
+                        db_session.add(p_model)
+                        db_session.commit()
+                    attrs['parent_id'] = p_model.id
+
+                model = item['model']
                 if not model:
                     model = GoodsCategory(**attrs)
                     db_session.add(model)
                     db_session.commit()
-                    print('SUCCESS save category')
-                spider.categories_info[model.name]['id'] = model.id
+                    print('SUCCESS save category ' + attrs['name'])
+                else:
+                    print('Skip category ' + attrs['name'])
+                # spider.categories_info[model.name]['id'] = model.id
 
             if isinstance(item, GympluscoffeeGoodsItem):
                 attrs = {'site_id': spider.site_id}
@@ -98,15 +116,14 @@ class PyscrapyPipeline:
                         continue
                     if key == 'url' and value.startswith('/'):
                         value = spider.base_url + value
-                    if key == 'category_name' and value in spider.categories_info:
-                        attrs['category_id'] = spider.categories_info[value]['id']
                     attrs[key] = value
 
-                model = item['model'] if 'model' in item else None
+                model: Goods = item['model'] if 'model' in item else None
                 if model:
-                    opt_str = 'SUCCESS UPDATE '
-                    for attr_key, attr_value in attrs.items():
-                        setattr(model, attr_key, attr_value)
+                    opt_str = 'SUCCESS UPDATE id = {} : '.format(str(model.id))
+                    # for attr_key, attr_value in attrs.items():
+                    #     setattr(model, attr_key, attr_value)
+                    db_session.query(Goods).filter(Goods.id == model.id).update(attrs)  # 经常要更新多次 原因未知
                 else:
                     opt_str = 'SUCCESS ADD '
                     model = Goods(**attrs)
@@ -126,14 +143,15 @@ class PyscrapyPipeline:
                             i += 1
                         continue
                     attrs[item_key] = item_value
-                model = item['model'] if 'model' in item else None
+                model: GoodsSku = item['model'] if 'model' in item else None
                 if model:
                     opt_str = 'SUCCESS UPDATE '
-                    for attr_key, attr_value in attrs.items():
-                        setattr(model, attr_key, attr_value)
+                    # for attr_key, attr_value in attrs.items():
+                    #     setattr(model, attr_key, attr_value)
+                    db_session.query(GoodsSku).filter(GoodsSku.id == model.id).update(attrs)
                 else:
                     opt_str = 'SUCCESS ADD '
-                    model = Goods(**attrs)
+                    model = GoodsSku(**attrs)
                     db_session.add(model)
                 db_session.commit()
                 print(opt_str + ' GOODS SKU : ' + json.dumps(attrs))

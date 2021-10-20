@@ -3,7 +3,7 @@ from scrapy.exceptions import UsageError
 from scrapy.http import TextResponse
 from scrapy import Request
 from ..items import GympluscoffeeGoodsItem, GympluscoffeeCategoryItem, GympluscoffeeGoodsSkuItem
-from ..models import Goods, GoodsSku
+from ..models import Goods, GoodsSku, GoodsCategory
 import json
 from sqlalchemy import and_, or_
 import time
@@ -14,11 +14,14 @@ class GympluscoffeeSpider(BaseSpider):
 
     name = 'gympluscoffee'
     start_categories = ['merch', 'mens', 'womens']
-    categories_info = {}
+    # categories_info = {}
     url_to_category_name_map = {}
     CHILD_GOODS_LIST = 'goods_list'
     CHILD_GOODS_DETAIL = 'goods_detail'
-    spider_child = CHILD_GOODS_LIST
+    CHILD_GOODS_CATEGORIES = 'goods_categories'
+    spider_child = CHILD_GOODS_CATEGORIES
+
+    xpath_categories = '//ul[@class="list-menu list-menu--inline"]/li/div[@class="header-menu-item-father"]'
 
     def __init__(self, name=None, **kwargs):
         super(GympluscoffeeSpider, self).__init__(name=name, **kwargs)
@@ -26,20 +29,7 @@ class GympluscoffeeSpider(BaseSpider):
         if 'spider_child' not in kwargs:
             msg = 'lost param spider_child'
             raise UsageError(msg)
-
-        if kwargs['spider_child'] == self.CHILD_GOODS_DETAIL:
-            self.spider_child = self.CHILD_GOODS_DETAIL
-
-        if kwargs['spider_child'] == self.CHILD_GOODS_LIST:
-            for category in self.start_categories:
-                start_url = "{}/collections/{}?page=1".format(self.base_url, category)
-                self.start_urls.append(start_url)
-                self.categories_info[category] = {
-                    'id': 0,
-                    'url': "{}/collections/{}".format(self.base_url, category),
-                    'start_url': start_url,
-                    'name': category
-                }
+        self.spider_child = kwargs['spider_child']
 
     def start_requests(self):
         self.add_spider_log()
@@ -51,13 +41,75 @@ class GympluscoffeeSpider(BaseSpider):
                 Goods.updated_at < before_time
             ), Goods.status == Goods.STATUS_UNKNOWN)).all()
             for goods in goods_list:
+                print("goods id = " + str(goods.id) + "==== status = " + str(goods.status) + " url = " + goods.url)
                 yield Request(goods.url, callback=self.parse, meta={'goods': goods})
-        else:
-            for category_name, info in self.categories_info.items():
-                yield Request(info['start_url'], callback=self.parse, meta={'category': info, 'page': 1})
-                # yield Request(info['start_url'], callback=self.parse, meta={'category_name': category_name})
+
+        if self.spider_child == self.CHILD_GOODS_LIST:
+            categories = self.db_session.query(GoodsCategory).filter(and_(
+                GoodsCategory.site_id == self.site_id, GoodsCategory.parent_id > 0)).all()
+            for category in categories:
+                start_url = category.url + "?page=1"
+                self.start_urls.append(start_url)
+                print(start_url)
+                yield Request(start_url, callback=self.parse, meta={'category': category, 'page': 1})
+
+        if self.spider_child == self.CHILD_GOODS_CATEGORIES:
+            yield Request(self.base_url, callback=self.parse)
+
+    def get_categories(self, response: TextResponse) -> list:
+        categories_ele = response.xpath(self.xpath_categories)
+        categories = []
+        for category_ele in categories_ele:
+            name = category_ele.xpath('summary/span/text()').get().strip()
+            category = {'name': name}
+            items_ele = category_ele.xpath('ul/li/a')
+            items = []
+            i = 0
+            for item_ele in items_ele:
+                if i == 0:
+                    url = item_ele.xpath('@href').get()
+                    category['url'] = url
+                    i += 1
+                    continue
+                name = item_ele.xpath('text()').get().strip()
+                url = item_ele.xpath('@href').get()
+                item = {'name': name, 'url': url}
+                items.append(item)
+            category['items'] = items
+            categories.append(category)
+        return categories
 
     def parse(self, response: TextResponse, **kwargs):
+        if self.spider_child == self.CHILD_GOODS_CATEGORIES:
+            categories = self.get_categories(response)
+            for category in categories:
+                p_model = self.db_session.query(GoodsCategory).filter(
+                    GoodsCategory.site_id == self.site_id,
+                    GoodsCategory.name == category['name'],
+                    GoodsCategory.url == self.base_url + category['url']
+                ).first()
+                item_category = GympluscoffeeCategoryItem()
+                item_category['site_id'] = self.site_id
+                item_category['parent_name'] = None
+                item_category['parent_url'] = None
+                item_category['model'] = p_model
+                item_category['name'] = category['name']
+                item_category['url'] = category['url']
+                yield item_category
+                for item in category['items']:
+                    model = self.db_session.query(GoodsCategory).filter(
+                        GoodsCategory.site_id == self.site_id,
+                        GoodsCategory.name == item['name'],
+                        GoodsCategory.url == self.base_url + item['url']
+                    ).first()
+                    item_category = GympluscoffeeCategoryItem()
+                    item_category['site_id'] = self.site_id
+                    item_category['parent_name'] = category['name']
+                    item_category['parent_url'] = category['url']
+                    item_category['model'] = model
+                    item_category['name'] = item['name']
+                    item_category['url'] = item['url']
+                    yield item_category
         if self.spider_child == self.CHILD_GOODS_DETAIL:
             goods_model = response.meta['goods']
             item_goods = GympluscoffeeGoodsItem()
@@ -93,8 +145,8 @@ class GympluscoffeeSpider(BaseSpider):
                 item_sku['title'] = sku['sku']
                 item_sku['full_title'] = sku['name']
                 item_sku['price'] = sku['price']
-                item_sku['inventory_quantity'] = sku['price']
-                item_sku['barcode'] = sku['price']
+                item_sku['inventory_quantity'] = sku['inventory_quantity']
+                item_sku['barcode'] = sku['barcode']
 
                 if 'featured_image' in sku:
                     if sku['featured_image']:
@@ -107,33 +159,24 @@ class GympluscoffeeSpider(BaseSpider):
             yield item_goods
 
         if self.spider_child == self.CHILD_GOODS_LIST:
-            if response.meta['page'] == 2:
-                time.sleep(2)
             goods_list = response.xpath('//a[@class="full-unstyled-link"]')
             # page_ele = response.xpath('//div[@id="bc-sf-filter-bottom-pagination"]/span[@class="page"][last()]')
             if goods_list:
-                category = response.meta['category']
-                if response.meta['page'] == 1:
-                    category_item = GympluscoffeeCategoryItem()
-                    category_item['name'] = category['name']
-                    category_item['url'] = category['url']
-                    yield category_item
+                category: GoodsCategory = response.meta['category']
                 request_url = response.url
                 self.mylogger.debug("request_url: " + request_url)
                 url_info = request_url.split('?')
                 current_page = int(url_info[1].split('=')[1])
-                category_name = category['name']
                 items = GympluscoffeeGoodsItem()
                 for goods in goods_list:
-                    # href = goods.xpath('@href').extract()[0]
                     href: str = goods.xpath('@href').get()
                     goods_model = self.db_session.query(Goods).filter(Goods.url == self.base_url + href.strip()).first()
-                    items['goods_model'] = goods_model # None: ADD ; Other: UPDATE
+                    items['model'] = goods_model  # None: ADD ; Other: UPDATE
                     title: str = goods.xpath('.//div/span[1]/text()').get()
                     items['title'] = title.strip()
                     items['url'] = href.strip()
-                    items['category_name'] = category_name
-                    items['category_id'] = self.categories_info[category_name]['id']
+                    items['category_name'] = category.name
+                    items['category_id'] = category.id
                     # self.mylogger.debug('GOODS: ' + title + " : " + href)
                     yield items
                 next_url = url_info[0] + "?page=" + str(current_page + 1)
