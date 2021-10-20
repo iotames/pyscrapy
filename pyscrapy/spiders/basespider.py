@@ -45,6 +45,7 @@ class BaseSpider(scrapy.Spider):
         if 'logs_dir' in kwargs:
             logs_dir = kwargs['logs_dir']
         self.mylogger = Logger(logs_dir)
+        self.mylogger.echo_msg = True
 
     def add_spider_log(self):
         logattr = {'spider_name': self.name, 'datetime': datetime.datetime.now()}  # time.strftime("%Y%m%d %H:%M:%S")

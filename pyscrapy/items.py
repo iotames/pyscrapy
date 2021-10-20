@@ -4,13 +4,41 @@
 # https://docs.scrapy.org/en/latest/topics/items.html
 
 import scrapy
+from pyscrapy.models import BaseModel
+
+
+class GympluscoffeeCategoryItem(scrapy.Item):
+    site_id = scrapy.Field()
+    parent_id = scrapy.Field()
+    name = scrapy.Field()
+    url = scrapy.Field()
 
 
 class GympluscoffeeGoodsItem(scrapy.Item):
-    goods_title = scrapy.Field()
-    goods_url = scrapy.Field()
+    site_id = scrapy.Field()
+    model = scrapy.Field()
+    code = scrapy.Field()
+    title = scrapy.Field()
+    url = scrapy.Field()
     category_id = scrapy.Field()
     category_name = scrapy.Field()
+    status = scrapy.Field()
+
+
+class GympluscoffeeGoodsSkuItem(scrapy.Item):
+    site_id = scrapy.Field()
+    model = scrapy.Field()
+    code = scrapy.Field()
+    goods_id = scrapy.Field()
+    category_id = scrapy.Field()
+    category_name = scrapy.Field()
+    options = scrapy.Field()  # option1 option2 option3
+    title = scrapy.Field()  # sku
+    full_title = scrapy.Field()  # name
+    price = scrapy.Field()
+    inventory_quantity = scrapy.Field()
+    barcode = scrapy.Field()
+    image = scrapy.Field()
 
 
 class StrongerlabelGoodsItem(scrapy.Item):
@@ -25,11 +53,7 @@ class StrongerlabelGoodsItem(scrapy.Item):
     image = scrapy.Field()
 
 
-class GympluscoffeeCategoryItem(scrapy.Item):
-    site_id = scrapy.Field()
-    parent_id = scrapy.Field()
-    name = scrapy.Field()
-    url = scrapy.Field()
+
 
 
 class PyscrapyItem(scrapy.Item):

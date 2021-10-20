@@ -2,7 +2,7 @@ import scrapy
 from scrapy.exceptions import UsageError
 from scrapy.http import TextResponse
 from scrapy import Request
-from ..items import GympluscoffeeGoodsItem, GympluscoffeeCategoryItem
+from ..items import GympluscoffeeGoodsItem, GympluscoffeeCategoryItem, GympluscoffeeGoodsSkuItem
 from ..models import Goods, GoodsSku
 import json
 from sqlalchemy import and_, or_
@@ -59,12 +59,56 @@ class GympluscoffeeSpider(BaseSpider):
 
     def parse(self, response: TextResponse, **kwargs):
         if self.spider_child == self.CHILD_GOODS_DETAIL:
-            yield self.save_goods_detail(response, response.meta['goods'])
-            # yield scrapy.Request(url=url, callback=self.save_goods_detail, cb_kwargs={'goods_model': goods})
+            goods_model = response.meta['goods']
+            item_goods = GympluscoffeeGoodsItem()
+            item_goods['model'] = goods_model
+            if response.status != 200:
+                self.mylogger.debug("Warning: " + response.url + " : status = " + str(response.status))
+                item_goods['status'] = Goods.STATUS_AVAILABLE
+                item_goods['url'] = response.url
+                yield item_goods
+
+            xpath = '//div[@class="product-form__buttons"]/button/text()'
+            select = response.xpath(xpath)
+            btn_text: str = select.get().strip()
+            if btn_text.lower() == 'sold out':
+                item_goods['status'] = Goods.STATUS_SOLD_OUT
+                self.mylogger.debug("Warning: STATUS_SOLD_OUT: " + response.url)
+            if btn_text.lower() == 'add to cart':
+                item_goods['status'] = Goods.STATUS_AVAILABLE
+            skus = self.get_variants_by_html(response.text)
+            for sku in skus:
+                item_sku = GympluscoffeeGoodsSkuItem()
+                sku_code = sku['id']
+                sku_model = self.db_session.query(GoodsSku).filter(
+                    GoodsSku.goods_id == goods_model.id, GoodsSku.code == sku_code).first()
+
+                item_sku['site_id'] = self.site_id
+                item_sku['model'] = sku_model
+                item_sku['code'] = sku_code
+                item_sku['goods_id'] = goods_model.id
+                item_sku['category_id'] = goods_model.category_id
+                item_sku['category_name'] = goods_model.category_name
+                item_sku['options'] = [sku['option1'], sku['option2'], sku['option3']]
+                item_sku['title'] = sku['sku']
+                item_sku['full_title'] = sku['name']
+                item_sku['price'] = sku['price']
+                item_sku['inventory_quantity'] = sku['price']
+                item_sku['barcode'] = sku['price']
+
+                if 'featured_image' in sku:
+                    if sku['featured_image']:
+                        if 'src' in sku['featured_image']:
+                            item_sku['image'] = sku['featured_image']['src']
+                        if 'product_id' in sku['featured_image']:
+                            item_goods['code'] = sku['featured_image']['product_id']
+                yield item_sku
+
+            yield item_goods
 
         if self.spider_child == self.CHILD_GOODS_LIST:
             if response.meta['page'] == 2:
-                time.sleep(3)
+                time.sleep(2)
             goods_list = response.xpath('//a[@class="full-unstyled-link"]')
             # page_ele = response.xpath('//div[@id="bc-sf-filter-bottom-pagination"]/span[@class="page"][last()]')
             if goods_list:
@@ -82,10 +126,12 @@ class GympluscoffeeSpider(BaseSpider):
                 items = GympluscoffeeGoodsItem()
                 for goods in goods_list:
                     # href = goods.xpath('@href').extract()[0]
-                    href = goods.xpath('@href').get()
-                    title = goods.xpath('.//div/span[1]/text()').get()
-                    items['goods_title'] = title
-                    items['goods_url'] = href
+                    href: str = goods.xpath('@href').get()
+                    goods_model = self.db_session.query(Goods).filter(Goods.url == self.base_url + href.strip()).first()
+                    items['goods_model'] = goods_model # None: ADD ; Other: UPDATE
+                    title: str = goods.xpath('.//div/span[1]/text()').get()
+                    items['title'] = title.strip()
+                    items['url'] = href.strip()
                     items['category_name'] = category_name
                     items['category_id'] = self.categories_info[category_name]['id']
                     # self.mylogger.debug('GOODS: ' + title + " : " + href)
@@ -101,65 +147,3 @@ class GympluscoffeeSpider(BaseSpider):
         vv = cc[1].split('</script>')
         variants_str = vv[0].strip()
         return json.loads(variants_str)
-
-    def save_goods_detail(self, response: TextResponse, goods_model: Goods):
-        if response.status != 200:
-            self.mylogger.debug("Warning: " + response.url + " : status = " + str(response.status))
-            goods_model.status = Goods.STATUS_UNAVAILABLE
-            goods_model.url = response.url
-            goods_model.updated_at = int(time.time())
-            self.db_session.commit()
-            return False
-        xpath = '//div[@class="product-form__buttons"]/button/text()'
-        select = response.xpath(xpath)
-        btn_text = select.get().strip()
-        if btn_text == 'Sold Out':
-            goods_model.status = Goods.STATUS_SOLD_OUT
-            self.mylogger.debug("Warning: STATUS_SOLD_OUT: " + response.url)
-        if btn_text == 'Add to Cart':
-            goods_model.status = Goods.STATUS_AVAILABLE
-
-        skus = self.get_variants_by_html(response.text)
-        for sku in skus:
-            sku_code = sku['id']
-            sku_model = self.db_session.query(GoodsSku).filter(
-                GoodsSku.goods_id == goods_model.id, GoodsSku.code == sku_code).first()
-            update_data = {
-                'site_id': self.site_id,
-                'goods_id': goods_model.id,
-                'category_id': goods_model.category_id,
-                'category_name': goods_model.category_name,
-                'code': sku_code,
-                'option1': sku['option1'],
-                'option2': sku['option2'],
-                'option3': sku['option3'],
-                'title': sku['sku'],
-                'full_title': sku['name'],
-                'price': sku['price'],
-                'inventory_quantity': sku['inventory_quantity'],
-                'barcode': sku['barcode']
-            }
-
-            if 'featured_image' in sku:
-                if sku['featured_image']:
-                    if 'src' in sku['featured_image']:
-                        update_data['image'] = sku['featured_image']['src']
-                    if 'product_id' in sku['featured_image']:
-                        goods_model.code = sku['featured_image']['product_id']
-
-            if not sku_model:
-                sku_model = GoodsSku(**update_data)
-                self.db_session.add(sku_model)
-            else:
-                update_data['updated_at'] = int(time.time())
-                self.db_session.query(GoodsSku).filter(
-                    GoodsSku.goods_id == goods_model.id, GoodsSku.code == sku_code).update(update_data)
-
-        msg = str(goods_model.id) + " title : " + goods_model.title + " : " + response.url
-        if skus:
-            goods_model.url = response.url
-            goods_model.updated_at = int(time.time())
-            self.db_session.commit()
-            print('SUCCESS update : ' + msg)
-        else:
-            print('FAIL : ' + msg)
