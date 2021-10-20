@@ -8,6 +8,7 @@ import json
 from sqlalchemy import and_, or_
 import time
 from .basespider import BaseSpider
+from translate import Translator
 
 
 class GympluscoffeeSpider(BaseSpider):
@@ -22,6 +23,10 @@ class GympluscoffeeSpider(BaseSpider):
     spider_child = CHILD_GOODS_CATEGORIES
 
     xpath_categories = '//ul[@class="list-menu list-menu--inline"]/li/div[@class="header-menu-item-father"]'
+    xpath_product_desc = '//div[@class="product__description rte"]'
+    xpath_product_reviews = '//span[@class="jdgm-prev-badge__text"]'
+
+    translator: Translator
 
     def __init__(self, name=None, **kwargs):
         super(GympluscoffeeSpider, self).__init__(name=name, **kwargs)
@@ -30,10 +35,16 @@ class GympluscoffeeSpider(BaseSpider):
             msg = 'lost param spider_child'
             raise UsageError(msg)
         self.spider_child = kwargs['spider_child']
+        self.translator = Translator(to_lang='chinese')
+
+    def to_chinese(self, content: str):
+        return self.translator.translate(content)
 
     def start_requests(self):
         self.add_spider_log()
         if self.spider_child == self.CHILD_GOODS_DETAIL:
+            # goods = self.db_session.query(Goods).filter(Goods.id == 543).first()
+            # yield Request(goods.url, callback=self.parse, meta={'goods': goods})
             # 12小时内的商品不会再更新
             before_time = time.time() - (12 * 3600)
             goods_list = self.db_session.query(Goods).filter(or_(and_(
@@ -119,6 +130,19 @@ class GympluscoffeeSpider(BaseSpider):
                 item_goods['status'] = Goods.STATUS_AVAILABLE
                 item_goods['url'] = response.url
                 yield item_goods
+
+            desc_ele = response.xpath(self.xpath_product_desc)
+            desc = desc_ele.xpath('span/p/text()').get().strip()  # 描述
+            print(desc)
+            reviews_text: str = response.xpath(self.xpath_product_reviews + '/text()').get().strip()
+            reviews = int(reviews_text.replace(',', '').split(' ')[0])
+            print(reviews)
+            fabric_html = desc_ele.xpath('div[6]/div[2][contains(.,text())]').get()
+            dd = fabric_html.split('<div class="product_collapsible_content">')
+            fabric = dd[1].split('</div>')[0].replace('<br>', ' ').strip()  # 织物材料
+            print(fabric)
+            # print(self.to_chinese(fabric))
+            # return False
 
             xpath = '//div[@class="product-form__buttons"]/button/text()'
             select = response.xpath(xpath)
