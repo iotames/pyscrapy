@@ -1,4 +1,4 @@
-from .baseconfig import BaseConfig
+from config.baseconfig import BaseConfig
 
 
 class Database(BaseConfig):
@@ -15,3 +15,9 @@ class Database(BaseConfig):
     }
 
     SAMPLE_CONFIG = DEFAULT_CONFIG
+
+
+if __name__ == '__main__':
+    database = Database()
+    conf = database.get_config()
+    print(conf)

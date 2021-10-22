@@ -25,6 +25,7 @@ class GympluscoffeeSpider(BaseSpider):
     xpath_categories = '//ul[@class="list-menu list-menu--inline"]/li/div[@class="header-menu-item-father"]'
     xpath_product_desc = '//div[@class="product__description rte"]'
     xpath_product_reviews = '//span[@class="jdgm-prev-badge__text"]'
+    xpath_product_rating = '//div[@class="jdgm-histogram jdgm-temp-hidden"]/div[@class="jdgm-histogram__row"]'
 
     translator: Translator
 
@@ -43,14 +44,16 @@ class GympluscoffeeSpider(BaseSpider):
     def start_requests(self):
         self.add_spider_log()
         if self.spider_child == self.CHILD_GOODS_DETAIL:
-            # goods = self.db_session.query(Goods).filter(Goods.id == 543).first()
+            # goods = self.db_session.query(Goods).filter(Goods.id == 1).first()
             # yield Request(goods.url, callback=self.parse, meta={'goods': goods})
+
             # 12小时内的商品不会再更新
             before_time = time.time() - (12 * 3600)
             goods_list = self.db_session.query(Goods).filter(or_(and_(
                 Goods.site_id == self.site_id,
                 Goods.updated_at < before_time
             ), Goods.status == Goods.STATUS_UNKNOWN)).all()
+            print(len(goods_list))
             for goods in goods_list:
                 print("goods id = " + str(goods.id) + "==== status = " + str(goods.status) + " url = " + goods.url)
                 yield Request(goods.url, callback=self.parse, meta={'goods': goods})
@@ -89,6 +92,34 @@ class GympluscoffeeSpider(BaseSpider):
             category['items'] = items
             categories.append(category)
         return categories
+
+    @staticmethod
+    def get_product_attr_content(desc_ele, attr='Fabric'):
+        content = ''
+        try:
+            fabric_title_ele = desc_ele.xpath('div/div[@class="product_collapsible_title"]/span[text()="{}"]'.format(attr))  # [contains(text(), "{}")]
+            # [contains(.,text())]
+            fabric_html = fabric_title_ele.xpath('parent::div/parent::div/div[2]/text()').get()  # [contains(., text())]
+            content = fabric_html.replace('<br>', ' ').replace('\n', '  ').strip()  # 织物材料
+        except Exception as e:
+            pass
+        return content
+
+    @staticmethod
+    def get_product_schema_text(desc_ele):
+        schema_text = ''
+        schema_ele = desc_ele.xpath('span/span/text()')
+        if not schema_ele:
+            schema_ele = desc_ele.xpath('span/div/div/div/p/span/text()')
+            if not schema_ele:
+                schema_ele = desc_ele.xpath('span/p/text()')
+                if not schema_ele:
+                    schema_ele = desc_ele.xpath('span/p/span/text()')
+            try:
+                schema_text = schema_ele.get().strip()  # 描述
+            except AttributeError:
+                pass
+        return schema_text
 
     def parse(self, response: TextResponse, **kwargs):
         if self.spider_child == self.CHILD_GOODS_CATEGORIES:
@@ -131,18 +162,31 @@ class GympluscoffeeSpider(BaseSpider):
                 item_goods['url'] = response.url
                 yield item_goods
 
+            price = response.xpath("//meta[@property=\"og:price:amount\"]/@content")
+            item_goods['price'] = price.get()
+
+            details = {}
             desc_ele = response.xpath(self.xpath_product_desc)
-            desc = desc_ele.xpath('span/p/text()').get().strip()  # 描述
-            print(desc)
-            reviews_text: str = response.xpath(self.xpath_product_reviews + '/text()').get().strip()
-            reviews = int(reviews_text.replace(',', '').split(' ')[0])
-            print(reviews)
-            fabric_html = desc_ele.xpath('div[6]/div[2][contains(.,text())]').get()
-            dd = fabric_html.split('<div class="product_collapsible_content">')
-            fabric = dd[1].split('</div>')[0].replace('<br>', ' ').strip()  # 织物材料
-            print(fabric)
+            details['schema'] = self.get_product_schema_text(desc_ele)
+            details['details'] = self.get_product_attr_content(desc_ele, 'Details')
+            details['fabric'] = self.get_product_attr_content(desc_ele, 'Fabric')
             # print(self.to_chinese(fabric))
-            # return False
+            reviews_ele = response.xpath(self.xpath_product_reviews + '/text()')
+            reviews_text: str = reviews_ele.get().strip()
+            print(reviews_text)
+            reviews_num = 0
+            if reviews_text != 'No reviews':
+                reviews_num = int(reviews_text.replace(',', '').split(' ')[0])
+            item_goods['reviews_num'] = reviews_num
+            rating = {}
+            if reviews_num > 0:
+                for ele in response.xpath(self.xpath_product_rating):
+                    rating_key = ele.xpath('@data-rating').get()
+                    rating_value = ele.xpath('@data-frequency').get()
+                    rating[rating_key] = int(rating_value)
+            details['rating'] = rating
+
+            item_goods['details'] = details
 
             xpath = '//div[@class="product-form__buttons"]/button/text()'
             select = response.xpath(xpath)

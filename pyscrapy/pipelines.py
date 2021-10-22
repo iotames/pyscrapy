@@ -116,6 +116,8 @@ class PyscrapyPipeline:
                         continue
                     if key == 'url' and value.startswith('/'):
                         value = spider.base_url + value
+                    if key == 'details':
+                        value = json.dumps(value)
                     attrs[key] = value
 
                 model: Goods = item['model'] if 'model' in item else None

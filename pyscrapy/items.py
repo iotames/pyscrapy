@@ -25,6 +25,9 @@ class GympluscoffeeGoodsItem(scrapy.Item):
     category_id = scrapy.Field()
     category_name = scrapy.Field()
     status = scrapy.Field()
+    price = scrapy.Field()
+    details = scrapy.Field()
+    reviews_num = scrapy.Field()
 
 
 class GympluscoffeeGoodsSkuItem(scrapy.Item):

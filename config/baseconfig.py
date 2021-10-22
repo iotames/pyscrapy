@@ -13,6 +13,8 @@ class BaseConfig:
 
     def __init__(self):
         self.filepath = self.CONFIG_DIR_PATH + os.sep + self.name + self.file_ext
+        if not os.path.isfile(self.filepath):
+            self.create_config_file()
 
     def get_config_by_json(self) -> dict:
         # 如果文件不存在，则返回空字典

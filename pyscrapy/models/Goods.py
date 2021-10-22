@@ -17,10 +17,10 @@ class Goods(BaseModel):
     price = Column(Float(8, 2), comment='价格')
     quantity = Column(Integer, default=0)
     status = Column(Integer, default=0, comment='状态。 0:Unknown; 1:Available; 2:SOLD OUT; 3:Unavailable')
-    # reviews_num = Column(Integer, default=0, comment='评论数')
+    reviews_num = Column(Integer, default=0, comment='评论数')
     # reviews_url = Column(String(500), comment='评论列表地址')
     # sales = Column(Integer, default=0, comment='销量')
-    # details = Column(Text, comment='详情')
+    details = Column(Text, comment='详情')
 
     STATUS_UNKNOWN = 0
     STATUS_AVAILABLE = 1
