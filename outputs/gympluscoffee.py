@@ -12,7 +12,7 @@ class GympluscoffeeOutput(BaseOutput):
     translator: Translator
 
     def __init__(self):
-        super(GympluscoffeeOutput, self).__init__('SKU库存详情')
+        super(GympluscoffeeOutput, self).__init__('SKU库存详情', self.site_name)
         self.translator = Translator(to_lang='chinese', provider='mymemory')
 
     def to_chinese(self, content: str):

@@ -5,6 +5,9 @@ from outputs.baseoutput import BaseOutput
 class StrongerlabelOutput(BaseOutput):
 
     site_name = 'strongerlabel'
+    
+    def __init__(self):
+        super(StrongerlabelOutput, self).__init__('商品库存', self.site_name)
 
     def output(self):
         sheet = self.work_sheet

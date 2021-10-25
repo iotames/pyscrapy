@@ -16,13 +16,14 @@ class BaseOutput:
     wb: Workbook
     work_sheet: Worksheet
     output_dir = Config.ROOT_PATH + '/runtime'
-    output_file = output_dir + '/output' + time.strftime("%Y-%m-%d_%H_%M", time.localtime()) + '.xlsx'
+    output_file: str = output_dir + '/{}_' + time.strftime("%Y-%m-%d_%H_%M", time.localtime()) + '.xlsx'
 
-    def __init__(self, sheet_title='库存详情'):
+    def __init__(self, sheet_title='库存详情', filename='output'):
         db = DB(Config().get_database())
         db.ROOT_PATH = Config.ROOT_PATH
         self.db_session = db.get_db_session()
         # TODO 因文件名故，xlsx文件通常仅走新增路线
+        self.output_file = self.output_file.format(filename)
         if os.path.isfile(self.output_file):
             self.wb = load_workbook(self.output_file)
             self.work_sheet = self.wb.worksheets[0]
