@@ -5,6 +5,8 @@
 
 
 # useful for handling different item types with a single interface
+import time
+
 from itemadapter import ItemAdapter
 from .spiders import GympluscoffeeSpider, StrongerlabelSpider
 from pyscrapy.spiders.basespider import BaseSpider
@@ -107,7 +109,6 @@ class PyscrapyPipeline:
                     print('SUCCESS save category ' + attrs['name'])
                 else:
                     print('Skip category ' + attrs['name'])
-                # spider.categories_info[model.name]['id'] = model.id
 
             if isinstance(item, GympluscoffeeGoodsItem):
                 attrs = {'site_id': spider.site_id}
@@ -125,6 +126,7 @@ class PyscrapyPipeline:
                     opt_str = 'SUCCESS UPDATE id = {} : '.format(str(model.id))
                     # for attr_key, attr_value in attrs.items():
                     #     setattr(model, attr_key, attr_value)
+                    attrs['updated_at'] = int(time.time())
                     db_session.query(Goods).filter(Goods.id == model.id).update(attrs)  # 经常要更新多次 原因未知
                 else:
                     opt_str = 'SUCCESS ADD '

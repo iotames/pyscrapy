@@ -1,4 +1,5 @@
 import scrapy
+from scrapy.utils.project import get_project_settings
 from scrapy.exceptions import UsageError
 from scrapy.http import TextResponse
 from scrapy import Request
@@ -14,9 +15,8 @@ from translate import Translator
 class GympluscoffeeSpider(BaseSpider):
 
     name = 'gympluscoffee'
+    goods_model_list: list
     start_categories = ['merch', 'mens', 'womens']
-    # categories_info = {}
-    url_to_category_name_map = {}
     CHILD_GOODS_LIST = 'goods_list'
     CHILD_GOODS_DETAIL = 'goods_detail'
     CHILD_GOODS_CATEGORIES = 'goods_categories'
@@ -26,6 +26,7 @@ class GympluscoffeeSpider(BaseSpider):
     xpath_product_desc = '//div[@class="product__description rte"]'
     xpath_product_reviews = '//span[@class="jdgm-prev-badge__text"]'
     xpath_product_rating = '//div[@class="jdgm-histogram jdgm-temp-hidden"]/div[@class="jdgm-histogram__row"]'
+    xpath_product_title = '//h1[@class="product__title"]'
 
     translator: Translator
 
@@ -53,10 +54,16 @@ class GympluscoffeeSpider(BaseSpider):
                 Goods.site_id == self.site_id,
                 Goods.updated_at < before_time
             ), Goods.status == Goods.STATUS_UNKNOWN)).all()
-            print(len(goods_list))
-            for goods in goods_list:
-                print("goods id = " + str(goods.id) + "==== status = " + str(goods.status) + " url = " + goods.url)
-                yield Request(goods.url, callback=self.parse, meta={'goods': goods})
+            goods_list_len = len(goods_list)
+            print(goods_list_len)
+            max_connect = get_project_settings().get('CONCURRENT_REQUESTS')  # 爬虫请求的最大并行数
+            int_len = goods_list_len // max_connect  # 取整
+            last_len = goods_list_len % max_connect  # 取余
+            print(int_len)
+            print(last_len)
+            self.goods_model_list = goods_list
+            # TODO 单线程请求，速度慢，待优化
+            yield Request(self.base_url, callback=self.parse, meta={'goods_index': -1})
 
         if self.spider_child == self.CHILD_GOODS_LIST:
             categories = self.db_session.query(GoodsCategory).filter(and_(
@@ -153,9 +160,14 @@ class GympluscoffeeSpider(BaseSpider):
                     item_category['url'] = item['url']
                     yield item_category
         if self.spider_child == self.CHILD_GOODS_DETAIL:
-            goods_model = response.meta['goods']
+            goods_model_index = response.meta['goods_index']
+            if goods_model_index == -1:
+                yield Request(self.goods_model_list[0].url, callback=self.parse, meta={'goods_index': 0})
+            goods_model: Goods = self.goods_model_list[goods_model_index]
             item_goods = GympluscoffeeGoodsItem()
             item_goods['model'] = goods_model
+            title_ele = response.xpath(self.xpath_product_title)
+            item_goods['title'] = title_ele.xpath('text()').get().strip() if title_ele else ''
             if response.status != 200:
                 self.mylogger.debug("Warning: " + response.url + " : status = " + str(response.status))
                 item_goods['status'] = Goods.STATUS_AVAILABLE
@@ -225,6 +237,13 @@ class GympluscoffeeSpider(BaseSpider):
                 yield item_sku
 
             yield item_goods
+
+            next_goods_index = goods_model_index + 1
+            print('next_goods_index = {}, len_list = {}, good_id = {}'.format(next_goods_index, str(len(self.goods_model_list)), goods_model.id))
+            if next_goods_index < len(self.goods_model_list):
+                print(str(goods_model.id))
+                print(next_goods_index)
+                yield Request(self.goods_model_list[next_goods_index].url, dont_filter=True, callback=self.parse, meta={'goods_index': next_goods_index})
 
         if self.spider_child == self.CHILD_GOODS_LIST:
             goods_list = response.xpath('//a[@class="full-unstyled-link"]')
