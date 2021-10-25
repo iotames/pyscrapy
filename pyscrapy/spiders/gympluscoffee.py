@@ -104,13 +104,17 @@ class GympluscoffeeSpider(BaseSpider):
         return categories
 
     @staticmethod
-    def get_product_attr_content(desc_ele, attr='Fabric'):
+    def get_product_attr_content(desc_ele, attr_name='Fabric'):
         content = ''
         try:
-            fabric_title_ele = desc_ele.xpath('div/div[@class="product_collapsible_title"]/span[text()="{}"]'.format(attr))  # [contains(text(), "{}")]
+            # [contains(text(), "{}")]
+            xpath = 'div/div[@class="product_collapsible_title"]/span'
+            attr_title_ele = desc_ele.xpath('{}[text()="{}"]'.format(xpath, attr_name))
             # [contains(.,text())]
-            fabric_html = fabric_title_ele.xpath('parent::div/parent::div/div[2]/text()').get()  # [contains(., text())]
-            content = fabric_html.replace('<br>', ' ').replace('\n', '  ').strip()  # 织物材料
+            content_html_ele = attr_title_ele.xpath('parent::div/parent::div/div[2]')
+            # http://www.xoxxoo.com/index/index/article/id/280
+            content_html = content_html_ele.xpath('string(.)').extract()[0]
+            content = content_html.replace('<br>', ' ').replace('\n', '  ').strip()
         except Exception as e:
             pass
         return content
@@ -118,17 +122,9 @@ class GympluscoffeeSpider(BaseSpider):
     @staticmethod
     def get_product_schema_text(desc_ele):
         schema_text = ''
-        schema_ele = desc_ele.xpath('span/span/text()')
-        if not schema_ele:
-            schema_ele = desc_ele.xpath('span/div/div/div/p/span/text()')
-            if not schema_ele:
-                schema_ele = desc_ele.xpath('span/p/text()')
-                if not schema_ele:
-                    schema_ele = desc_ele.xpath('span/p/span/text()')
-            try:
-                schema_text = schema_ele.get().strip()  # 描述
-            except AttributeError:
-                pass
+        schema_ele = desc_ele.xpath('span')
+        if schema_ele:
+            schema_text = schema_ele.xpath('string(.)').extract()[0]
         return schema_text
 
     def parse(self, response: TextResponse, **kwargs):
