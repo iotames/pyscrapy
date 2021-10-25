@@ -62,8 +62,11 @@ class GympluscoffeeSpider(BaseSpider):
             print(int_len)
             print(last_len)
             self.goods_model_list = goods_list
-            # TODO 单线程请求，速度慢，待优化
-            yield Request(self.base_url, callback=self.parse, meta={'goods_index': -1})
+            # TODO 多线程请求待优化
+            goods_index = 0
+            for goods_model in self.goods_model_list:
+                yield Request(goods_model.url, dont_filter=True, callback=self.parse, meta={'goods_index': goods_index})
+                goods_index += 1
 
         if self.spider_child == self.CHILD_GOODS_LIST:
             categories = self.db_session.query(GoodsCategory).filter(and_(
@@ -160,9 +163,11 @@ class GympluscoffeeSpider(BaseSpider):
                     item_category['url'] = item['url']
                     yield item_category
         if self.spider_child == self.CHILD_GOODS_DETAIL:
+            print(response.url)
             goods_model_index = response.meta['goods_index']
             if goods_model_index == -1:
                 yield Request(self.goods_model_list[0].url, callback=self.parse, meta={'goods_index': 0})
+
             goods_model: Goods = self.goods_model_list[goods_model_index]
             item_goods = GympluscoffeeGoodsItem()
             item_goods['model'] = goods_model
@@ -238,12 +243,12 @@ class GympluscoffeeSpider(BaseSpider):
 
             yield item_goods
 
-            next_goods_index = goods_model_index + 1
-            print('next_goods_index = {}, len_list = {}, good_id = {}'.format(next_goods_index, str(len(self.goods_model_list)), goods_model.id))
-            if next_goods_index < len(self.goods_model_list):
-                print(str(goods_model.id))
-                print(next_goods_index)
-                yield Request(self.goods_model_list[next_goods_index].url, dont_filter=True, callback=self.parse, meta={'goods_index': next_goods_index})
+            # next_goods_index = goods_model_index + 1
+            # print('next_goods_index = {}, len_list = {}, good_id = {}'.format(next_goods_index, str(len(self.goods_model_list)), goods_model.id))
+            # if next_goods_index < len(self.goods_model_list):
+            #     print(str(goods_model.id))
+            #     print(next_goods_index)
+            #     yield Request(self.goods_model_list[next_goods_index].url, dont_filter=True, callback=self.parse, meta={'goods_index': next_goods_index})
 
         if self.spider_child == self.CHILD_GOODS_LIST:
             goods_list = response.xpath('//a[@class="full-unstyled-link"]')

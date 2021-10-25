@@ -1,19 +1,30 @@
+import json
+
 from pyscrapy.models import Goods, GoodsSku
 from outputs.baseoutput import BaseOutput
 import time
+from translate import Translator
 
 
 class GympluscoffeeOutput(BaseOutput):
 
     site_name = 'gympluscoffee'
+    translator: Translator
 
     def __init__(self):
         super(GympluscoffeeOutput, self).__init__('SKU库存详情')
+        self.translator = Translator(to_lang='chinese', provider='mymemory')
+
+    def to_chinese(self, content: str):
+        return self.translator.translate(content)
 
     def output_to_excel(self):
         sheet = self.work_sheet
         # sheet.sheet_format.defaultRowHeight = 30
-        title_row = ('商品ID', '分类名', '商品名', '商品链接', '商品状态', '更新时间', '规格1', '规格2', 'SKU名', '价格', '库存')
+        title_row = ('商品ID', '分类名', '商品标题', '商品链接', '商品状态', '更新时间',
+                     '评论数', '价格/EUR', '商品简介', '商品详情', '织物布料',
+                     '5星评论', '4星评论', '3星评论', '2星评论', '1星评论',
+                     '规格1', '规格2', 'SKU名', '价格', '库存')
         title_col = 1
         for title in title_row:
             sheet.cell(1, title_col, title)
@@ -26,8 +37,33 @@ class GympluscoffeeOutput(BaseOutput):
             start_row_index = sku_row_index
             time_tuple = time.localtime(goods.updated_at)
             time_str = time.strftime("%Y-%m-%d %H:%M", time_tuple)
+            reviews_num = goods.reviews_num
+            details = goods.details
+            price = goods.price
+            schema = ''
+            detail = ''
+            fabric = ''
+            rating5 = 0
+            rating4 = 0
+            rating3 = 0
+            rating2 = 0
+            rating1 = 0
+            if details:
+                details = json.loads(details)
+                schema = details['schema']  # + " 翻译： " + self.to_chinese(details['schema'])
+                detail = details['details']  # + " 翻译： " + self.to_chinese(details['details'])
+                fabric = details['fabric']  # + " 翻译： " + self.to_chinese(details['fabric'])
+                if reviews_num > 0:
+                    rating = details['rating']
+                    rating5 = rating['5']
+                    rating4 = rating['4']
+                    rating3 = rating['3']
+                    rating2 = rating['2']
+                    rating1 = rating['1']
             # 商品信息元组
-            goods_info_list = (goods.id, goods.category_name, goods.title, goods.url, Goods.statuses_map[goods.status], time_str)
+            goods_info_list = (goods.id, goods.category_name, goods.title, goods.url, Goods.statuses_map[goods.status],
+                               time_str, reviews_num, price, schema, detail, fabric, rating5, rating4, rating3, rating2, rating1)
+            print(goods_info_list)
             # 返回商品信息递增列 next col index
             goods_col_index = self.set_values_to_row(sheet, goods_info_list, sku_row_index, goods_col_index)
 
