@@ -9,13 +9,14 @@ import time
 
 from itemadapter import ItemAdapter
 from .spiders import GympluscoffeeSpider, StrongerlabelSpider
-from pyscrapy.spiders.basespider import BaseSpider
 from .items import GympluscoffeeGoodsItem, GympluscoffeeCategoryItem, StrongerlabelGoodsItem, GympluscoffeeGoodsSkuItem
 from .database import Database
 from .models import Site, Goods, GoodsCategory, GoodsCategoryX, GoodsSku
 from Config import Config
 import scrapy
 import json
+from scrapy.pipelines.images import ImagesPipeline
+from scrapy.exceptions import DropItem
 
 db = Database(Config().get_database())
 db.ROOT_PATH = Config.ROOT_PATH
@@ -127,7 +128,8 @@ class PyscrapyPipeline:
                     # for attr_key, attr_value in attrs.items():
                     #     setattr(model, attr_key, attr_value)
                     attrs['updated_at'] = int(time.time())
-                    db_session.query(Goods).filter(Goods.id == model.id).update(attrs)  # 经常要更新多次 原因未知
+                    # CONCURRENT_REQUESTS （并发请求数） 值过小， 可能导致经常要更新多次的问题
+                    db_session.query(Goods).filter(Goods.id == model.id).update(attrs)
                 else:
                     opt_str = 'SUCCESS ADD '
                     model = Goods(**attrs)
@@ -162,3 +164,20 @@ class PyscrapyPipeline:
 
     def open_spider(self, spider):
         pass
+
+
+class ImagePipeline(ImagesPipeline):
+    def get_media_requests(self, item, info):
+        print('================get_media_requests==========')
+        for image_url in item['image_urls']:
+            yield scrapy.Request(image_url)
+
+    def item_completed(self, results, item, info):
+        print('================item_completed==========')
+        image_paths = [x['path'] for ok, x in results if ok]
+        if not image_paths:
+            raise DropItem("Item contains no images")
+        adapter = ItemAdapter(item)
+        adapter['image_paths'] = image_paths
+        print(results)
+        return item

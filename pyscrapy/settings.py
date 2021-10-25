@@ -20,10 +20,10 @@ USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTM
 ROBOTSTXT_OBEY = False
 
 # DEBUG INFO WARNING ERROR CRITICAL
-LOG_LEVEL = 'WARNING'
+# LOG_LEVEL = 'WARNING'
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
-CONCURRENT_REQUESTS = 18
+CONCURRENT_REQUESTS = 1000
 
 # Configure a delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
@@ -67,6 +67,8 @@ DOWNLOADER_MIDDLEWARES = {
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
    'pyscrapy.pipelines.PyscrapyPipeline': 300,
+   # TODO 图片下载
+   # 'pyscrapy.pipelines.ImagePipeline': 290
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

@@ -3,7 +3,7 @@ from scrapy.utils.project import get_project_settings
 from scrapy.exceptions import UsageError
 from scrapy.http import TextResponse
 from scrapy import Request
-from ..items import GympluscoffeeGoodsItem, GympluscoffeeCategoryItem, GympluscoffeeGoodsSkuItem
+from ..items import GympluscoffeeGoodsItem, GympluscoffeeCategoryItem, GympluscoffeeGoodsSkuItem, GympluscoffeeGoodsImageItem
 from ..models import Goods, GoodsSku, GoodsCategory
 import json
 from sqlalchemy import and_, or_
@@ -127,6 +127,14 @@ class GympluscoffeeSpider(BaseSpider):
             schema_text = schema_ele.xpath('string(.)').extract()[0]
         return schema_text
 
+    @staticmethod
+    def get_product_image(response: TextResponse) -> str:
+        image_url = ''
+        ele = response.xpath('//div[@class="product__media media"]/img')
+        if ele:
+            image_url = ele.xpath('@src').get()
+        return "https:" + image_url
+
     def parse(self, response: TextResponse, **kwargs):
         if self.spider_child == self.CHILD_GOODS_CATEGORIES:
             categories = self.get_categories(response)
@@ -200,6 +208,11 @@ class GympluscoffeeSpider(BaseSpider):
             details['rating'] = rating
 
             item_goods['details'] = details
+            item_goods['image'] = self.get_product_image(response)
+
+            item_goods_image = GympluscoffeeGoodsImageItem()
+            item_goods_image['image_urls'] = [item_goods['image']]
+            yield item_goods_image
 
             xpath = '//div[@class="product-form__buttons"]/button/text()'
             select = response.xpath(xpath)

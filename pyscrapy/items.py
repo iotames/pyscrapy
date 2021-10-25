@@ -22,6 +22,7 @@ class GympluscoffeeGoodsItem(scrapy.Item):
     code = scrapy.Field()
     title = scrapy.Field()
     url = scrapy.Field()
+    image = scrapy.Field()
     category_id = scrapy.Field()
     category_name = scrapy.Field()
     status = scrapy.Field()
@@ -58,7 +59,9 @@ class StrongerlabelGoodsItem(scrapy.Item):
     image = scrapy.Field()
 
 
-
+class GympluscoffeeGoodsImageItem(scrapy.Item):
+    image_urls = scrapy.Field()
+    images = scrapy.Field()
 
 
 class PyscrapyItem(scrapy.Item):
