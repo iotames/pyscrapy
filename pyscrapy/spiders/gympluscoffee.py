@@ -1,4 +1,3 @@
-import scrapy
 from scrapy.utils.project import get_project_settings
 from scrapy.exceptions import UsageError
 from scrapy.http import TextResponse

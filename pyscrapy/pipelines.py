@@ -14,7 +14,7 @@ from .items import GympluscoffeeGoodsItem, GympluscoffeeCategoryItem, Strongerla
 from .database import Database
 from .models import Site, Goods, GoodsCategory, GoodsCategoryX, GoodsSku
 from Config import Config
-import scrapy
+from scrapy import Item, Request
 import json
 from scrapy.pipelines.images import ImagesPipeline
 from scrapy.exceptions import DropItem
@@ -29,7 +29,7 @@ db_session = db.get_db_session()
 
 class PyscrapyPipeline:
 
-    def process_item(self, item: scrapy.Item, spider):
+    def process_item(self, item: Item, spider):
         print('====================== PyscrapyPipeline : process_item ===================')
         if isinstance(spider, StrongerlabelSpider):
             if isinstance(item, StrongerlabelGoodsItem):
@@ -203,13 +203,13 @@ class ImagePipeline(ImagesPipeline):
         print('================get_media_requests==========')
         urls = ItemAdapter(item).get(self.images_urls_field, [])  # item['image_urls']
         spider = info.spider
-        # return [scrapy.Request(u) for u in urls]
+        # return [Request(u) for u in urls]
         for image_url in urls:
             file_path = self.get_local_file_path_by_url(image_url, spider)
             if os.path.isfile(file_path):
                 print('SkipUrl: {} Exists File {}'.format(image_url, file_path))
                 continue
-            yield scrapy.Request(image_url)
+            yield Request(image_url)
 
     def item_completed(self, results, item, info: ImagesPipeline.SpiderInfo):
         print('================item_completed==========')

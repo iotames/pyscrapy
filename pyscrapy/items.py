@@ -2,73 +2,71 @@
 #
 # See documentation in:
 # https://docs.scrapy.org/en/latest/topics/items.html
-
-import scrapy
-from pyscrapy.models import BaseModel
+from scrapy import Item, Field
 
 
-class GympluscoffeeCategoryItem(scrapy.Item):
-    site_id = scrapy.Field()
-    model = scrapy.Field()
-    parent_name = scrapy.Field()
-    parent_url = scrapy.Field()
-    name = scrapy.Field()
-    url = scrapy.Field()
+class GympluscoffeeCategoryItem(Item):
+    site_id = Field()
+    model = Field()
+    parent_name = Field()
+    parent_url = Field()
+    name = Field()
+    url = Field()
 
 
-class GympluscoffeeGoodsItem(scrapy.Item):
-    image_urls = scrapy.Field()
-    images = scrapy.Field()
-    image_paths = scrapy.Field()
-    model = scrapy.Field()
+class GympluscoffeeGoodsItem(Item):
+    image_urls = Field()
+    images = Field()
+    image_paths = Field()
+    model = Field()
 
-    site_id = scrapy.Field()
-    code = scrapy.Field()
-    title = scrapy.Field()
-    url = scrapy.Field()
-    image = scrapy.Field()
-    category_id = scrapy.Field()
-    category_name = scrapy.Field()
-    status = scrapy.Field()
-    price = scrapy.Field()
-    details = scrapy.Field()
-    reviews_num = scrapy.Field()
-
-
-class GympluscoffeeGoodsSkuItem(scrapy.Item):
-    image_urls = scrapy.Field()
-    images = scrapy.Field()
-    image_paths = scrapy.Field()
-    model = scrapy.Field()
-
-    site_id = scrapy.Field()
-    code = scrapy.Field()
-    goods_id = scrapy.Field()
-    category_id = scrapy.Field()
-    category_name = scrapy.Field()
-    options = scrapy.Field()  # option1 option2 option3
-    title = scrapy.Field()  # sku
-    full_title = scrapy.Field()  # name
-    price = scrapy.Field()
-    inventory_quantity = scrapy.Field()
-    barcode = scrapy.Field()
-    image = scrapy.Field()
+    site_id = Field()
+    code = Field()
+    title = Field()
+    url = Field()
+    image = Field()
+    category_id = Field()
+    category_name = Field()
+    status = Field()
+    price = Field()
+    details = Field()
+    reviews_num = Field()
 
 
-class StrongerlabelGoodsItem(scrapy.Item):
-    code = scrapy.Field()  # id
-    title = scrapy.Field()
-    url = scrapy.Field()
-    quantity = scrapy.Field()  # quantity inventory_quantity
-    categories = scrapy.Field()
-    created_at = scrapy.Field()
-    stickers = scrapy.Field()  # { in-stock: true, out-of-stock: false}
-    price = scrapy.Field()
-    image = scrapy.Field()
+class GympluscoffeeGoodsSkuItem(Item):
+    image_urls = Field()
+    images = Field()
+    image_paths = Field()
+    model = Field()
+
+    site_id = Field()
+    code = Field()
+    goods_id = Field()
+    category_id = Field()
+    category_name = Field()
+    options = Field()  # option1 option2 option3
+    title = Field()  # sku
+    full_title = Field()  # name
+    price = Field()
+    inventory_quantity = Field()
+    barcode = Field()
+    image = Field()
 
 
-class PyscrapyItem(scrapy.Item):
+class StrongerlabelGoodsItem(Item):
+    code = Field()  # id
+    title = Field()
+    url = Field()
+    quantity = Field()  # quantity inventory_quantity
+    categories = Field()
+    created_at = Field()
+    stickers = Field()  # { in-stock: true, out-of-stock: false}
+    price = Field()
+    image = Field()
+
+
+class PyscrapyItem(Item):
     # print('========start==PyscrapyItem===process_item===')
     # define the fields for your item here like:
-    # name = scrapy.Field()
+    # name = Field()
     pass

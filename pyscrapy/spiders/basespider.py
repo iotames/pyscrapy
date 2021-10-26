@@ -1,4 +1,4 @@
-import scrapy
+from scrapy import Spider
 from scrapy.http import TextResponse
 from ..helpers import Logger
 from Config import Config
@@ -8,7 +8,10 @@ from ..models import Site, SpiderRunLog
 import datetime
 
 
-class BaseSpider(scrapy.Spider):
+class BaseSpider(Spider):
+
+    def parse(self, response, **kwargs):
+        pass
 
     name: str
     start_urls = []
