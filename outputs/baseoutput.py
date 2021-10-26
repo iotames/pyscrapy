@@ -6,6 +6,9 @@ from pyscrapy.models import Site
 import os
 import time
 from sqlalchemy.orm.session import Session
+from scrapy.utils.project import get_project_settings
+from openpyxl.drawing.image import Image
+from openpyxl.utils import get_column_letter
 
 
 class BaseOutput:
@@ -17,8 +20,10 @@ class BaseOutput:
     work_sheet: Worksheet
     output_dir = Config.ROOT_PATH + '/runtime'
     output_file: str = output_dir + '/{}_' + time.strftime("%Y-%m-%d_%H_%M", time.localtime()) + '.xlsx'
+    images_dir: str
 
     def __init__(self, sheet_title='库存详情', filename='output'):
+        self.images_dir = get_project_settings().get('IMAGES_STORE')
         db = DB(Config().get_database())
         db.ROOT_PATH = Config.ROOT_PATH
         self.db_session = db.get_db_session()
@@ -36,9 +41,18 @@ class BaseOutput:
         self.site_id = site.id
 
     @staticmethod
-    def set_values_to_row(sheet: Worksheet, values_list: tuple, row_index, start_col=1):
+    def set_values_to_row(sheet: Worksheet, values_list: list, row_index, start_col=1):
         for cell_value in values_list:
-            sheet.cell(row_index, start_col, cell_value)
+            if isinstance(cell_value, dict):
+                if cell_value['type'] == Image:
+                    print('===========================================Image===' + cell_value['path'])
+                    image = Image(cell_value['path'])
+                    image.width, image.height = cell_value['size']
+                    image.anchor = get_column_letter(start_col) + str(row_index)
+                    print(image.anchor)
+                    sheet.add_image(image)
+            else:
+                sheet.cell(row_index, start_col, cell_value)
             start_col += 1
         return start_col
 
