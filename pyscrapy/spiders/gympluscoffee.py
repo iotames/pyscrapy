@@ -3,7 +3,7 @@ from scrapy.utils.project import get_project_settings
 from scrapy.exceptions import UsageError
 from scrapy.http import TextResponse
 from scrapy import Request
-from ..items import GympluscoffeeGoodsItem, GympluscoffeeCategoryItem, GympluscoffeeGoodsSkuItem, GympluscoffeeGoodsImageItem
+from ..items import GympluscoffeeGoodsItem, GympluscoffeeCategoryItem, GympluscoffeeGoodsSkuItem
 from ..models import Goods, GoodsSku, GoodsCategory
 import json
 from sqlalchemy import and_, or_
@@ -209,10 +209,7 @@ class GympluscoffeeSpider(BaseSpider):
 
             item_goods['details'] = details
             item_goods['image'] = self.get_product_image(response)
-
-            item_goods_image = GympluscoffeeGoodsImageItem()
-            item_goods_image['image_urls'] = [item_goods['image']]
-            yield item_goods_image
+            item_goods['image_urls'] = [item_goods['image']]  # 图片管道
 
             xpath = '//div[@class="product-form__buttons"]/button/text()'
             select = response.xpath(xpath)
@@ -246,6 +243,7 @@ class GympluscoffeeSpider(BaseSpider):
                     if sku['featured_image']:
                         if 'src' in sku['featured_image']:
                             item_sku['image'] = sku['featured_image']['src']
+                            item_sku['image_urls'] = [item_sku['image']]  # 图片下载管道
                         if 'product_id' in sku['featured_image']:
                             item_goods['code'] = sku['featured_image']['product_id']
                 yield item_sku

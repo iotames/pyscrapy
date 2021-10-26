@@ -8,6 +8,7 @@
 import time
 
 from itemadapter import ItemAdapter
+from scrapy.settings import Settings
 from .spiders import GympluscoffeeSpider, StrongerlabelSpider
 from .items import GympluscoffeeGoodsItem, GympluscoffeeCategoryItem, StrongerlabelGoodsItem, GympluscoffeeGoodsSkuItem
 from .database import Database
@@ -17,6 +18,9 @@ import scrapy
 import json
 from scrapy.pipelines.images import ImagesPipeline
 from scrapy.exceptions import DropItem
+import hashlib
+from scrapy.utils.python import to_bytes
+import os
 
 db = Database(Config().get_database())
 db.ROOT_PATH = Config.ROOT_PATH
@@ -26,6 +30,7 @@ db_session = db.get_db_session()
 class PyscrapyPipeline:
 
     def process_item(self, item: scrapy.Item, spider):
+        print('====================== PyscrapyPipeline : process_item ===================')
         if isinstance(spider, StrongerlabelSpider):
             if isinstance(item, StrongerlabelGoodsItem):
                 category_name = ''
@@ -112,9 +117,12 @@ class PyscrapyPipeline:
                     print('Skip category ' + attrs['name'])
 
             if isinstance(item, GympluscoffeeGoodsItem):
+                not_update = ['image_urls', 'images', 'image_paths', 'model']
                 attrs = {'site_id': spider.site_id}
                 for key, value in item.items():
-                    if key == 'model':
+                    if key in not_update:
+                        if key == 'image_paths' and value:
+                            attrs['local_image'] = value[0]
                         continue
                     if key == 'url' and value.startswith('/'):
                         value = spider.base_url + value
@@ -139,13 +147,16 @@ class PyscrapyPipeline:
 
             if isinstance(item, GympluscoffeeGoodsSkuItem):
                 attrs = {}
+                not_update = ['image_urls', 'images', 'image_paths', 'model']
                 for item_key, item_value in item.items():
-                    if item_key == 'model':
+                    if item_key in not_update:
+                        if item_key == 'image_paths' and item_value:
+                            attrs['local_image'] = item_value[0]
                         continue
                     if item_key == 'options':
                         i = 1
                         for option_value in item_value:
-                            attrs['option'+str(i)] = option_value
+                            attrs['option' + str(i)] = option_value
                             i += 1
                         continue
                     attrs[item_key] = item_value
@@ -167,17 +178,53 @@ class PyscrapyPipeline:
 
 
 class ImagePipeline(ImagesPipeline):
-    def get_media_requests(self, item, info):
+    
+    # def process_item(self, item, spider):
+    #     if isinstance(item, GympluscoffeeGoodsImageItem):
+    #         return super(ImagePipeline, self).process_item(item, spider)
+
+    @staticmethod
+    def get_guid_by_url(url: str) -> str:
+        return hashlib.sha1(to_bytes(url)).hexdigest()
+
+    def file_path(self, request, response=None, info: ImagesPipeline.SpiderInfo = None, *, item=None):
+        print('=========================file_path=====================')
+        # print(item)
+        image_guid = self.get_guid_by_url(request.url)
+        return f'{info.spider.name}/{image_guid}.jpg'
+
+    @classmethod
+    def get_local_file_path_by_url(cls, url, spider):
+        settings: Settings = spider.settings
+        dir_path = settings.get('IMAGES_STORE') + os.path.sep + spider.name
+        return dir_path + os.path.sep + cls.get_guid_by_url(url) + ".jpg"
+
+    def get_media_requests(self, item, info: ImagesPipeline.SpiderInfo):
         print('================get_media_requests==========')
-        for image_url in item['image_urls']:
+        urls = ItemAdapter(item).get(self.images_urls_field, [])  # item['image_urls']
+        spider = info.spider
+        # return [scrapy.Request(u) for u in urls]
+        for image_url in urls:
+            file_path = self.get_local_file_path_by_url(image_url, spider)
+            if os.path.isfile(file_path):
+                print('SkipUrl: {} Exists File {}'.format(image_url, file_path))
+                continue
             yield scrapy.Request(image_url)
 
-    def item_completed(self, results, item, info):
+    def item_completed(self, results, item, info: ImagesPipeline.SpiderInfo):
         print('================item_completed==========')
+        # results [] or [(True, {'url': '', 'path': 'dir/file.jpg', 'checksum': '', 'status': 'uptodate'})]
         image_paths = [x['path'] for ok, x in results if ok]
+        adapter = ItemAdapter(item)
+        # self.images_urls_field = 'image_urls'
+        urls_field = self.images_urls_field
+        if not image_paths and urls_field in item:
+            image_paths = []
+            for url in item[urls_field]:
+                file_path = self.get_local_file_path_by_url(url, info.spider)
+                if os.path.isfile(file_path):
+                    image_paths.append(info.spider.name + os.path.sep + self.get_guid_by_url(url) + '.jpg')
         if not image_paths:
             raise DropItem("Item contains no images")
-        adapter = ItemAdapter(item)
         adapter['image_paths'] = image_paths
-        print(results)
         return item

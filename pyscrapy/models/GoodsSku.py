@@ -24,7 +24,7 @@ class GoodsSku(BaseModel):
     barcode = Column(String(64), comment='条形码')
     price = Column(Float(8, 2), comment='价格')
 
-    # local_image = Column(String(255), comment='本地图片地址')
+    local_image = Column(String(255), comment='本地图片地址')
     # reviews_num = Column(Integer, default=0, comment='评论数')
     # reviews_url = Column(String(500), comment='评论列表地址')
     # sales = Column(Integer, default=0, comment='销量')

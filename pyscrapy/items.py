@@ -17,8 +17,12 @@ class GympluscoffeeCategoryItem(scrapy.Item):
 
 
 class GympluscoffeeGoodsItem(scrapy.Item):
-    site_id = scrapy.Field()
+    image_urls = scrapy.Field()
+    images = scrapy.Field()
+    image_paths = scrapy.Field()
     model = scrapy.Field()
+
+    site_id = scrapy.Field()
     code = scrapy.Field()
     title = scrapy.Field()
     url = scrapy.Field()
@@ -32,8 +36,12 @@ class GympluscoffeeGoodsItem(scrapy.Item):
 
 
 class GympluscoffeeGoodsSkuItem(scrapy.Item):
-    site_id = scrapy.Field()
+    image_urls = scrapy.Field()
+    images = scrapy.Field()
+    image_paths = scrapy.Field()
     model = scrapy.Field()
+
+    site_id = scrapy.Field()
     code = scrapy.Field()
     goods_id = scrapy.Field()
     category_id = scrapy.Field()
@@ -57,11 +65,6 @@ class StrongerlabelGoodsItem(scrapy.Item):
     stickers = scrapy.Field()  # { in-stock: true, out-of-stock: false}
     price = scrapy.Field()
     image = scrapy.Field()
-
-
-class GympluscoffeeGoodsImageItem(scrapy.Item):
-    image_urls = scrapy.Field()
-    images = scrapy.Field()
 
 
 class PyscrapyItem(scrapy.Item):
