@@ -4,3 +4,4 @@ pymysql
 openpyxl
 translate
 pillow
+selenium==3.141.0  # 4.0.0 有BUG

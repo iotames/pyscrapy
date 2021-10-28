@@ -54,8 +54,10 @@ CONCURRENT_REQUESTS = 10
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
+# process_request()增序调用，process_response()降序调用
 DOWNLOADER_MIDDLEWARES = {
    'pyscrapy.middlewares.PyscrapyDownloaderMiddleware': 543,
+   'pyscrapy.middlewares.SeleniumMiddleware': 550
 }
 
 # Enable or disable extensions

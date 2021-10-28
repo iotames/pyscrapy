@@ -18,6 +18,10 @@ class BaseSpider(Spider):
     db_session = None
     site_id: int
     log_id: int
+    custom_settings = {
+        'COMPONENTS_NAME_LIST_DENY': [],
+        'SELENIUM_ENABLED': False
+    }
 
     def __init__(self, name=None, **kwargs):
         super(BaseSpider, self).__init__(name=name, **kwargs)
@@ -40,9 +44,6 @@ class BaseSpider(Spider):
             self.db_session.add(site)
             self.db_session.commit()
         self.site_id = site.id
-
-        # if 'spider_child' not in kwargs:
-        #     raise SystemExit('lost param spider_child')
 
         logs_dir = ''
         if 'logs_dir' in kwargs:

@@ -4,9 +4,13 @@
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
 from scrapy import signals
-from scrapy.http import Request
+from scrapy.http import Request, HtmlResponse
 from config import Spider as SpiderConfig, UserAgent, HttpProxy
-
+from config import Selenium
+from selenium.webdriver.chrome.webdriver import WebDriver
+# from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.common.exceptions import TimeoutException
 # useful for handling different item types with a single interface
 from itemadapter import is_item, ItemAdapter
 
@@ -68,18 +72,19 @@ class PyscrapyDownloaderMiddleware:
 
     def __init__(self):
         spider_config = SpiderConfig()
-        print(spider_config.get_config())
         self.user_agent = spider_config.get_component(UserAgent.name)
         self.http_proxy = spider_config.get_component(HttpProxy.name)
 
     @classmethod
     def from_crawler(cls, crawler):
+        print('PyscrapyDownloaderMiddleware is starting ...')
         # This method is used by Scrapy to create your spiders.
         s = cls()
         crawler.signals.connect(s.spider_opened, signal=signals.spider_opened)
         return s
 
     def process_request(self, request: Request, spider):
+        print('PyscrapyDownloaderMiddleware  process_request is starting ...')
         if self.user_agent:
             request.headers['User-Agent'] = self.user_agent.choice_one_from_items()
         if self.http_proxy:
@@ -114,3 +119,36 @@ class PyscrapyDownloaderMiddleware:
 
     def spider_opened(self, spider):
         spider.logger.info('Spider opened: %s' % spider.name)
+
+
+class SeleniumMiddleware:
+
+    browser = None
+
+    def __init__(self, selenium=None, enabled=False):
+        if enabled:
+            timeout = selenium.get_config()['timeout']
+            self.browser = selenium.get_driver()
+            self.browser.set_page_load_timeout(timeout)
+
+    def __del__(self):
+        self.browser.close()
+        self.browser.quite()
+
+    def process_request(self, request, spider):
+        if not self.browser:
+            return None
+        try:
+            print('SeleniumMiddleware  process_request is starting ...')
+            self.browser.get(request.url)
+            request.meta['browser']: WebDriver = self.browser
+            return HtmlResponse(url=request.url, body=self.browser.page_source, request=request, status=200,
+                                encoding='utf-8')
+        except TimeoutException:
+            return HtmlResponse(url=request.url, status=500, request=request)
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        print('SeleniumMiddleware is Starting ...')
+        enabled = crawler.settings.getbool('SELENIUM_ENABLED')
+        return cls(selenium=Selenium(), enabled=enabled)
