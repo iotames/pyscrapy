@@ -5,8 +5,7 @@
 
 from scrapy import signals
 from scrapy.http import Request
-import random
-from config import Spider as SpiderConfig
+from config import Spider as SpiderConfig, UserAgent, HttpProxy
 
 # useful for handling different item types with a single interface
 from itemadapter import is_item, ItemAdapter
@@ -64,12 +63,14 @@ class PyscrapyDownloaderMiddleware:
     # scrapy acts as if the downloader middleware does not modify the
     # passed objects.
 
+    user_agent: UserAgent
+    http_proxy: HttpProxy
+
     def __init__(self):
         spider_config = SpiderConfig()
-        if spider_config.proxy:
-            self.HTTP_PROXIES = spider_config.proxy.get_items()
-        if spider_config.user_agent:
-            self.USER_AGENT_LIST = spider_config.user_agent.get_items()
+        print(spider_config.get_config())
+        self.user_agent = spider_config.get_component(UserAgent.name)
+        self.http_proxy = spider_config.get_component(HttpProxy.name)
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -78,14 +79,11 @@ class PyscrapyDownloaderMiddleware:
         crawler.signals.connect(s.spider_opened, signal=signals.spider_opened)
         return s
 
-    HTTP_PROXIES = []
-    USER_AGENT_LIST = []
-
     def process_request(self, request: Request, spider):
-        if self.USER_AGENT_LIST:
-            request.headers['User-Agent'] = random.choice(self.USER_AGENT_LIST)
-        if self.HTTP_PROXIES:
-            request.meta['proxy'] = random.choice(self.HTTP_PROXIES)
+        if self.user_agent:
+            request.headers['User-Agent'] = self.user_agent.choice_one_from_items()
+        if self.http_proxy:
+            request.meta['proxy'] = self.http_proxy.choice_one_from_items()
 
         # Must either:
         # - return None: continue processing this request

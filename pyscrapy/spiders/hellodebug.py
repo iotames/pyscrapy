@@ -7,6 +7,7 @@ class HelloSpider(BaseSpider):
 
     def __init__(self, name=None, **kwargs):
         super(HelloSpider, self).__init__(name=name, **kwargs)
+        self.allowed_domains = ['httpbin.org', 'baidu.com']
         self.start_urls = [
             # "https://www.google.com",
             # "https://www.baidu.com",

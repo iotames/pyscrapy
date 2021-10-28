@@ -6,7 +6,7 @@ from config.baseconfig import BaseConfig
 
 class HttpProxy(BaseConfig):
 
-    name = 'proxy'
+    name = 'http_proxy'
 
     DEFAULT_CONFIG = {
         'items': []

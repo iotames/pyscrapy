@@ -14,6 +14,7 @@ NEWSPIDER_MODULE = 'pyscrapy.spiders'
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
+# default : "Scrapy/2.5.1 (+https://scrapy.org)"
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.104 Safari/537.36'
 
 # Obey robots.txt rules
