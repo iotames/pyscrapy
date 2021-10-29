@@ -8,7 +8,7 @@ import json
 from sqlalchemy import and_, or_
 import time
 from .basespider import BaseSpider
-from translate import Translator
+# from translate import Translator
 
 
 class GympluscoffeeSpider(BaseSpider):
@@ -27,22 +27,22 @@ class GympluscoffeeSpider(BaseSpider):
     xpath_product_rating = '//div[@class="jdgm-histogram jdgm-temp-hidden"]/div[@class="jdgm-histogram__row"]'
     xpath_product_title = '//h1[@class="product__title"]'
 
-    translator: Translator
+    # translator: Translator
 
     def __init__(self, name=None, **kwargs):
         super(GympluscoffeeSpider, self).__init__(name=name, **kwargs)
-
+        self.base_url = "https://" + self.domain
+        self.add_spider_log()
         if 'spider_child' not in kwargs:
             msg = 'lost param spider_child'
             raise UsageError(msg)
         self.spider_child = kwargs['spider_child']
-        self.translator = Translator(to_lang='chinese')
+        # self.translator = Translator(to_lang='chinese')
 
-    def to_chinese(self, content: str):
-        return self.translator.translate(content)
+    # def to_chinese(self, content: str):
+    #     return self.translator.translate(content)
 
     def start_requests(self):
-        self.add_spider_log()
         if self.spider_child == self.CHILD_GOODS_DETAIL:
             # goods = self.db_session.query(Goods).filter(Goods.id == 1).first()
             # yield Request(goods.url, callback=self.parse, meta={'goods': goods})
@@ -62,10 +62,7 @@ class GympluscoffeeSpider(BaseSpider):
             print(last_len)
             self.goods_model_list = goods_list
             # TODO 多线程请求待优化
-            goods_index = 0
-            for goods_model in self.goods_model_list:
-                yield Request(goods_model.url, dont_filter=True, callback=self.parse, meta={'goods_index': goods_index})
-                goods_index += 1
+            yield Request(self.base_url, callback=self.update_goods_detail)
 
         if self.spider_child == self.CHILD_GOODS_LIST:
             categories = self.db_session.query(GoodsCategory).filter(and_(
@@ -78,6 +75,11 @@ class GympluscoffeeSpider(BaseSpider):
 
         if self.spider_child == self.CHILD_GOODS_CATEGORIES:
             yield Request(self.base_url, callback=self.parse)
+
+    def update_goods_detail(self, response):
+        # 首页为起始入口
+        for goods_model in self.goods_model_list:
+            yield Request(goods_model.url, dont_filter=True, callback=self.parse, meta={'goods_model': goods_model})
 
     def get_categories(self, response: TextResponse) -> list:
         categories_ele = response.xpath(self.xpath_categories)
@@ -166,12 +168,8 @@ class GympluscoffeeSpider(BaseSpider):
                     item_category['url'] = item['url']
                     yield item_category
         if self.spider_child == self.CHILD_GOODS_DETAIL:
-            print(response.url)
-            goods_model_index = response.meta['goods_index']
-            if goods_model_index == -1:
-                yield Request(self.goods_model_list[0].url, callback=self.parse, meta={'goods_index': 0})
-
-            goods_model: Goods = self.goods_model_list[goods_model_index]
+            goods_model: Goods = response.meta['goods_model']
+            print('Response : Goods ID {}  ..  URL: {}'.format(str(goods_model.id), response.url))
             item_goods = GympluscoffeeGoodsItem()
             item_goods['model'] = goods_model
             title_ele = response.xpath(self.xpath_product_title)
@@ -248,13 +246,6 @@ class GympluscoffeeSpider(BaseSpider):
                 yield item_sku
 
             yield item_goods
-
-            # next_goods_index = goods_model_index + 1
-            # print('next_goods_index = {}, len_list = {}, good_id = {}'.format(next_goods_index, str(len(self.goods_model_list)), goods_model.id))
-            # if next_goods_index < len(self.goods_model_list):
-            #     print(str(goods_model.id))
-            #     print(next_goods_index)
-            #     yield Request(self.goods_model_list[next_goods_index].url, dont_filter=True, callback=self.parse, meta={'goods_index': next_goods_index})
 
         if self.spider_child == self.CHILD_GOODS_LIST:
             goods_list = response.xpath('//a[@class="full-unstyled-link"]')

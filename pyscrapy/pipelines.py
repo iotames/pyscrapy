@@ -5,6 +5,7 @@
 
 
 # useful for handling different item types with a single interface
+import datetime
 import time
 
 from itemadapter import ItemAdapter
@@ -12,7 +13,7 @@ from scrapy.settings import Settings
 from .spiders import GympluscoffeeSpider, StrongerlabelSpider
 from .items import GympluscoffeeGoodsItem, GympluscoffeeCategoryItem, StrongerlabelGoodsItem, GympluscoffeeGoodsSkuItem
 from .database import Database
-from .models import Site, Goods, GoodsCategory, GoodsCategoryX, GoodsSku
+from .models import Site, Goods, GoodsCategory, GoodsCategoryX, GoodsSku, GoodsQuantityLog, GoodsSkuQuantityLog
 from Config import Config
 from scrapy import Item, Request
 import json
@@ -142,6 +143,9 @@ class PyscrapyPipeline:
                     opt_str = 'SUCCESS ADD '
                     model = Goods(**attrs)
                     db_session.add(model)
+                sku_quantity_log = GoodsQuantityLog(
+                    log_id=spider.log_id, goods_id=model.id, quantity=model.quantity, datetime=datetime.datetime.now())
+                db_session.add(sku_quantity_log)
                 db_session.commit()
                 print(opt_str + ' GOODS : ' + json.dumps(attrs))
 
@@ -170,6 +174,10 @@ class PyscrapyPipeline:
                     opt_str = 'SUCCESS ADD '
                     model = GoodsSku(**attrs)
                     db_session.add(model)
+                sku_quantity_log = GoodsSkuQuantityLog(
+                    log_id=spider.log_id, goods_id=model.goods_id, sku_id=model.id,
+                    quantity=model.inventory_quantity, datetime=datetime.datetime.now())
+                db_session.add(sku_quantity_log)
                 db_session.commit()
                 print(opt_str + ' GOODS SKU : ' + json.dumps(attrs))
 

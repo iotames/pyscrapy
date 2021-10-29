@@ -86,7 +86,10 @@ class GympluscoffeeOutput(BaseOutput):
             image = ''
             if goods.local_image:
                 image = self.get_image_info(goods.local_image)
-            p_category_name = self.get_parent_by_category_id(goods.category_id).name
+            p_category_name = ''
+            p_category = self.get_parent_by_category_id(goods.category_id)
+            if p_category:
+                p_category_name = p_category.name
             goods_info_list = [goods.id, p_category_name, goods.category_name, goods.title, goods.url,
                                Goods.statuses_map[goods.status], time_str,
                                reviews_num, price, schema, detail, fabric, rating5, rating4, rating3, rating2, rating1]

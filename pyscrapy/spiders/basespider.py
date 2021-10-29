@@ -58,4 +58,5 @@ class BaseSpider(Spider):
         log = SpiderRunLog(**logattr)
         self.db_session.add(log)
         self.db_session.commit()
+        self.log_id = log.id
 
