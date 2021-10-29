@@ -8,6 +8,7 @@ class BaseConfig:
     file_ext = '.json'
     CONFIG_DIR_PATH = os.path.dirname(__file__)
     filepath: str
+    config: dict
 
     DEFAULT_CONFIG = {}
     SAMPLE_CONFIG = {}
@@ -18,6 +19,7 @@ class BaseConfig:
         self.filepath = self.CONFIG_DIR_PATH + os.sep + self.name + self.file_ext
         if not os.path.isfile(self.filepath):
             self.create_config_file()
+        self.config = self.get_config()
 
     def get_config_by_json(self) -> dict:
         # 如果文件不存在，则返回空字典
@@ -43,7 +45,7 @@ class BaseConfig:
         if os.path.isfile(self.filepath):
             raise RuntimeError('config file: ' + self.filepath + ' already exists!')
         file_stream = open(self.filepath, 'w', encoding='utf-8')
-        json.dump(self.SAMPLE_CONFIG, file_stream, ensure_ascii=False)
+        json.dump(self.DEFAULT_CONFIG, file_stream, ensure_ascii=False)
 
     def get_component(self, name):
         if name in self.enabled_components_name_list:
