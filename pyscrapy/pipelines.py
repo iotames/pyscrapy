@@ -84,6 +84,11 @@ class PyscrapyPipeline:
                     attrs['updated_at'] = int(time.time())  # update方法无法自动更新时间戳
                     db_session.query(Goods).filter(
                         Goods.code == item['code'], Goods.url == url).update(attrs)
+
+                goods_quantity_log = GoodsQuantityLog(
+                    log_id=spider.log_id, goods_id=goods.id, quantity=goods.quantity, datetime=datetime.datetime.now())
+                db_session.add(goods_quantity_log)
+
                 db_session.commit()
                 print('SUCCESS {} GOODS {}'.format(opt_str, str(goods.id)))
                 GoodsCategoryX.save_goods_categories(goods, categories, db_session)
@@ -146,9 +151,9 @@ class PyscrapyPipeline:
                     opt_str = 'SUCCESS ADD '
                     model = Goods(**attrs)
                     db_session.add(model)
-                sku_quantity_log = GoodsQuantityLog(
+                goods_quantity_log = GoodsQuantityLog(
                     log_id=spider.log_id, goods_id=model.id, quantity=model.quantity, datetime=datetime.datetime.now())
-                db_session.add(sku_quantity_log)
+                db_session.add(goods_quantity_log)
                 db_session.commit()
                 print(opt_str + ' GOODS : ' + json.dumps(attrs))
 

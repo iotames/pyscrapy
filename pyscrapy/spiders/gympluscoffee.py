@@ -14,6 +14,15 @@ from .basespider import BaseSpider
 class GympluscoffeeSpider(BaseSpider):
 
     name = 'gympluscoffee'
+
+    custom_settings = {
+        # 'DOWNLOAD_DELAY': 3,
+        # 'RANDOMIZE_DOWNLOAD_DELAY': True,
+        # 'CONCURRENT_REQUESTS_PER_DOMAIN': 1,
+        'CONCURRENT_REQUESTS': 1000,
+        # 'COMPONENTS_NAME_LIST_DENY': ['user_agent'],
+    }
+
     goods_model_list: list
     start_categories = ['merch', 'mens', 'womens']
     CHILD_GOODS_LIST = 'goods_list'
