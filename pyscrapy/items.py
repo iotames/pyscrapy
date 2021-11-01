@@ -54,6 +54,10 @@ class GympluscoffeeGoodsSkuItem(Item):
 
 
 class StrongerlabelGoodsItem(Item):
+    image_urls = Field()
+    images = Field()
+    image_paths = Field()
+
     code = Field()  # id
     title = Field()
     url = Field()

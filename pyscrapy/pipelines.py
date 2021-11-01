@@ -70,6 +70,8 @@ class PyscrapyPipeline:
                     'category_name': category_name,
                     'status': status
                 }
+                if item['image_paths']:
+                    attrs['local_image'] = item['image_paths'][0]
                 goods = db_session.query(Goods).filter(
                     Goods.code == item['code'], Goods.url == url).first()
                 opt_str = 'unknown'
@@ -79,6 +81,7 @@ class PyscrapyPipeline:
                     opt_str = 'ADD'
                 else:
                     opt_str = 'UPDATE'
+                    attrs['updated_at'] = int(time.time())  # update方法无法自动更新时间戳
                     db_session.query(Goods).filter(
                         Goods.code == item['code'], Goods.url == url).update(attrs)
                 db_session.commit()
@@ -136,7 +139,7 @@ class PyscrapyPipeline:
                     opt_str = 'SUCCESS UPDATE id = {} : '.format(str(model.id))
                     # for attr_key, attr_value in attrs.items():
                     #     setattr(model, attr_key, attr_value)
-                    attrs['updated_at'] = int(time.time())
+                    attrs['updated_at'] = int(time.time())  # update方法无法自动更新时间戳
                     # CONCURRENT_REQUESTS （并发请求数） 值过小， 可能导致经常要更新多次的问题
                     db_session.query(Goods).filter(Goods.id == model.id).update(attrs)
                 else:
@@ -169,6 +172,7 @@ class PyscrapyPipeline:
                     opt_str = 'SUCCESS UPDATE '
                     # for attr_key, attr_value in attrs.items():
                     #     setattr(model, attr_key, attr_value)
+                    attrs['updated_at'] = int(time.time())  # update方法无法自动更新时间戳
                     db_session.query(GoodsSku).filter(GoodsSku.id == model.id).update(attrs)
                 else:
                     opt_str = 'SUCCESS ADD '
@@ -196,10 +200,10 @@ class ImagePipeline(ImagesPipeline):
         return hashlib.sha1(to_bytes(url)).hexdigest()
 
     def file_path(self, request, response=None, info: ImagesPipeline.SpiderInfo = None, *, item=None):
-        print('=========================file_path=====================')
-        # print(item)
+        # print('=========ImagePipeline=======file_path==========')
         image_guid = self.get_guid_by_url(request.url)
-        return f'{info.spider.name}/{image_guid}.jpg'
+        image_path = f'{info.spider.name}/{image_guid}.jpg'
+        return image_path
 
     @classmethod
     def get_local_file_path_by_url(cls, url, spider):
@@ -208,19 +212,24 @@ class ImagePipeline(ImagesPipeline):
         return dir_path + os.path.sep + cls.get_guid_by_url(url) + ".jpg"
 
     def get_media_requests(self, item, info: ImagesPipeline.SpiderInfo):
-        print('================get_media_requests==========')
+        # print('=========ImagePipeline=======get_media_requests==========')
         urls = ItemAdapter(item).get(self.images_urls_field, [])  # item['image_urls']
         spider = info.spider
         # return [Request(u) for u in urls]
         for image_url in urls:
+            meta = None
+            if spider.name == 'strongerlabel':
+                meta = {'referer': 'https://www.strongerlabel.com/sg/all-products'}
+                image_url = 'https://www.strongerlabel.com/imgproxy/preset:sharp/resize:fit:320/gravity:nowe/quality:70/plain/' + image_url
             file_path = self.get_local_file_path_by_url(image_url, spider)
             if os.path.isfile(file_path):
                 print('SkipUrl: {} Exists File {}'.format(image_url, file_path))
                 continue
-            yield Request(image_url)
+            yield Request(image_url, meta=meta)
 
     def item_completed(self, results, item, info: ImagesPipeline.SpiderInfo):
-        print('================item_completed==========')
+        # print('==========ImagePipeline======item_completed==========')
+        # print(results)
         # results [] or [(True, {'url': '', 'path': 'dir/file.jpg', 'checksum': '', 'status': 'uptodate'})]
         image_paths = [x['path'] for ok, x in results if ok]
         adapter = ItemAdapter(item)
@@ -232,7 +241,7 @@ class ImagePipeline(ImagesPipeline):
                 file_path = self.get_local_file_path_by_url(url, info.spider)
                 if os.path.isfile(file_path):
                     image_paths.append(info.spider.name + os.path.sep + self.get_guid_by_url(url) + '.jpg')
-        if not image_paths:
-            raise DropItem("Item contains no images")
+        # if not image_paths:
+        #     raise DropItem("Item contains no images")
         adapter['image_paths'] = image_paths
         return item

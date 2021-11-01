@@ -84,11 +84,17 @@ class PyscrapyDownloaderMiddleware:
         return s
 
     def process_request(self, request: Request, spider):
-        print('PyscrapyDownloaderMiddleware  process_request is starting ...')
-        if self.user_agent:
+        # print('PyscrapyDownloaderMiddleware  process_request is starting ...')
+        settings = spider.settings
+        deny_list = settings.getlist('COMPONENTS_NAME_LIST_DENY')
+        if self.user_agent and (UserAgent.name not in deny_list):
             request.headers['User-Agent'] = self.user_agent.choice_one_from_items()
-        if self.http_proxy:
+        if self.http_proxy and (UserAgent.name not in deny_list):
             request.meta['proxy'] = self.http_proxy.choice_one_from_items()
+        referer = request.meta.get('referer', None)
+        if referer:
+            request.headers['referer'] = referer
+        # print(request.headers)
 
         # Must either:
         # - return None: continue processing this request
@@ -124,16 +130,19 @@ class PyscrapyDownloaderMiddleware:
 class SeleniumMiddleware:
 
     browser = None
+    enabled = False
 
     def __init__(self, selenium=None, enabled=False):
+        self.enabled = enabled
         if enabled:
             timeout = selenium.get_config()['timeout']
             self.browser = selenium.get_driver()
             self.browser.set_page_load_timeout(timeout)
 
     def __del__(self):
-        self.browser.close()
-        self.browser.quite()
+        if self.enabled:
+            self.browser.close()
+            self.browser.quite()
 
     def process_request(self, request, spider):
         if not self.browser:
