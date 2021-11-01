@@ -1,4 +1,4 @@
-from scrapy.utils.project import get_project_settings
+# from scrapy.utils.project import get_project_settings 全局设置
 from scrapy.exceptions import UsageError
 from scrapy.http import TextResponse
 from scrapy import Request
@@ -64,13 +64,15 @@ class GympluscoffeeSpider(BaseSpider):
             ), Goods.status == Goods.STATUS_UNKNOWN)).all()
             goods_list_len = len(goods_list)
             print(goods_list_len)
-            max_connect = get_project_settings().get('CONCURRENT_REQUESTS')  # 爬虫请求的最大并行数
+            # max_connect = get_project_settings().get('CONCURRENT_REQUESTS')  # 全局设置
+            # 爬虫请求的最大并行数
+            max_connect = self.settings.getint('CONCURRENT_REQUESTS')  # 局部设置
             int_len = goods_list_len // max_connect  # 取整
             last_len = goods_list_len % max_connect  # 取余
             print(int_len)
             print(last_len)
             self.goods_model_list = goods_list
-            # TODO 多线程请求待优化
+            # TODO 异步并发请求待优化
             yield Request(self.base_url, callback=self.update_goods_detail)
 
         if self.spider_child == self.CHILD_GOODS_LIST:
