@@ -4,7 +4,7 @@ from pyscrapy.models import GoodsCategory
 from .base import Base
 
 
-class Gympluscoffee(Base):
+class CategoryGympluscoffee(Base):
 
     def process_item(self, item: GympluscoffeeCategoryItem, spider: GympluscoffeeSpider):
         db_session = self.db_session

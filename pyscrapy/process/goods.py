@@ -7,7 +7,7 @@ import json
 from .base import Base
 
 
-class Strongerlabel(Base):
+class GoodsStrongerlabel(Base):
 
     def process_item(self, item: StrongerlabelGoodsItem, spider: StrongerlabelSpider):
         db_session = self.db_session
@@ -47,7 +47,7 @@ class Strongerlabel(Base):
             'category_name': category_name,
             'status': status
         }
-        if item['image_paths']:
+        if 'image_paths' in item and item['image_paths']:
             attrs['local_image'] = item['image_paths'][0]
         goods = db_session.query(Goods).filter(
             Goods.code == item['code'], Goods.url == url).first()
@@ -71,7 +71,7 @@ class Strongerlabel(Base):
         GoodsCategoryX.save_goods_categories(goods, categories, db_session)
 
 
-class Gympluscoffee(Base):
+class GoodsGympluscoffee(Base):
 
     def process_item(self, item: GympluscoffeeGoodsItem, spider: GympluscoffeeSpider):
         db_session = self.db_session

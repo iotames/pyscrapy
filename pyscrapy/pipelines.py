@@ -7,7 +7,6 @@
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
 from scrapy.settings import Settings
-from .spiders import GympluscoffeeSpider, StrongerlabelSpider
 from .items import GympluscoffeeGoodsItem, GympluscoffeeCategoryItem, StrongerlabelGoodsItem, GympluscoffeeGoodsSkuItem
 from scrapy import Item, Request
 from scrapy.pipelines.images import ImagesPipeline
@@ -15,35 +14,30 @@ from scrapy.pipelines.images import ImagesPipeline
 import hashlib
 from scrapy.utils.python import to_bytes
 import os
-from pyscrapy.process.goods import Strongerlabel as pcgdsl, Gympluscoffee as pcgdgc
-from pyscrapy.process.category import Gympluscoffee as pccggc
-from pyscrapy.process.goods_sku import Gympluscoffee as pcskugc
+from pyscrapy.process.goods import GoodsStrongerlabel, GoodsGympluscoffee
+from pyscrapy.process.category import CategoryGympluscoffee
+from pyscrapy.process.goods_sku import SkuGympluscoffee
 
-process_sl_goods = pcgdsl()
-process_gc_category = pccggc()
-process_gc_goods = pcgdgc()
-process_gc_sku = pcskugc()
+process_map = {
+    StrongerlabelGoodsItem: GoodsStrongerlabel.get_instance(),
+    GympluscoffeeCategoryItem: CategoryGympluscoffee.get_instance(),
+    GympluscoffeeGoodsItem: GoodsGympluscoffee.get_instance(),
+    GympluscoffeeGoodsSkuItem: SkuGympluscoffee.get_instance(),
+}
 
 
 class PyscrapyPipeline:
 
     def process_item(self, item: Item, spider):
         print('====================== PyscrapyPipeline : process_item ===================')
-        if isinstance(item, StrongerlabelGoodsItem):
-            process_sl_goods.process_item(item, spider)
-        if isinstance(item, GympluscoffeeCategoryItem):
-            process_gc_category.process_item(item, spider)
-        if isinstance(item, GympluscoffeeGoodsItem):
-            process_gc_goods.process_item(item, spider)
-        if isinstance(item, GympluscoffeeGoodsSkuItem):
-            process_gc_sku.process_item(item, spider)
+        process_map[type(item)].process_item(item, spider)
 
     def open_spider(self, spider):
         pass
 
 
 class ImagePipeline(ImagesPipeline):
-    
+
     # def process_item(self, item, spider):
     #     if isinstance(item, GympluscoffeeGoodsImageItem):
     #         return super(ImagePipeline, self).process_item(item, spider)

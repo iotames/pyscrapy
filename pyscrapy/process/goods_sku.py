@@ -7,7 +7,7 @@ import json
 from .base import Base
 
 
-class Gympluscoffee(Base):
+class SkuGympluscoffee(Base):
 
     def process_item(self, item: GympluscoffeeGoodsSkuItem, spider: GympluscoffeeSpider):
         db_session = self.db_session
