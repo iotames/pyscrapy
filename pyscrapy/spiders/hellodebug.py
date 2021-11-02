@@ -2,14 +2,28 @@ from scrapy.http import TextResponse, request
 from .basespider import BaseSpider
 from selenium.webdriver.remote.webdriver import WebDriver
 from scrapy import Request
+from scrapy_splash import SplashRequest
 
 
 class HelloSpider(BaseSpider):
     name: str = 'hello'
 
-    # custom_settings = {
-    #     'SELENIUM_ENABLED': True
-    # }
+    custom_settings = {
+        'LOG_LEVEL': 'WARNING',  # 没有效果
+        'SELENIUM_ENABLED': False,
+        'SPLASH_ENABLED': True,
+        'SPLASH_URL': 'http://127.0.0.1:8050',
+        'DOWNLOADER_MIDDLEWARES': {
+            'scrapy_splash.SplashCookiesMiddleware': 723,
+            'scrapy_splash.SplashMiddleware': 725,
+            'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware': 810,
+        },
+        'SPIDER_MIDDLEWARES': {
+            'scrapy_splash.SplashDeduplicateArgsMiddleware': 100,
+        },
+        'DUPEFILTER_CLASS': 'scrapy_splash.SplashAwareDupeFilter',
+        'HTTPCACHE_STORAGE': 'scrapy_splash.SplashAwareFSCacheStorage'
+    }
 
     def __init__(self, name=None, **kwargs):
         super(HelloSpider, self).__init__(name=name, **kwargs)
@@ -24,9 +38,12 @@ class HelloSpider(BaseSpider):
         # headers = {
         #     'content-type': 'application/json',
         # }
-        for url in self.start_urls:
+        start_url = self.start_urls[0]
+        if self.settings.getbool('SPLASH_ENABLED'):
+            yield SplashRequest(start_url, self.parse)  # , args={'proxy': 'http://127.0.0.1:1080'}
+        else:
             yield request.Request(
-                url,
+                start_url,
                 callback=self.parse,
                 # method='POST',
                 # headers=headers
@@ -39,10 +56,49 @@ class HelloSpider(BaseSpider):
         if url.find('httpbin') > -1:
             self.mylogger.debug(text)
         if self.settings.getbool('SELENIUM_ENABLED'):
-            browser: WebDriver = response.meta['browser']
-            if url.find('baidu.com') > -1:
-                browser.find_element_by_xpath('//*[@id="kw"]').send_keys('hello word')
-                browser.find_element_by_xpath('//*[@id="su"]').click()
-            # browser.get('https://www.baidu.com')
-            yield Request(url='https://www.baidu.com')
+            yield self.parse_selenium(response)
+        if self.settings.getbool('SPLASH_ENABLED'):
+            yield self.parse_splash(response)
         # self.logger.debug(text)
+
+    def parse_selenium(self, response: TextResponse):
+        browser: WebDriver = response.meta['browser']
+        if response.url.find('baidu.com') > -1:
+            browser.find_element_by_xpath('//*[@id="kw"]').send_keys('hello word')
+            browser.find_element_by_xpath('//*[@id="su"]').click()
+        # browser.get('https://www.baidu.com')
+        yield Request(url='https://www.baidu.com')
+
+    lua_source = """
+    function main(splash, args)
+        function focus(sel)
+            splash:select(sel):focus()
+        end
+        assert(splash:go(args.url))
+        assert(splash:wait(0.5))
+        focus('input[name=wd]')
+        splash:send_text(args.keyword)
+        assert(splash:wait(0))
+        splash:select('input[type=submit]'):mouse_click()
+        assert(splash:wait(2))
+        return splash:html()
+    end
+    """
+
+    def parse_splash(self, response: TextResponse):
+        self.mylogger.debug('========parse_splash============')
+        if response.url.find('baidu.com') > -1:
+            return SplashRequest('https://www.baidu.com', callback=self.parse_baidu, endpoint='execute', args={
+                'lua_source': self.lua_source,
+                'keyword': 'hello my splash klfd6783klkiu'
+            })
+        else:
+            return SplashRequest(url='https://www.baidu.com', callback=self.parse_splash)
+
+    def parse_baidu(self, response: TextResponse):
+        self.mylogger.debug('========parse_baidu============')
+        print(response.meta)  # {'splash': {'endpoint': 'execute', ...
+        # print(response.text)
+        self.mylogger.echo_msg = False
+        self.mylogger.debug(response.text)
+        return None

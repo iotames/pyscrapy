@@ -25,13 +25,13 @@ class Selenium(BaseConfig):
 
     DEFAULT_CONFIG = {
         "driver_browser": DRIVER_CHROME,
-        "timeout": 30
+        "timeout": 60
     }
 
     SAMPLE_CONFIG = {
-        "driver_browser": DRIVER_FIREFOX,
+        "driver_browser": DRIVER_CHROME,  # DRIVER_FIREFOX
         "driver_path": "",
-        "binary_location": "/opt/apps/org.mozilla.firefox-nal/files/firefox",  # /opt/google/chrome/google-chrome
+        "binary_location": "/opt/google/chrome/google-chrome",  # "/opt/apps/org.mozilla.firefox-nal/files/firefox"
         "debugger_address": "127.0.0.1:9222",
         "arguments": [
             "--headless",
@@ -128,7 +128,7 @@ class Selenium(BaseConfig):
             # 创建子进程 os.system 改为 os.popen
             exe_result = os.popen(exe_content)
             # print(exe_result.read())
-            print('本地谷歌浏览器的远程调试模式启动成功！=================OK===')
+            print('本地浏览器远程调试模式启动成功！=================OK===')
 
     def get_driver(self):
         print('===========Selenium WebDriver ======================= Init: ')
