@@ -30,7 +30,8 @@ class PyscrapyPipeline:
 
     def process_item(self, item: Item, spider):
         print('====================== PyscrapyPipeline : process_item ===================')
-        process_map[type(item)].process_item(item, spider)
+        if type(item) in process_map:
+            process_map[type(item)].process_item(item, spider)
 
     def open_spider(self, spider):
         pass

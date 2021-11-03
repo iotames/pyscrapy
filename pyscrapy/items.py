@@ -69,6 +69,12 @@ class StrongerlabelGoodsItem(Item):
     image = Field()
 
 
+class HelloItem(Item):
+    image_urls = Field()
+    images = Field()
+    image_paths = Field()
+
+
 class PyscrapyItem(Item):
     # print('========start==PyscrapyItem===process_item===')
     # define the fields for your item here like:

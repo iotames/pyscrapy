@@ -3,10 +3,13 @@ from .basespider import BaseSpider
 from selenium.webdriver.remote.webdriver import WebDriver
 from scrapy import Request
 from scrapy_splash import SplashRequest
+from pyscrapy.items import HelloItem
+from config import HttpProxy
 
 
 class HelloSpider(BaseSpider):
     name: str = 'hello'
+    proxy: HttpProxy
 
     custom_settings = {
         'LOG_LEVEL': 'WARNING',  # 没有效果
@@ -14,6 +17,7 @@ class HelloSpider(BaseSpider):
         'SPLASH_ENABLED': True,
         'SPLASH_URL': 'http://127.0.0.1:8050',
         'DOWNLOADER_MIDDLEWARES': {
+            'pyscrapy.middlewares.PyscrapyDownloaderMiddleware': 543,
             'scrapy_splash.SplashCookiesMiddleware': 723,
             'scrapy_splash.SplashMiddleware': 725,
             'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware': 810,
@@ -33,6 +37,8 @@ class HelloSpider(BaseSpider):
             # "https://www.baidu.com",
             "https://httpbin.org/get"
         ]
+        # 初始化IP代理池
+        self.proxy = HttpProxy()
 
     def start_requests(self):
         # headers = {
@@ -40,7 +46,9 @@ class HelloSpider(BaseSpider):
         # }
         start_url = self.start_urls[0]
         if self.settings.getbool('SPLASH_ENABLED'):
-            yield SplashRequest(start_url, self.parse)  # , args={'proxy': 'http://127.0.0.1:1080'}
+            http_proxy = self.proxy.choice_one_from_items()  # 从IP代理池选择一个IP代理
+            print(http_proxy)
+            yield SplashRequest(start_url, self.parse, args={'proxy': http_proxy})
         else:
             yield request.Request(
                 start_url,
@@ -86,11 +94,11 @@ class HelloSpider(BaseSpider):
     """
 
     def parse_splash(self, response: TextResponse):
-        self.mylogger.debug('========parse_splash============')
+        # self.mylogger.debug('========parse_splash============')
         if response.url.find('baidu.com') > -1:
             return SplashRequest('https://www.baidu.com', callback=self.parse_baidu, endpoint='execute', args={
                 'lua_source': self.lua_source,
-                'keyword': 'hello my splash klfd6783klkiu'
+                'keyword': 'hello my splash'
             })
         else:
             return SplashRequest(url='https://www.baidu.com', callback=self.parse_splash)
@@ -101,4 +109,6 @@ class HelloSpider(BaseSpider):
         # print(response.text)
         self.mylogger.echo_msg = False
         self.mylogger.debug(response.text)
-        return None
+        item = HelloItem()
+        item['image_urls'] = ['http://localhost:8050/render.png?url=https://www.taobao.com/&timeout=10']
+        yield item

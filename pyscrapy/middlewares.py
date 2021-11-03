@@ -90,7 +90,12 @@ class PyscrapyDownloaderMiddleware:
         if self.user_agent and (UserAgent.name not in deny_list):
             request.headers['User-Agent'] = self.user_agent.choice_one_from_items()
         if self.http_proxy and (UserAgent.name not in deny_list):
-            request.meta['proxy'] = self.http_proxy.choice_one_from_items()
+            proxy_addr = self.http_proxy.choice_one_from_items()
+            splash_enabled = settings.getbool('SPLASH_ENABLED')
+            if not splash_enabled:
+                # request.meta['splash']['args']['proxy'] = proxy_addr 会出现本地IP代理池接口服务请求也走代理
+                request.meta['proxy'] = proxy_addr
+
         referer = request.meta.get('referer', None)
         if referer:
             request.headers['referer'] = referer

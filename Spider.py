@@ -35,4 +35,4 @@ if __name__ == '__main__':
         'logs_dir': dirpath,
         'spider_child': GympluscoffeeSpider.CHILD_GOODS_DETAIL
     }
-    Spider.crawl(StrongerlabelSpider.name, spider_args=args)
+    Spider.crawl('hello', spider_args=args)
