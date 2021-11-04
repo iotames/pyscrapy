@@ -62,10 +62,14 @@ class HttpProxy(BaseConfig):
         return "http://{}".format(proxy)
 
     def choice_one_from_items(self):
-        if self.config['proxy_type'] == self.TYPE_VPN:
-            return super().choice_one_from_items()
-        ip_pool_service = self.config['ip_pool_service']
-        return self.get_proxy_from_pool(ip_pool_service)
+        def get_proxy_by_pool():
+            ip_pool_service = self.config['ip_pool_service']
+            return self.get_proxy_from_pool(ip_pool_service)
+        method_map = {
+            self.TYPE_VPN: super().choice_one_from_items,
+            self.TYPE_IP_POOL: get_proxy_by_pool
+        }
+        return method_map[self.config['proxy_type']]()
 
     def test_request(self, url='http://httpbin.org/get'):
         http_proxy = self.choice_one_from_items()

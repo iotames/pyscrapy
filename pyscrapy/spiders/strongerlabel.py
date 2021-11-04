@@ -33,7 +33,6 @@ class StrongerlabelSpider(BaseSpider):
         self.sl_uid = "7294d35d-e23f-4406-98ed-7ea9ee6c099b"
         self.sl_sid = 'b35f55f7-6ba2-482a-b0f1-bf5f5864e78d'
         self.sl_key = '16d7a766-26a5-4394-9fac-846d0404f434'
-        self.add_spider_log()
 
     def start_requests(self):
         start_url = "https://www.baidu.com"

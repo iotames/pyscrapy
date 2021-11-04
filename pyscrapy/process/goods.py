@@ -7,6 +7,21 @@ import json
 from .base import Base
 
 
+def add_or_update_goods_quantity_log(model: Goods, log_id: int, db_session):
+    log: GoodsQuantityLog = db_session.query(GoodsQuantityLog).filter(
+        GoodsQuantityLog.log_id == log_id, GoodsQuantityLog.goods_id == model.id).first()
+    now_datetime = datetime.datetime.now()
+    if log:
+        log.quantity = model.quantity
+        log.datetime = now_datetime
+        print('UPDATE GoodsQuantityLog')
+    else:
+        goods_quantity_log = GoodsQuantityLog(
+            log_id=log_id, goods_id=model.id, quantity=model.quantity, datetime=now_datetime)
+        db_session.add(goods_quantity_log)
+        print('ADD GoodsQuantityLog')
+
+
 class GoodsStrongerlabel(Base):
 
     def process_item(self, item: StrongerlabelGoodsItem, spider: StrongerlabelSpider):
@@ -62,9 +77,7 @@ class GoodsStrongerlabel(Base):
             db_session.query(Goods).filter(
                 Goods.code == item['code'], Goods.url == url).update(attrs)
 
-        goods_quantity_log = GoodsQuantityLog(
-            log_id=spider.log_id, goods_id=goods.id, quantity=goods.quantity, datetime=datetime.datetime.now())
-        db_session.add(goods_quantity_log)
+        add_or_update_goods_quantity_log(goods, spider.log_id, db_session)
 
         db_session.commit()
         print('SUCCESS {} GOODS {}'.format(opt_str, str(goods.id)))
@@ -100,8 +113,6 @@ class GoodsGympluscoffee(Base):
             opt_str = 'SUCCESS ADD '
             model = Goods(**attrs)
             db_session.add(model)
-        goods_quantity_log = GoodsQuantityLog(
-            log_id=spider.log_id, goods_id=model.id, quantity=model.quantity, datetime=datetime.datetime.now())
-        db_session.add(goods_quantity_log)
+        add_or_update_goods_quantity_log(model, spider.log_id, db_session)
         db_session.commit()
         print(opt_str + ' GOODS : ' + json.dumps(attrs))

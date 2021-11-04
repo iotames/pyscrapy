@@ -41,7 +41,6 @@ class GympluscoffeeSpider(BaseSpider):
     def __init__(self, name=None, **kwargs):
         super(GympluscoffeeSpider, self).__init__(name=name, **kwargs)
         self.base_url = "https://" + self.domain
-        self.add_spider_log()
         if 'spider_child' not in kwargs:
             msg = 'lost param spider_child'
             raise UsageError(msg)
@@ -56,8 +55,8 @@ class GympluscoffeeSpider(BaseSpider):
             # goods = self.db_session.query(Goods).filter(Goods.id == 1).first()
             # yield Request(goods.url, callback=self.parse, meta={'goods': goods})
 
-            # 12小时内的商品不会再更新
-            before_time = time.time() - (12 * 3600)
+            # 3小时内的采集过的商品不会再更新
+            before_time = time.time() - (3 * 3600)
             goods_list = self.db_session.query(Goods).filter(or_(and_(
                 Goods.site_id == self.site_id,
                 Goods.updated_at < before_time

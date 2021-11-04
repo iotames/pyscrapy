@@ -7,6 +7,22 @@ import json
 from .base import Base
 
 
+def add_or_update_goods_quantity_log(model: GoodsSku, log_id: int, db_session):
+    log: GoodsSkuQuantityLog = db_session.query(GoodsSkuQuantityLog).filter(
+        GoodsSkuQuantityLog.log_id == log_id, GoodsSkuQuantityLog.sku_id == model.id).first()
+    now_datetime = datetime.datetime.now()
+    if log:
+        log.quantity = model.quantity
+        log.datetime = now_datetime
+        print('UPDATE GoodsSkuQuantityLog id={}'.format(str(log.id)))
+    else:
+        log = GoodsSkuQuantityLog(
+            log_id=log_id, goods_id=model.goods_id, sku_id=model.id,
+            quantity=model.inventory_quantity, datetime=now_datetime)
+        db_session.add(log)
+        print('ADD GoodsSkuQuantityLog id={}'.format(str(log.id)))
+
+
 class SkuGympluscoffee(Base):
 
     def process_item(self, item: GympluscoffeeGoodsSkuItem, spider: GympluscoffeeSpider):
@@ -36,9 +52,6 @@ class SkuGympluscoffee(Base):
             opt_str = 'SUCCESS ADD '
             model = GoodsSku(**attrs)
             db_session.add(model)
-        sku_quantity_log = GoodsSkuQuantityLog(
-            log_id=spider.log_id, goods_id=model.goods_id, sku_id=model.id,
-            quantity=model.inventory_quantity, datetime=datetime.datetime.now())
-        db_session.add(sku_quantity_log)
+        add_or_update_goods_quantity_log(model, spider.log_id, db_session)
         db_session.commit()
         print(opt_str + ' GOODS SKU : ' + json.dumps(attrs))
