@@ -1,0 +1,18 @@
+from api import app, Response
+# from flask import request
+# import json
+
+
+# @app.route('/api/page/schema')
+# def page_schema():
+#     component = request.args.get('component')
+#     name = request.args.get('name')
+#     return Response.data(PageSchema.get_data(component, name))
+#
+# @app.route('/vue-element-admin/user/login', methods=['POST'])
+# def login():
+#     return Response.data({"token": "admin-token"})
+
+@app.route('/user/logout', methods=['POST', 'GET'])
+def logout():
+    return Response.success({})
