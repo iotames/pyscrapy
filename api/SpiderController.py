@@ -10,5 +10,5 @@ class SpiderController(BaseController):
         data = []
         for site in sites:
             data.append({"id": site.id, "name": site.name, "home_url": site.home_url,
-                         "created_at": time.strftime("%Y%m%d %H:%M", time.localtime(site.created_at))})
+                         "created_at": time.strftime("%Y-%m-%d %H:%M", time.localtime(site.created_at))})
         return data
