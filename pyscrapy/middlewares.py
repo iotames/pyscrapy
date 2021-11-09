@@ -6,7 +6,7 @@
 from scrapy import signals
 from scrapy.http import Request, HtmlResponse
 from config import Spider as SpiderConfig, UserAgent, HttpProxy
-from config import Selenium
+from config.selenium import Selenium
 from selenium.webdriver.chrome.webdriver import WebDriver
 # from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.remote.webdriver import WebDriver

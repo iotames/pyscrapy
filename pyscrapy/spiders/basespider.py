@@ -47,10 +47,10 @@ class BaseSpider(Spider):
         self.site_id = site.id
 
         # 检查是否传入 log_id 参数
+        self.log_id = 0
         if 'log_id' in kwargs and kwargs['log_id']:
             self.log_id = int(kwargs['log_id'])
-        else:
-            self.log_id = self.add_spider_log()
+        self.log_id = self.add_spider_log(self.log_id)
 
         logs_dir = ''
         if 'logs_dir' in kwargs:

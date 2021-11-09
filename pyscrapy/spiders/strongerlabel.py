@@ -28,13 +28,20 @@ class StrongerlabelSpider(BaseSpider):
     sl_key: str
 
     def __init__(self, name=None, **kwargs):
+        print('init---------------------------------------')
         super(StrongerlabelSpider, self).__init__(name=name, **kwargs)
+        print('after super-------------------------')
+        print(self.mylogger)
+        print(self.log_id)
         self.allowed_domains.append('api-v3.findify.io')
+        # self.allowed_domains.append('baidu.com') 启动URL的域名不需要加入
+        print(self.allowed_domains)
         self.sl_uid = "7294d35d-e23f-4406-98ed-7ea9ee6c099b"
         self.sl_sid = 'b35f55f7-6ba2-482a-b0f1-bf5f5864e78d'
         self.sl_key = '16d7a766-26a5-4394-9fac-846d0404f434'
 
     def start_requests(self):
+        print('start_requests----------------------')
         start_url = "https://www.baidu.com"
         yield Request(start_url, callback=self.request_goods_list, cb_kwargs={'url': '', 'offset': -1})
 

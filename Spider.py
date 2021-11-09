@@ -34,6 +34,6 @@ if __name__ == '__main__':
     args = {
         'logs_dir': dirpath,
         'spider_child': GympluscoffeeSpider.CHILD_GOODS_DETAIL,
-        'log_id': None,  # "59"
+        'log_id': "",  # "59"
     }
-    Spider.crawl(GympluscoffeeSpider.name, spider_args=args)
+    Spider.crawl('hello', spider_args=args)

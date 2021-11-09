@@ -1,5 +1,5 @@
 from flask import Flask
-from config import ApiServer
+from config.api_server import ApiServer
 from api.response import Response
 
 app = Flask(

@@ -39,3 +39,13 @@
         .
     </p>
 </PageContainer>
+
+@inject NavigationManager navv
+
+@code {
+    
+    protected override void OnInitialized() {
+        navv.NavigateTo("/table/spiders");
+    }
+
+}
