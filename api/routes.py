@@ -1,6 +1,6 @@
 from api import app, Response
 from api.SpiderController import SpiderController
-# from flask import request
+from flask import request
 # import json
 
 
@@ -22,4 +22,11 @@ def logout():
 @app.route('/api/spiders')
 def get_spiders():
     items = SpiderController().get_spiders_list()
+    return Response.success({"items": items})
+
+
+@app.route('/api/spider/logs')
+def get_spider_logs():
+    name = request.args.get("name")
+    items = SpiderController().get_spiders_run_logs(name)
     return Response.success({"items": items})
