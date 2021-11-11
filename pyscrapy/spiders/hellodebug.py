@@ -4,12 +4,12 @@ from selenium.webdriver.remote.webdriver import WebDriver
 from scrapy import Request
 from scrapy_splash import SplashRequest
 from pyscrapy.items import HelloItem
-from config import HttpProxy
+from config import Spider, HttpProxy
 
 
 class HelloSpider(BaseSpider):
     name: str = 'hello'
-    proxy: HttpProxy
+    http_proxy: HttpProxy
 
     custom_settings = {
         'LOG_LEVEL': 'WARNING',  # 没有效果
@@ -38,7 +38,8 @@ class HelloSpider(BaseSpider):
             "https://httpbin.org/get"
         ]
         # 初始化IP代理池
-        self.proxy = HttpProxy()
+        spider_config = Spider()
+        self.http_proxy = spider_config.get_component(HttpProxy.name)
 
     def start_requests(self):
         # headers = {
@@ -46,9 +47,12 @@ class HelloSpider(BaseSpider):
         # }
         start_url = self.start_urls[0]
         if self.settings.getbool('SPLASH_ENABLED'):
-            http_proxy = self.proxy.choice_one_from_items()  # 从IP代理池选择一个IP代理
-            print(http_proxy)
-            yield SplashRequest(start_url, self.parse, args={'proxy': http_proxy})
+            args = {}
+            if self.http_proxy:
+                http_proxy = self.http_proxy.choice_one_from_items()  # 从IP代理池选择一个IP代理
+                print(http_proxy)
+                args["proxy"] = http_proxy
+            yield SplashRequest(start_url, self.parse, args=args)
         else:
             yield request.Request(
                 start_url,
@@ -110,5 +114,5 @@ class HelloSpider(BaseSpider):
         self.mylogger.echo_msg = False
         self.mylogger.debug(response.text)
         item = HelloItem()
-        item['image_urls'] = ['http://localhost:8050/render.png?url=https://www.taobao.com/&timeout=10']
+        item['image_urls'] = ['http://localhost:8050/render.png?url=https%3A%2F%2Fwww.baidu.com%2Fs%3Fwd%3Dhello%2520splash&timeout=10']
         yield item

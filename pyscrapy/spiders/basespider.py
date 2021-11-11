@@ -67,9 +67,18 @@ class BaseSpider(Spider):
         if log:
             log.datetime = now_datetime
         else:
+            logattr["status"] = SpiderRunLog.STATUS_RUNNING
             log = SpiderRunLog(**logattr)
             self.db_session.add(log)
         self.db_session.commit()
         self.log_id = log.id
         return self.log_id
 
+    def closed(self, reason):
+        print("============Close Spider : " + self.name)
+        print(reason)  # finished
+        print(self.log_id)
+        log_cls = SpiderRunLog
+        res = self.db_session.query(log_cls).filter(log_cls.id == self.log_id).update({"status": log_cls.STATUS_DONE})
+        print(res)
+        self.db_session.commit()
