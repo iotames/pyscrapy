@@ -75,6 +75,20 @@ class HelloItem(Item):
     image_paths = Field()
 
 
+class SweatybettyGoodsItem(Item):
+    image_urls = Field()
+    images = Field()
+    image_paths = Field()
+    model = Field()
+
+    code = Field()  # id
+    title = Field()
+    url = Field()
+    price = Field()
+    image = Field()
+    reviews_num = Field()
+
+
 class PyscrapyItem(Item):
     # print('========start==PyscrapyItem===process_item===')
     # define the fields for your item here like:

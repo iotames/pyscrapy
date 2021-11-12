@@ -11,7 +11,11 @@ class Spider(BaseConfig):
         HttpProxy.name: HttpProxy
     }
 
+    ENV_PRODUCTION = 'production'
+    ENV_DEVELOP = 'develop'
+
     DEFAULT_CONFIG = {
+        'env': ENV_PRODUCTION,
         'enabled_components_list': []
     }
 
@@ -28,4 +32,4 @@ if __name__ == '__main__':
     spider = Spider()
     print(spider.get_component(UserAgent.name))
     print(spider.get_component(HttpProxy.name))
-    print(spider.get_config())
+    print(spider.get_config().get("env"))

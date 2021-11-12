@@ -6,6 +6,7 @@ from ..database import Database
 from ..models import Site, SpiderRunLog
 # from sqlalchemy import and_, or_
 import datetime
+from config.spider import Spider as SpiderConfig
 
 
 class BaseSpider(Spider):
@@ -18,6 +19,7 @@ class BaseSpider(Spider):
     db_session = None
     site_id: int
     log_id: int
+    app_env: str
     custom_settings = {
         'COMPONENTS_NAME_LIST_DENY': [],
         'SELENIUM_ENABLED': False
@@ -46,6 +48,9 @@ class BaseSpider(Spider):
             self.db_session.commit()
         self.site_id = site.id
 
+        spider_config = SpiderConfig()
+        self.app_env = spider_config.get_config().get("env")
+
         # 检查是否传入 log_id 参数
         self.log_id = 0
         if 'log_id' in kwargs and kwargs['log_id']:
@@ -58,7 +63,9 @@ class BaseSpider(Spider):
         self.mylogger = Logger(logs_dir)
         self.mylogger.echo_msg = True
 
-    def add_spider_log(self, log_id=None):
+    def add_spider_log(self, log_id=None) -> int:
+        if self.app_env == SpiderConfig.ENV_DEVELOP:
+            return 0
         now_datetime = datetime.datetime.now()
         logattr = {'spider_name': self.name, 'datetime': now_datetime}  # time.strftime("%Y%m%d %H:%M:%S")
         if hasattr(self, 'spider_child'):
@@ -78,6 +85,8 @@ class BaseSpider(Spider):
         print("============Close Spider : " + self.name)
         print(reason)  # finished
         print(self.log_id)
+        if self.app_env == SpiderConfig.ENV_DEVELOP:
+            return True
         log_cls = SpiderRunLog
         res = self.db_session.query(log_cls).filter(log_cls.id == self.log_id).update({"status": log_cls.STATUS_DONE})
         print(res)

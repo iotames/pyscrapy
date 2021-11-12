@@ -4,3 +4,4 @@
 # your spiders.
 from .gympluscoffee import GympluscoffeeSpider
 from .strongerlabel import StrongerlabelSpider
+from .sweatybetty import SweatybettySpider
