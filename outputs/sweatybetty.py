@@ -1,9 +1,9 @@
 import json
 
-from pyscrapy.models import Goods, GoodsSku, GoodsCategory
+from pyscrapy.models import Goods, GoodsCategory, Translator as TranslatorModel
 from outputs.baseoutput import BaseOutput
 import time
-# from translate import Translator
+from translate import Translator
 from openpyxl.drawing.image import Image
 import os
 
@@ -11,16 +11,21 @@ import os
 class SweatybettyOutput(BaseOutput):
 
     site_name = 'sweatybetty'
-    # translator: Translator
+    translator: Translator
     categories: list
+
+    trans_dic = {}
 
     def __init__(self):
         super(SweatybettyOutput, self).__init__('商品信息', self.site_name)
         self.categories = self.db_session.query(GoodsCategory).all()
-        # self.translator = Translator(to_lang='chinese', provider='mymemory')
+        self.translator = Translator(to_lang='chinese', provider='mymemory')  # , proxies={'http': '127.0.0.1:1080'}
+        all_trans = self.db_session.query(TranslatorModel).all()
+        for trans in all_trans:
+            self.trans_dic[trans.from_lang] = trans.to_lang
 
-    # def to_chinese(self, content: str):
-    #     return self.translator.translate(content)
+    def to_chinese(self, content: str):
+        return self.translator.translate(content)
 
     def get_image_info(self, path: str) -> dict:
         image_path = self.images_dir + os.path.sep + path
@@ -56,6 +61,30 @@ class SweatybettyOutput(BaseOutput):
                 details = json.loads(details)
                 if 'fabric' in details:
                     fabric = details['fabric']  # + " 翻译： " + self.to_chinese(details['fabric'])
+                    fabric_list = []
+                    fa1_list = fabric.split(',')
+                    for fa1 in fa1_list:
+                        fa2_list = fa1.split('%')
+                        try:
+                            fabric_ele = fa2_list[1].strip()
+                        except IndexError:
+                            fabric_ele = fa2_list[0].strip()
+                            print(fabric_ele)
+                            print(str(goods.id))
+
+                        if fabric_ele not in self.trans_dic:
+                            to_lang = self.to_chinese(fabric_ele)
+                            print(to_lang)
+                            if to_lang.find('MYMEMORY WARNING: YOU USED ALL AVAILABLE FREE TRANSLATIONS FOR') >= 0:
+                                to_lang = fabric_ele
+                            self.trans_dic[fabric_ele] = to_lang
+                            trans_model = TranslatorModel(from_lang=fabric_ele, to_lang=to_lang)
+                            self.db_session.add(trans_model)
+                            self.db_session.commit()
+                        fabric_list.append(fabric_ele)
+                    for fabric_item in fabric_list:
+                        fabric = fabric.replace(fabric_item, self.trans_dic[fabric_item])
+
                 if reviews_num > 0:
                     rating = details['rating']
                     average = rating['average']

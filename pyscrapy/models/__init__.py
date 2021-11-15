@@ -8,3 +8,4 @@ from .GoodsCategoryX import GoodsCategoryX
 from .SpiderRunLog import SpiderRunLog
 from .GoodsQuantityLog import GoodsQuantityLog
 from .GoodsSkuQuantityLog import GoodsSkuQuantityLog
+from .Translator import Translator
