@@ -7,6 +7,7 @@ import json
 from sqlalchemy import and_, or_
 import time
 from pyscrapy.spiders.basespider import BaseSpider
+from urllib.parse import urlencode
 # from translate import Translator
 
 
@@ -18,7 +19,7 @@ class SweatybettySpider(BaseSpider):
         'DOWNLOAD_DELAY': 3,
         'RANDOMIZE_DOWNLOAD_DELAY': True,
         'CONCURRENT_REQUESTS_PER_DOMAIN': 1,
-        'CONCURRENT_REQUESTS': 1,  # 5
+        'CONCURRENT_REQUESTS': 32,  # 5
     }
 
     goods_model_list: list
@@ -33,7 +34,8 @@ class SweatybettySpider(BaseSpider):
     xpath_goods_url = "div/div[@class=\"product-image  \"]/a"  # @href
     xpath_goods_title = "div/div[@class=\"product-tile-details\"]/div[@class=\"product-title\"]/div[@class=\"product-name-grade-wrap\"]/div[@class=\"product-name\"]/a"
     xpath_goods_price = "div/div[@class=\"product-tile-details\"]/div[@class=\"product-pricing\"]/div[@class=\"product-price\"]"  # @data-price-sales  text()
-    # xpath_goods_rating = "div/div[@class='product-tile-details']/div[@class='product-rating']/div/div/a/div[@class='bv_numReviews_component_container']"
+    # xpath_goods_rating = "div/div[@class='product-tile-details']/div[@class='product-rating']/div/div/a/div[@class='bv_numReviews_component_container']" // JS render
+    xpath_goods_fabric = "//div[@class='pl-text pl-text--p3 fibre-composition-web']"
 
     def __init__(self, name=None, **kwargs):
         super(SweatybettySpider, self).__init__(name=name, **kwargs)
@@ -43,6 +45,15 @@ class SweatybettySpider(BaseSpider):
         self.spider_child = kwargs['spider_child']
         self.allowed_domains.append("api.bazaarvoice.com")
 
+    url_goods_summary = "https://api.bazaarvoice.com/data/display/0.2alpha/product/summary"
+    summary_query = {
+        'PassKey': '22spgqyzgh7ktk76n520p3r0q',
+        'contentType': 'reviews,questions',
+        'reviewDistribution': 'primaryRating,recommended',
+        'rev': '0',
+        'contentlocale': 'en_GB,en_US,en_AU,en_EU'
+    }
+
     def start_requests(self):
         if self.spider_child == self.CHILD_GOODS_LIST:
             yield Request(
@@ -51,13 +62,66 @@ class SweatybettySpider(BaseSpider):
                 headers=dict(referer="https://www.sweatybetty.com/shop?start=34&sz=36&format=ajax"),
                 meta=dict(start=0)
             )
+        if self.spider_child == self.CHILD_GOODS_DETAIL:
+            self.goods_model_list = self.db_session.query(Goods).filter(Goods.site_id == self.site_id).all()
+            if len(self.goods_model_list) > 0:
+                yield self.request_detail(0)
+
+    def request_detail(self, model_index: int):
+        self.summary_query['productid'] = self.goods_model_list[model_index].code
+        return Request(
+                    self.url_goods_summary + "?" + urlencode(self.summary_query),
+                    callback=self.parse_goods_detail_rating,
+                    meta=dict(model_index=model_index)
+                )
+
+    def parse_goods_detail_page(self, response: TextResponse):
+        item = response.meta['item']
+        composition = response.xpath(self.xpath_goods_fabric + "/text()").get().strip()
+        fabric = composition.split(":")[1].strip()
+        details = item['details']
+        details["fabric"] = fabric
+        item['details'] = details
+        yield item
+
+    def parse_goods_detail_rating(self, response: TextResponse):
+        model_index = response.meta['model_index']
+        text = response.text
+        json_response = json.loads(text)
+        print(json_response)
+        review_summary = json_response['reviewSummary']
+        reviews_num = review_summary['numReviews']
+        rating_summary = review_summary['primaryRating']
+        rating = {
+            "average": rating_summary['average']
+        }
+        for rat_item in rating_summary['distribution']:
+            rating[str(rat_item['key'])] = rat_item['count']
+
+        goods_model: Goods = self.goods_model_list[model_index]
+        item = SweatybettyGoodsItem()
+        item["model"] = goods_model
+        item['reviews_num'] = reviews_num
+        details = {'rating': rating}
+        item['details'] = details
+
+        yield Request(
+            goods_model.url,
+            callback=self.parse_goods_detail_page,
+            headers=dict(referer="https://www.sweatybetty.com/shop"),
+            meta=dict(item=item)
+            )
+
+        if model_index < (len(self.goods_model_list) - 1):
+            yield self.request_detail(model_index+1)
 
     @staticmethod
     def get_product_code(li_id: str):
         id1 = li_id.split("-")
-        id2 = id1[1]
-        id3 = id2.split("_")
-        return id3[0]
+        return id1[1]
+        # id2 = id1[1]
+        # id3 = id2.split("_")
+        # return id3[0]
 
     def parse_goods_list(self, response: TextResponse, **kwargs):
         start = response.meta['start']

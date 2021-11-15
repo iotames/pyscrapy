@@ -131,8 +131,8 @@ class GoodsSweatybetty(Base):
                 continue
             # if key == 'url' and value.startswith('/'):
             #     value = spider.base_url + value
-            # if key == 'details':
-            #     value = json.dumps(value)
+            if key == 'details':
+                value = json.dumps(value)
             attrs[key] = value
 
         model: Goods = item['model'] if 'model' in item else None
@@ -147,6 +147,6 @@ class GoodsSweatybetty(Base):
             opt_str = 'SUCCESS ADD '
             model = Goods(**attrs)
             db_session.add(model)
-        add_or_update_goods_quantity_log(model, spider.log_id, db_session)
+        # add_or_update_goods_quantity_log(model, spider.log_id, db_session)
         db_session.commit()
         print(opt_str + ' GOODS : ' + json.dumps(attrs))

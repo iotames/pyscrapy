@@ -20,7 +20,6 @@ class GympluscoffeeGoodsItem(Item):
     image_paths = Field()
     model = Field()
 
-    site_id = Field()
     code = Field()
     title = Field()
     url = Field()
@@ -86,6 +85,7 @@ class SweatybettyGoodsItem(Item):
     url = Field()
     price = Field()
     image = Field()
+    details = Field()
     reviews_num = Field()
 
 
