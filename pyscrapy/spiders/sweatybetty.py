@@ -18,8 +18,8 @@ class SweatybettySpider(BaseSpider):
     custom_settings = {
         'DOWNLOAD_DELAY': 3,
         'RANDOMIZE_DOWNLOAD_DELAY': True,
-        'CONCURRENT_REQUESTS_PER_DOMAIN': 1,
-        'CONCURRENT_REQUESTS': 32,  # 5
+        # 'CONCURRENT_REQUESTS_PER_DOMAIN': 1, default 8
+        'CONCURRENT_REQUESTS': 16,  # default 16 recommend 5
     }
 
     goods_model_list: list
@@ -70,10 +70,11 @@ class SweatybettySpider(BaseSpider):
     def request_detail(self, model_index: int):
         self.summary_query['productid'] = self.goods_model_list[model_index].code
         return Request(
-                    self.url_goods_summary + "?" + urlencode(self.summary_query),
-                    callback=self.parse_goods_detail_rating,
-                    meta=dict(model_index=model_index)
-                )
+            self.url_goods_summary + "?" + urlencode(self.summary_query),
+            headers={'referer': 'https://www.sweatybetty.com/'},
+            callback=self.parse_goods_detail_rating,
+            meta=dict(model_index=model_index)
+        )
 
     def parse_goods_detail_page(self, response: TextResponse):
         item = response.meta['item']
