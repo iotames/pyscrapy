@@ -16,8 +16,8 @@ class SweatybettySpider(BaseSpider):
     name = 'sweatybetty'
 
     custom_settings = {
-        'DOWNLOAD_DELAY': 3,
-        'RANDOMIZE_DOWNLOAD_DELAY': True,
+        # 'DOWNLOAD_DELAY': 3,
+        # 'RANDOMIZE_DOWNLOAD_DELAY': True,
         # 'CONCURRENT_REQUESTS_PER_DOMAIN': 1, default 8
         'CONCURRENT_REQUESTS': 16,  # default 16 recommend 5
     }
@@ -62,9 +62,17 @@ class SweatybettySpider(BaseSpider):
                 headers=dict(referer="https://www.sweatybetty.com/shop?start=34&sz=36&format=ajax"),
                 meta=dict(start=0)
             )
+        # TODO 点一次未更新完整，要多点几次。原因未知
         if self.spider_child == self.CHILD_GOODS_DETAIL:
-            self.goods_model_list = self.db_session.query(Goods).filter(Goods.site_id == self.site_id).all()
-            if len(self.goods_model_list) > 0:
+            # 2小时内的采集过的商品不会再更新
+            before_time = time.time() - (2 * 3600)
+            self.goods_model_list = self.db_session.query(Goods).filter(
+                Goods.site_id == self.site_id,
+                Goods.updated_at < before_time
+            ).all()
+            goods_list_len = len(self.goods_model_list)
+            print(goods_list_len)
+            if goods_list_len > 0:
                 yield self.request_detail(0)
 
     def request_detail(self, model_index: int):
@@ -77,12 +85,16 @@ class SweatybettySpider(BaseSpider):
         )
 
     def parse_goods_detail_page(self, response: TextResponse):
+        print('parse_goods_detail_page====================================')
         item = response.meta['item']
-        composition = response.xpath(self.xpath_goods_fabric + "/text()").get().strip()
-        fabric = composition.split(":")[1].strip()
-        details = item['details']
-        details["fabric"] = fabric
-        item['details'] = details
+        try:
+            composition = response.xpath(self.xpath_goods_fabric + "/text()").get().strip()
+            fabric = composition.split(":")[1].strip()
+            details = item['details']
+            details["fabric"] = fabric
+            item['details'] = details
+        except AttributeError:
+            print("AttributeError: =============================================================")
         yield item
 
     def parse_goods_detail_rating(self, response: TextResponse):
@@ -112,8 +124,10 @@ class SweatybettySpider(BaseSpider):
             headers=dict(referer="https://www.sweatybetty.com/shop"),
             meta=dict(item=item)
             )
-
-        if model_index < (len(self.goods_model_list) - 1):
+        max_goods_index = (len(self.goods_model_list) - 1)
+        print('model_index = ' + str(model_index) + '====max_goods_index = ' + str(max_goods_index))
+        if model_index < max_goods_index:
+            print('next model index ========== ' + str(model_index+1))
             yield self.request_detail(model_index+1)
 
     @staticmethod
@@ -137,7 +151,7 @@ class SweatybettySpider(BaseSpider):
             item = SweatybettyGoodsItem()
             li_id = ele.xpath("@id").get()
             code = self.get_product_code(li_id)
-            model = self.db_session.query(Goods).filter(Goods.code == code).first()
+            model = self.db_session.query(Goods).filter(Goods.code == code, Goods.site_id == self.site_id).first()
             print(code)
             image = ele.xpath(self.xpath_goods_image + "/@data-src").get() + "&fmt=webp"
             print(image)
