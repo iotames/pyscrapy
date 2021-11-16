@@ -1,6 +1,6 @@
 from api import app, Response
 from api.SpiderController import SpiderController
-from flask import request
+from flask import request, redirect
 # import json
 
 
@@ -30,3 +30,12 @@ def get_spider_logs():
     name = request.args.get("name")
     items = SpiderController().get_spiders_run_logs(name)
     return Response.success({"items": items})
+
+
+@app.errorhandler(404)
+def page_redirect(error):
+    print('====================404=========')
+    print(request.path)
+    print(error)
+    # return Response.success({"hello": "word"})
+    return redirect('/index.html?page=' + request.path)

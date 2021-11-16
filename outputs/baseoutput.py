@@ -40,17 +40,30 @@ class BaseOutput:
             raise RuntimeError(self.site_name + " 在数据库中不存在")
         self.site_id = site.id
 
+    def get_image_info(self, path: str) -> dict:
+        image_path = self.images_dir + os.path.sep + path
+        if not os.path.isfile(image_path):
+            return {'type': str, 'path': image_path}
+        image = {
+            'type': Image,
+            'path': image_path,
+            'size': (100, 100)
+        }
+        return image
+
     @staticmethod
     def set_values_to_row(sheet: Worksheet, values_list: list, row_index, start_col=1):
         for cell_value in values_list:
             if isinstance(cell_value, dict):
                 if cell_value['type'] == Image:
-                    print('===========================================Image===' + cell_value['path'])
+                    # print('===========================================Image===' + cell_value['path'])
                     image = Image(cell_value['path'])
                     image.width, image.height = cell_value['size']
                     image.anchor = get_column_letter(start_col) + str(row_index)
                     print(image.anchor)
                     sheet.add_image(image)
+                if cell_value['type'] == str:
+                    sheet.cell(row_index, start_col, cell_value['path'])
             else:
                 sheet.cell(row_index, start_col, cell_value)
             start_col += 1

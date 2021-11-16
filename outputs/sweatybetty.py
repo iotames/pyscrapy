@@ -4,8 +4,6 @@ from pyscrapy.models import Goods, GoodsCategory, Translator as TranslatorModel
 from outputs.baseoutput import BaseOutput
 import time
 from translate import Translator
-from openpyxl.drawing.image import Image
-import os
 
 
 class SweatybettyOutput(BaseOutput):
@@ -26,15 +24,6 @@ class SweatybettyOutput(BaseOutput):
 
     def to_chinese(self, content: str):
         return self.translator.translate(content)
-
-    def get_image_info(self, path: str) -> dict:
-        image_path = self.images_dir + os.path.sep + path
-        image = {
-            'type': Image,
-            'path': image_path,
-            'size': (100, 100)
-        }
-        return image
 
     def output_to_excel(self):
         sheet = self.work_sheet

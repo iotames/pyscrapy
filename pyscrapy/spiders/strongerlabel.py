@@ -115,7 +115,7 @@ class StrongerlabelSpider(BaseSpider):
             # print(item['title'] + " : " + url)
             quantity = item['quantity']
             goods_item['quantity'] = quantity
-            # goods_item['image_urls'] = [goods_item['image']]
+            goods_item['image_urls'] = [goods_item['image']]
             yield goods_item
 
         offset = response.meta['offset']

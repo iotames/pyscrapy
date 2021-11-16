@@ -81,6 +81,7 @@ class GoodsStrongerlabel(Base):
 
         db_session.commit()
         print('SUCCESS {} GOODS {}'.format(opt_str, str(goods.id)))
+        print(opt_str + ' GOODS : ' + json.dumps(attrs))
         GoodsCategoryX.save_goods_categories(goods, categories, db_session)
 
 

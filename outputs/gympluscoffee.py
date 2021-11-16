@@ -34,15 +34,6 @@ class GympluscoffeeOutput(BaseOutput):
                 model = category
         return model
 
-    def get_image_info(self, path: str) -> dict:
-        image_path = self.images_dir + os.path.sep + path
-        image = {
-            'type': Image,
-            'path': image_path,
-            'size': (100, 100)
-        }
-        return image
-
     def output_to_excel(self):
         sheet = self.work_sheet
         sheet.sheet_format.defaultRowHeight = 100
