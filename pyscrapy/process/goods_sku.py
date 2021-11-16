@@ -12,7 +12,7 @@ def add_or_update_goods_quantity_log(model: GoodsSku, log_id: int, db_session):
         GoodsSkuQuantityLog.log_id == log_id, GoodsSkuQuantityLog.sku_id == model.id).first()
     now_datetime = datetime.datetime.now()
     if log:
-        log.quantity = model.quantity
+        log.quantity = model.inventory_quantity
         log.datetime = now_datetime
         print('UPDATE GoodsSkuQuantityLog id={}'.format(str(log.id)))
     else:

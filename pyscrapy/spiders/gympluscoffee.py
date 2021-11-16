@@ -57,10 +57,10 @@ class GympluscoffeeSpider(BaseSpider):
 
             # 3小时内的采集过的商品不会再更新
             before_time = time.time() - (3 * 3600)
-            goods_list = self.db_session.query(Goods).filter(or_(and_(
+            goods_list = self.db_session.query(Goods).filter(and_(
                 Goods.site_id == self.site_id,
-                Goods.updated_at < before_time
-            ), Goods.status == Goods.STATUS_UNKNOWN)).all()
+                or_(Goods.updated_at < before_time, Goods.status == Goods.STATUS_UNKNOWN)
+            )).all()
             goods_list_len = len(goods_list)
             print(goods_list_len)
             # max_connect = get_project_settings().get('CONCURRENT_REQUESTS')  # 全局设置
@@ -89,7 +89,15 @@ class GympluscoffeeSpider(BaseSpider):
     def update_goods_detail(self, response):
         # 首页为起始入口
         for goods_model in self.goods_model_list:
-            yield Request(goods_model.url, dont_filter=True, callback=self.parse, meta={'goods_model': goods_model})
+            url = goods_model.url
+            # print(url) URL规则变更
+            # for category in self.start_categories:
+            #     if url.find("/"+category+"/products") > 0:
+            #         url = url.replace("/"+category + "/products", "/products")
+            # if url.find("/collections/products") > 0:
+            #     url = url.replace("/collections/products", "/products")
+            print(url)
+            yield Request(url, dont_filter=True, callback=self.parse, meta={'goods_model': goods_model})
 
     def get_categories(self, response: TextResponse) -> list:
         categories_ele = response.xpath(self.xpath_categories)
@@ -135,7 +143,7 @@ class GympluscoffeeSpider(BaseSpider):
         schema_text = ''
         schema_ele = desc_ele.xpath('span')
         if schema_ele:
-            schema_text = schema_ele.xpath('string(.)').extract()[0]
+            schema_text = schema_ele.xpath('string(.)').extract()[0].strip()
         return schema_text
 
     @staticmethod
@@ -182,13 +190,14 @@ class GympluscoffeeSpider(BaseSpider):
             print('Response : Goods ID {}  ..  URL: {}'.format(str(goods_model.id), response.url))
             item_goods = GympluscoffeeGoodsItem()
             item_goods['model'] = goods_model
+            item_goods['url'] = response.url
             title_ele = response.xpath(self.xpath_product_title)
             item_goods['title'] = title_ele.xpath('text()').get().strip() if title_ele else ''
             if response.status != 200:
                 self.mylogger.debug("Warning: " + response.url + " : status = " + str(response.status))
                 item_goods['status'] = Goods.STATUS_AVAILABLE
-                item_goods['url'] = response.url
                 yield item_goods
+                return True
 
             price = response.xpath("//meta[@property=\"og:price:amount\"]/@content")
             item_goods['price'] = price.get()
@@ -200,11 +209,14 @@ class GympluscoffeeSpider(BaseSpider):
             details['fabric'] = self.get_product_attr_content(desc_ele, 'Fabric')
             # print(self.to_chinese(fabric))
             reviews_ele = response.xpath(self.xpath_product_reviews + '/text()')
-            reviews_text: str = reviews_ele.get().strip()
-            print(reviews_text)
+            reviews_text = ''
             reviews_num = 0
-            if reviews_text != 'No reviews':
-                reviews_num = int(reviews_text.replace(',', '').split(' ')[0])
+            try:
+                reviews_text = reviews_ele.get().strip()
+                if reviews_text != 'No reviews':
+                    reviews_num = int(reviews_text.replace(',', '').split(' ')[0])
+            except AttributeError:
+                print(reviews_text)
             item_goods['reviews_num'] = reviews_num
             rating = {}
             if reviews_num > 0:
