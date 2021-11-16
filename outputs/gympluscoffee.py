@@ -4,8 +4,7 @@ from pyscrapy.models import Goods, GoodsSku, GoodsCategory
 from outputs.baseoutput import BaseOutput
 import time
 from translate import Translator
-from openpyxl.drawing.image import Image
-import os
+from openpyxl import load_workbook
 
 
 class GympluscoffeeOutput(BaseOutput):
@@ -126,7 +125,53 @@ class GympluscoffeeOutput(BaseOutput):
                 sku_row_index += 1
         self.wb.save(self.output_file)
 
+    # 重置EXCEL表格中URL和SKU重复的条目库存
+    def update_excel(self, filepath):
+        self.wb = load_workbook(filepath)
+        self.work_sheet = self.wb.worksheets[0]
+        print(self.work_sheet.rows)
+        print(self.work_sheet[3][5].value)
+
+        row_index = 1
+        url_sku_list = []
+        del_rows_index_list = []
+        del_rows_list = []
+        for row_data in self.work_sheet:
+            url = row_data[5].value
+            if not url:
+                continue
+            sku_text = row_data[20].value
+            if not sku_text:
+                continue
+
+            url_sku = url + sku_text
+            if url_sku in url_sku_list:
+                row_data[22].value = "---"
+                row_data[23].value = "---"
+                row_data[24].value = "---"
+                row_data[25].value = "---"
+                del_rows_index_list.append(row_index)
+                del_rows_list.append(url_sku)
+            else:
+                url_sku_list.append(url_sku)
+            row_index += 1
+        print(del_rows_index_list)
+        print(del_rows_list)
+        # for rowi in del_rows_index_list:
+        #     url = self.work_sheet[rowi][5].value
+        #     sku_text = self.work_sheet[rowi][20].value
+        #     print('================begin==============')
+        #     if not sku_text:
+        #         continue
+        #     print(rowi)
+        #     print(str(rowi) + "--" + url + "  " + sku_text)
+        #     # self.work_sheet.cell(rowi, 2, '')
+        #     # self.work_sheet.
+        #     self.work_sheet.delete_rows(rowi)  # delete_rows(1) 表示删除表格的第一行
+        self.wb.save(self.output_file)
+
 
 if __name__ == '__main__':
     gc = GympluscoffeeOutput()
-    gc.output_to_excel()
+    gc.update_excel(gc.output_dir + "/gympluscoffee_2021-11-16_16_56.xlsx")
+    # gc.output_to_excel()
