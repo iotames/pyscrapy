@@ -46,6 +46,7 @@ class ImagePipeline(ImagesPipeline):
 
     @staticmethod
     def get_guid_by_url(url: str) -> str:
+        print(url)
         return hashlib.sha1(to_bytes(url)).hexdigest()
 
     def file_path(self, request, response=None, info: ImagesPipeline.SpiderInfo = None, *, item=None):
@@ -65,11 +66,13 @@ class ImagePipeline(ImagesPipeline):
         urls = ItemAdapter(item).get(self.images_urls_field, [])  # item['image_urls']
         spider = info.spider
         # return [Request(u) for u in urls]
+        print('===========get image url========')
         for image_url in urls:
             meta = None
             if spider.name == 'strongerlabel':
                 meta = {'referer': 'https://www.strongerlabel.com/sg/all-products'}
                 image_url = 'https://www.strongerlabel.com/imgproxy/preset:sharp/resize:fit:320/gravity:nowe/quality:70/plain/' + image_url
+            print(image_url)
             file_path = self.get_local_file_path_by_url(image_url, spider)
             if os.path.isfile(file_path):
                 print('SkipUrl: {} Exists File {}'.format(image_url, file_path))

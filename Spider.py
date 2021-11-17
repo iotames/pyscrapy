@@ -36,4 +36,4 @@ if __name__ == '__main__':
         'spider_child': GympluscoffeeSpider.CHILD_GOODS_DETAIL,
         'log_id': "",  # "59"
     }
-    Spider.crawl('hello', spider_args=args)
+    Spider.crawl('amazon', spider_args=args)

@@ -1,5 +1,5 @@
-from pyscrapy.items import StrongerlabelGoodsItem, GympluscoffeeGoodsItem, SweatybettyGoodsItem
-from pyscrapy.spiders import StrongerlabelSpider, GympluscoffeeSpider, SweatybettySpider
+from pyscrapy.items import StrongerlabelGoodsItem, GympluscoffeeGoodsItem, SweatybettyGoodsItem, AmazonGoodsItem
+from pyscrapy.spiders import StrongerlabelSpider, GympluscoffeeSpider, SweatybettySpider, AmazonSpider
 from pyscrapy.models import Goods, GoodsCategory, GoodsCategoryX, GoodsQuantityLog
 import datetime
 import time
@@ -149,5 +149,38 @@ class GoodsSweatybetty(Base):
             model = Goods(**attrs)
             db_session.add(model)
         # add_or_update_goods_quantity_log(model, spider.log_id, db_session)
+        db_session.commit()
+        print(opt_str + ' GOODS : ' + json.dumps(attrs))
+
+
+class GoodsAmazon(Base):
+
+    def process_item(self, item: AmazonGoodsItem, spider: AmazonSpider):
+        db_session = self.db_session
+        not_update = ['image_urls', 'images', 'image_paths', 'model']
+        attrs = {'site_id': spider.site_id}
+        for key, value in item.items():
+            if key in not_update:
+                if key == 'image_paths' and value:
+                    attrs['local_image'] = value[0]
+                continue
+            # if key == 'url' and value.startswith('/'):
+            #     value = spider.base_url + value
+            if key == 'details':
+                value = json.dumps(value)
+            attrs[key] = value
+
+        model: Goods = item['model'] if 'model' in item else None
+        if model:
+            opt_str = 'SUCCESS UPDATE id = {} : '.format(str(model.id))
+            # for attr_key, attr_value in attrs.items():
+            #     setattr(model, attr_key, attr_value)
+            attrs['updated_at'] = int(time.time())  # update方法无法自动更新时间戳
+            # CONCURRENT_REQUESTS （并发请求数） 值过小， 可能导致经常要更新多次的问题
+            db_session.query(Goods).filter(Goods.id == model.id).update(attrs)
+        else:
+            opt_str = 'SUCCESS ADD '
+            model = Goods(**attrs)
+            db_session.add(model)
         db_session.commit()
         print(opt_str + ' GOODS : ' + json.dumps(attrs))
