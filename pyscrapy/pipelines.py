@@ -7,14 +7,14 @@
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
 from scrapy.settings import Settings
-from .items import GympluscoffeeGoodsItem, GympluscoffeeCategoryItem, StrongerlabelGoodsItem, GympluscoffeeGoodsSkuItem, SweatybettyGoodsItem
+from .items import GympluscoffeeGoodsItem, GympluscoffeeCategoryItem, StrongerlabelGoodsItem, GympluscoffeeGoodsSkuItem, SweatybettyGoodsItem, AmazonGoodsItem
 from scrapy import Item, Request
 from scrapy.pipelines.images import ImagesPipeline
 # from scrapy.exceptions import DropItem
 import hashlib
 from scrapy.utils.python import to_bytes
 import os
-from pyscrapy.process.goods import GoodsStrongerlabel, GoodsGympluscoffee, GoodsSweatybetty
+from pyscrapy.process.goods import GoodsStrongerlabel, GoodsGympluscoffee, GoodsSweatybetty, GoodsAmazon
 from pyscrapy.process.category import CategoryGympluscoffee
 from pyscrapy.process.goods_sku import SkuGympluscoffee
 
@@ -23,7 +23,8 @@ process_map = {
     GympluscoffeeCategoryItem: CategoryGympluscoffee.get_instance(),
     GympluscoffeeGoodsItem: GoodsGympluscoffee.get_instance(),
     GympluscoffeeGoodsSkuItem: SkuGympluscoffee.get_instance(),
-    SweatybettyGoodsItem: GoodsSweatybetty()
+    SweatybettyGoodsItem: GoodsSweatybetty(),
+    AmazonGoodsItem: GoodsAmazon()
 }
 
 

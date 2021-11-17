@@ -15,12 +15,12 @@ class AmazonSpider(BaseSpider):
 
     name = 'amazon'
 
-    custom_settings = {
-        'DOWNLOAD_DELAY': 3,
-        'RANDOMIZE_DOWNLOAD_DELAY': True,
-        'CONCURRENT_REQUESTS_PER_DOMAIN': 1,  # default 8
-        'CONCURRENT_REQUESTS': 1,  # default 16 recommend 5
-    }
+    # custom_settings = {
+    #     'DOWNLOAD_DELAY': 3,
+    #     'RANDOMIZE_DOWNLOAD_DELAY': True,
+    #     # 'CONCURRENT_REQUESTS_PER_DOMAIN': 1,  # default 8
+    #     'CONCURRENT_REQUESTS': 16,  # default 16 recommend 5
+    # }
 
     xpath_goods_items = '//*[@id="zg-ordered-list"]/li/span/div/span'
     xpath_goods_img = 'a/span/div/img'
@@ -47,6 +47,8 @@ class AmazonSpider(BaseSpider):
         return urls[index+1]
 
     def get_product_url_by_code(self, code: str) -> str:
+        if 'pg' in self.url_params:
+            del self.url_params['pg']
         return self.base_url + "/dp/{}?{}".format(code, urlencode(self.url_params))
 
     def __init__(self, name=None, **kwargs):
@@ -97,11 +99,13 @@ class AmazonSpider(BaseSpider):
             model = self.db_session.query(Goods).filter(Goods.site_id == self.site_id, Goods.code == code).first()
             goods_item = AmazonGoodsItem()
             goods_item["model"] = model
+            goods_item["image"] = image
+            goods_item["code"] = code
+            goods_item["title"] = title
+            goods_item["reviews_num"] = reviews_num
             goods_item["image_urls"] = [image]
-            goods_item["image"] = image,
-            goods_item["code"] = code,
-            goods_item["title"] = title,
-            goods_item["reviews_num"] = reviews_num,
+            print('before=============================')
+            print(goods_item)
             yield Request(self.get_product_url_by_code(code), callback=self.parse_goods_detail, meta=dict(item=goods_item))
 
             if response.meta['page'] == 1:
@@ -136,12 +140,13 @@ class AmazonSpider(BaseSpider):
     def parse_goods_detail(self, response: TextResponse):
         print('parse_goods_detail====================================')
         item = response.meta['item']
-        print('before=============================')
-        print(item)
+
         price_ele = response.xpath(self.xpath_goods_price)
-        price_text: str = price_ele.xpath("text()").get()
-        price = price_text.split('US$')[1]
-        item['price_text'] = price_text
+        price = 0
+        if price_ele:
+            price_text: str = price_ele.xpath("text()").get()
+            price = price_text.split('US$')[1]
+            item['price_text'] = price_text
         item['price'] = price
 
         details_eles = response.xpath(self.xpath_goods_details_items)
