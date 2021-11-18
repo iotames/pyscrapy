@@ -10,6 +10,7 @@ from pyscrapy.spiders.basespider import BaseSpider
 from urllib.parse import urlencode
 from Config import Config
 import re
+from pyscrapy.extracts.amazon import GoodsRankingList as XRankingList, GoodsDetail as XDetail
 # from translate import Translator
 
 
@@ -30,31 +31,27 @@ class AmazonSpider(BaseSpider):
         'SELENIUM_ENABLED': False
     }
 
-    xpath_goods_items = '//*[@id="zg-ordered-list"]/li/span/div/span'
-    xpath_goods_img = 'a/span/div/img'
-    xpath_review = "div[@class='a-icon-row a-spacing-none']/a[2]"
-    xpath_goods_price = '//div[@class="a-section a-spacing-small"]//span[@class="a-price a-text-price a-size-medium apexPriceToPay"]/span[1]'
-    xpath_goods_details_items = '//ul[@class="a-unordered-list a-vertical a-spacing-mini"]/li/span'
-    xpath_goods_rank_detail = '//div[@id="detailBulletsWrapper_feature_div"]/ul[1]/li/span'
-    re_goods_rank_in_root = r"商品里排第(.+?)名"
     url_params = {
         "language": 'zh_CN'
     }
 
     top_goods_urls = [
         '/Best-Sellers-Womens-Activewear-Skirts-Skorts/zgbs/fashion/23575633011?{}'
-        # '/bestsellers/fashion/2371062011?{}'
+        # '/bestsellers/fashion/2371062011?{}'  # 新品排行榜
+        # /new-releases/fashion/2371062011  # 销量排行榜
     ]
 
     goods_model_list: list
 
     @staticmethod
     def get_product_code_by_url(url: str) -> str:
+        # TODO => extracts.GoodsDetail
         urls = url.split('/')
         index = urls.index('dp')
         return urls[index+1]
 
     def get_product_url_by_code(self, code: str) -> str:
+        # TODO => extracts.GoodsDetail
         if 'pg' in self.url_params:
             del self.url_params['pg']
         return self.base_url + "/dp/{}?{}".format(code, urlencode(self.url_params))
@@ -80,11 +77,13 @@ class AmazonSpider(BaseSpider):
 
     def parse_top_goods_list(self, response: TextResponse):
         if self.check_robot_happened(response):
-            return False
-        goods_eles = response.xpath(self.xpath_goods_items)
+            # TODO
+            print('check_robot_happened')
+            raise RuntimeError('check_robot_happened')
+        goods_eles = response.xpath(XRankingList.xpath_goods_items)
         rank_in = 1
         for ele in goods_eles:
-            url_ele = ele.xpath("a/@href")
+            url_ele = ele.xpath(XRankingList.xpath_url)
             if not url_ele:
                 print('Skip===============================' + str(rank_in))
                 rank_in += 1
@@ -94,10 +93,9 @@ class AmazonSpider(BaseSpider):
                 url = self.base_url + url
 
             code = self.get_product_code_by_url(url)
-            img_ele = ele.xpath(self.xpath_goods_img)
-            title = img_ele.xpath("@alt").get()
-            image = img_ele.xpath("@src").get()
-            review_ele = ele.xpath(self.xpath_review)
+            title = ele.xpath(XRankingList.xpath_goods_title).get()
+            image = ele.xpath(XRankingList.xpath_goods_img).get()
+            review_ele = ele.xpath(XRankingList.xpath_review)
             reviews_num = 0
             if review_ele:
                 review_text = review_ele.xpath('text()').get()
@@ -126,28 +124,6 @@ class AmazonSpider(BaseSpider):
                 )
 
     @staticmethod
-    def get_goods_detail_feature(contains, response: TextResponse):
-        xpath_feature_key = '//*[@id="detailBullets_feature_div"]/ul/li/span/span[contains(text(), "{}")]'.format(contains)
-        ele = response.xpath(xpath_feature_key + '/parent::span/span[2]')
-        if ele:
-            return ele.xpath('text()').get().strip()
-        return ''
-
-    def get_goods_rank_list(self, response: TextResponse):
-        print('======get_goods_rank_list============================')
-        xpath_eles = self.xpath_goods_rank_detail + '/ul/li'
-        eles = response.xpath(xpath_eles)
-        if not eles:
-            return []
-        data = []
-        for ele in eles:
-            rank_text = ele.xpath('span/text()').get().strip()  # 商品里排第19名
-            category_text = ele.xpath('span/a/text()').get().strip()  # 女士运动裙裤
-            url = ele.xpath('span/a/@href').get()  # /-/zh/gp/bestsellers/fashion/2211990011/ref=pd_zg_hrsr_fashion
-            data.append({'rank_text': rank_text, 'category_text': category_text, 'url': url})
-        return data
-
-    @staticmethod
     def check_robot_happened(response: TextResponse):
         xpath_form = '//div[@class="a-box-inner a-padding-extra-large"]/form/div[1]/div/div/h4/text()'
         ele = response.xpath(xpath_form)  # Type the characters you see in this image:
@@ -158,23 +134,12 @@ class AmazonSpider(BaseSpider):
             raise RuntimeError("===============check_robot_happened=======================")
         return False
 
-    def get_rank_num_in_root(self, text: str) -> int:
-        print('====get_rank_num_in_root=======================================')
-        root_rank_info = re.findall(self.re_goods_rank_in_root, text)
-        print(root_rank_info)
-        if not root_rank_info:
-            return 0
-        rank_text = root_rank_info[0]
-        rank_num = int(rank_text.replace(',', ''))
-        print(rank_num)
-        return rank_num
-
     def parse_goods_detail(self, response: TextResponse):
         item = response.meta['item']
         if self.check_robot_happened(response):
             return False
 
-        price_ele = response.xpath(self.xpath_goods_price)
+        price_ele = response.xpath(XDetail.xpath_goods_price)
         price = 0
         if price_ele:
             price_text: str = price_ele.xpath("text()").get()
@@ -182,23 +147,23 @@ class AmazonSpider(BaseSpider):
             item['price_text'] = price_text
         item['price'] = price
 
-        details_eles = response.xpath(self.xpath_goods_details_items)
+        details_eles = response.xpath(XDetail.xpath_goods_detail_items)
         details = item['details']
         items = []
         for ele in details_eles:
             detail_text = ele.xpath('text()').get().strip()
             items.append(detail_text)
         details['items'] = items
-        details['sale_at'] = self.get_goods_detail_feature('上架时间', response)
-        details['asin'] = self.get_goods_detail_feature('ASIN', response)
+        details['sale_at'] = XDetail.get_goods_detail_feature('上架时间', response)
+        details['asin'] = XDetail.get_goods_detail_feature('ASIN', response)
 
-        rank_ele = response.xpath(self.xpath_goods_rank_detail)
+        rank_ele = response.xpath(XDetail.xpath_goods_rank_detail)
         rank_list = []
         root_rank = 0
         if rank_ele:
-            rank_list = self.get_goods_rank_list(response)
-            text = response.xpath(self.xpath_goods_rank_detail + '[contains(string(),"")]').get()
-            root_rank = self.get_rank_num_in_root(text)  # root_rank
+            rank_list = XDetail.get_goods_rank_list(response)
+            text = response.xpath(XDetail.xpath_goods_rank_detail + '[contains(string(),"")]').get()
+            root_rank = XDetail.get_rank_num_in_root(text)  # root_rank
         details['rank_list'] = rank_list
         details['root_rank'] = root_rank
         item['details'] = details
