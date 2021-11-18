@@ -15,16 +15,27 @@ class BaseSpider(Spider):
         pass
 
     name: str
+    base_url: str
     start_urls = []
     db_session = None
     site_id: int
     log_id: int
     app_env: str
+
+    # 该属性cls静态调用 无法继承覆盖。 必须在继承的类中重写
     custom_settings = {
         'IMAGES_STORE': Config.ROOT_PATH + "/runtime/images",
         'COMPONENTS_NAME_LIST_DENY': [],
         'SELENIUM_ENABLED': False
     }
+
+    @classmethod
+    def get_site_url(cls, url: str) -> str:
+        if url.startswith('http'):
+            return url
+        if url.startswith('/'):
+            return cls.base_url + url
+        return cls.base_url + '/' + url
 
     def __init__(self, name=None, **kwargs):
         super(BaseSpider, self).__init__(name=name, **kwargs)

@@ -8,19 +8,25 @@ from sqlalchemy import and_, or_
 import time
 from pyscrapy.spiders.basespider import BaseSpider
 from urllib.parse import urlencode
+from Config import Config
 # from translate import Translator
 
 
 class AmazonSpider(BaseSpider):
 
     name = 'amazon'
+    base_url = "https://www.amazon.com"
 
+    # 该属性cls静态调用 无法继承覆盖
     custom_settings = {
         'DOWNLOAD_DELAY': 3,
         'RANDOMIZE_DOWNLOAD_DELAY': True,
         'COOKIES_ENABLED': False,
         'CONCURRENT_REQUESTS_PER_DOMAIN': 4,  # default 8
         'CONCURRENT_REQUESTS': 8,  # default 16 recommend 5
+        'IMAGES_STORE': Config.ROOT_PATH + "/runtime/images",
+        'COMPONENTS_NAME_LIST_DENY': [],
+        'SELENIUM_ENABLED': False
     }
 
     xpath_goods_items = '//*[@id="zg-ordered-list"]/li/span/div/span'
@@ -42,9 +48,6 @@ class AmazonSpider(BaseSpider):
     def get_product_code_by_url(url: str) -> str:
         urls = url.split('/')
         index = urls.index('dp')
-        print('=============get_product_code_by_url=======urls=====================')
-        print(urls)
-        print(index)
         return urls[index+1]
 
     def get_product_url_by_code(self, code: str) -> str:
@@ -77,18 +80,12 @@ class AmazonSpider(BaseSpider):
         goods_eles = response.xpath(self.xpath_goods_items)
         for ele in goods_eles:
             url = ele.xpath("a/@href").get().strip()
-            print(url)
             if not url.startswith("http"):
                 url = self.base_url + url
-            print(url)
 
             code = self.get_product_code_by_url(url)
-            print('===============code=========')
-            print(code)
             img_ele = ele.xpath(self.xpath_goods_img)
             title = img_ele.xpath("@alt").get()
-            print('===================title=================')
-            print(title)
             image = img_ele.xpath("@src").get()
             review_ele = ele.xpath(self.xpath_review)
             reviews_num = 0
@@ -97,7 +94,6 @@ class AmazonSpider(BaseSpider):
                 print('===================review_text=================')
                 print(review_text)
                 reviews_num = int(review_text.replace(',', ''))
-                print(reviews_num)
 
             model = self.db_session.query(Goods).filter(Goods.site_id == self.site_id, Goods.code == code).first()
             goods_item = AmazonGoodsItem()
@@ -107,8 +103,6 @@ class AmazonSpider(BaseSpider):
             goods_item["title"] = title
             goods_item["reviews_num"] = reviews_num
             goods_item["image_urls"] = [image]
-            print('before=============================')
-            print(goods_item)
             yield Request(self.get_product_url_by_code(code), callback=self.parse_goods_detail, meta=dict(item=goods_item))
 
             if response.meta['page'] == 1:
@@ -152,7 +146,6 @@ class AmazonSpider(BaseSpider):
         return False
 
     def parse_goods_detail(self, response: TextResponse):
-        print('parse_goods_detail====================================')
         item = response.meta['item']
         if self.check_robot_happened(response):
             return False
@@ -176,7 +169,7 @@ class AmazonSpider(BaseSpider):
         details['asin'] = self.get_goods_detail_feature('ASIN', response)
         details['rank_list'] = self.get_goods_rank_list(response)
         item['details'] = details
-        print('=====================end===========')
+        print('=============parse_goods_detail=============end===========')
         print(item)
         yield item
 

@@ -24,7 +24,7 @@ process_map = {
     GympluscoffeeGoodsItem: GoodsGympluscoffee.get_instance(),
     GympluscoffeeGoodsSkuItem: SkuGympluscoffee.get_instance(),
     SweatybettyGoodsItem: GoodsSweatybetty(),
-    # AmazonGoodsItem: GoodsAmazon()
+    AmazonGoodsItem: GoodsAmazon()
 }
 
 
@@ -84,7 +84,7 @@ class ImagePipeline(ImagesPipeline):
             yield Request(image_url, meta=meta)
 
     def item_completed(self, results, item, info: ImagesPipeline.SpiderInfo):
-        # print('==========ImagePipeline======item_completed==========')
+        print('==========ImagePipeline======item_completed==========')
         # print(results)
         # results [] or [(True, {'url': '', 'path': 'dir/file.jpg', 'checksum': '', 'status': 'uptodate'})]
         image_paths = [x['path'] for ok, x in results if ok]
