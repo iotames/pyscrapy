@@ -21,6 +21,7 @@ class BaseSpider(Spider):
     log_id: int
     app_env: str
     custom_settings = {
+        'IMAGES_STORE': Config.ROOT_PATH + "/runtime/images",
         'COMPONENTS_NAME_LIST_DENY': [],
         'SELENIUM_ENABLED': False
     }
@@ -64,7 +65,7 @@ class BaseSpider(Spider):
         self.mylogger.echo_msg = True
 
     def add_spider_log(self, log_id=None) -> int:
-        if self.app_env == SpiderConfig.ENV_DEVELOP:
+        if self.app_env == SpiderConfig.ENV_DEVELOPMENT:
             return 0
         now_datetime = datetime.datetime.now()
         logattr = {'spider_name': self.name, 'datetime': now_datetime}  # time.strftime("%Y%m%d %H:%M:%S")
@@ -85,7 +86,7 @@ class BaseSpider(Spider):
         print("============Close Spider : " + self.name)
         print(reason)  # finished
         print(self.log_id)
-        if self.app_env == SpiderConfig.ENV_DEVELOP:
+        if self.app_env == SpiderConfig.ENV_DEVELOPMENT:
             return True
         log_cls = SpiderRunLog
         res = self.db_session.query(log_cls).filter(log_cls.id == self.log_id).update({"status": log_cls.STATUS_DONE})

@@ -24,7 +24,7 @@ process_map = {
     GympluscoffeeGoodsItem: GoodsGympluscoffee.get_instance(),
     GympluscoffeeGoodsSkuItem: SkuGympluscoffee.get_instance(),
     SweatybettyGoodsItem: GoodsSweatybetty(),
-    AmazonGoodsItem: GoodsAmazon()
+    # AmazonGoodsItem: GoodsAmazon()
 }
 
 
@@ -34,6 +34,9 @@ class PyscrapyPipeline:
         print('====================== PyscrapyPipeline : process_item ===================')
         if type(item) in process_map:
             process_map[type(item)].process_item(item, spider)
+        else:
+            msg = "Item对象 {} 在管道处理中没有找到process处理类。 请在 process_map 字典中添加对应关系。".format(item.__class__.__name__)
+            raise RuntimeError(msg)
 
     def open_spider(self, spider):
         pass

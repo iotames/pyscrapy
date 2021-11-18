@@ -15,12 +15,13 @@ class AmazonSpider(BaseSpider):
 
     name = 'amazon'
 
-    # custom_settings = {
-    #     'DOWNLOAD_DELAY': 3,
-    #     'RANDOMIZE_DOWNLOAD_DELAY': True,
-    #     # 'CONCURRENT_REQUESTS_PER_DOMAIN': 1,  # default 8
-    #     'CONCURRENT_REQUESTS': 16,  # default 16 recommend 5
-    # }
+    custom_settings = {
+        'DOWNLOAD_DELAY': 3,
+        'RANDOMIZE_DOWNLOAD_DELAY': True,
+        'COOKIES_ENABLED': False,
+        'CONCURRENT_REQUESTS_PER_DOMAIN': 4,  # default 8
+        'CONCURRENT_REQUESTS': 8,  # default 16 recommend 5
+    }
 
     xpath_goods_items = '//*[@id="zg-ordered-list"]/li/span/div/span'
     xpath_goods_img = 'a/span/div/img'
@@ -71,6 +72,8 @@ class AmazonSpider(BaseSpider):
             )
 
     def parse_top_goods_list(self, response: TextResponse):
+        if self.check_robot_happened(response):
+            return False
         goods_eles = response.xpath(self.xpath_goods_items)
         for ele in goods_eles:
             url = ele.xpath("a/@href").get().strip()
@@ -137,9 +140,22 @@ class AmazonSpider(BaseSpider):
             data.append({'rank_text': rank_text, 'category_text': category_text, 'url': url})
         return data
 
+    @staticmethod
+    def check_robot_happened(response: TextResponse):
+        xpath_form = '//div[@class="a-box-inner a-padding-extra-large"]/form/div[1]/div/div/h4/text()'
+        ele = response.xpath(xpath_form)  # Type the characters you see in this image:
+        print('===============check_robot_happened=======================')
+        print(ele)
+        if ele:
+            # TODO 切换IP继续爬
+            raise RuntimeError("===============check_robot_happened=======================")
+        return False
+
     def parse_goods_detail(self, response: TextResponse):
         print('parse_goods_detail====================================')
         item = response.meta['item']
+        if self.check_robot_happened(response):
+            return False
 
         price_ele = response.xpath(self.xpath_goods_price)
         price = 0

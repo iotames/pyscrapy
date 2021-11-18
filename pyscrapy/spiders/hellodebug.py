@@ -48,6 +48,7 @@ class HelloSpider(BaseSpider):
         start_url = self.start_urls[0]
         if self.settings.getbool('SPLASH_ENABLED'):
             args = {}
+            # TODO 更换UA请求头要通过splash LUA脚本注入才有效
             if self.http_proxy:
                 http_proxy = self.http_proxy.choice_one_from_items()  # 从IP代理池选择一个IP代理
                 print(http_proxy)

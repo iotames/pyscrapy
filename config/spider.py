@@ -12,7 +12,7 @@ class Spider(BaseConfig):
     }
 
     ENV_PRODUCTION = 'production'
-    ENV_DEVELOP = 'develop'
+    ENV_DEVELOPMENT = 'development'
 
     DEFAULT_CONFIG = {
         'env': ENV_PRODUCTION,

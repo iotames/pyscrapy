@@ -19,7 +19,7 @@ class GympluscoffeeSpider(BaseSpider):
         # 'DOWNLOAD_DELAY': 3,
         # 'RANDOMIZE_DOWNLOAD_DELAY': True,
         # 'CONCURRENT_REQUESTS_PER_DOMAIN': 1,
-        'CONCURRENT_REQUESTS': 1000,
+        'CONCURRENT_REQUESTS': 32,
         # 'COMPONENTS_NAME_LIST_DENY': ['user_agent'],
     }
 

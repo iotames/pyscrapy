@@ -6,9 +6,10 @@ from pyscrapy.models import Site
 import os
 import time
 from sqlalchemy.orm.session import Session
-from scrapy.utils.project import get_project_settings
+# from scrapy.utils.project import get_project_settings
 from openpyxl.drawing.image import Image
 from openpyxl.utils import get_column_letter
+from pyscrapy.spiders.basespider import BaseSpider
 
 
 class BaseOutput:
@@ -23,7 +24,7 @@ class BaseOutput:
     images_dir: str
 
     def __init__(self, sheet_title='库存详情', filename='output'):
-        self.images_dir = get_project_settings().get('IMAGES_STORE')
+        self.images_dir = BaseSpider.custom_settings.get('IMAGES_STORE')  # get_project_settings().get('IMAGES_STORE')
         db = DB(Config().get_database())
         db.ROOT_PATH = Config.ROOT_PATH
         self.db_session = db.get_db_session()
@@ -41,12 +42,13 @@ class BaseOutput:
         self.site_id = site.id
 
     def get_image_info(self, path: str) -> dict:
-        image_path = self.images_dir + os.path.sep + path
-        if not os.path.isfile(image_path):
-            return {'type': str, 'path': image_path}
+        if not path.startswith('/'):
+            path = self.images_dir + os.path.sep + path
+        if not os.path.isfile(path):
+            return {'type': str, 'path': path}
         image = {
             'type': Image,
-            'path': image_path,
+            'path': path,
             'size': (100, 100)
         }
         return image
