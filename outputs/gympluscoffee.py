@@ -12,6 +12,7 @@ class GympluscoffeeOutput(BaseOutput):
     site_name = 'gympluscoffee'
     translator: Translator
     categories: list
+    goods_model_list: list
 
     def __init__(self):
         super(GympluscoffeeOutput, self).__init__('SKU库存详情', self.site_name)
@@ -45,10 +46,19 @@ class GympluscoffeeOutput(BaseOutput):
         for title in title_row:
             sheet.cell(1, title_col, title)
             title_col += 1
-        goods_list = self.db_session.query(Goods).filter(Goods.site_id == self.site_id).all()
+        self.goods_model_list = self.db_session.query(Goods).filter(Goods.site_id == self.site_id).all()
+
+        goods_urls = []
+        for model in self.goods_model_list:
+            if model.url in goods_urls:
+                # 剔除可能重复的商品项
+                self.goods_model_list.remove(model)
+            else:
+                goods_urls.append(model.url)
+
         sku_row_index = 2
 
-        for goods in goods_list:
+        for goods in self.goods_model_list:
             goods_col_index = 1
             start_row_index = sku_row_index
             time_tuple = time.localtime(goods.updated_at)
@@ -94,12 +104,15 @@ class GympluscoffeeOutput(BaseOutput):
             sku_len = len(goods_sku_list)
             for sku in goods_sku_list:
                 if sku_row_index > start_row_index:
+                    # goods的SKU数量大于1， 从当前EXCEL行数量另起一行，复制goods基本信息填入。
                     goods_col_index = 1
                     if sku.local_image:
                         image = self.get_image_info(sku.local_image)
+                    # 从第2个SKU开始，从goods拷贝基本信息
                     sku_row_info = goods_info_list.copy()
                     sku_row_info.insert(1, image)
                     print(sku_row_info)
+                    # 从第2个SKU开始，都要拷贝goods基本信息写入EXCEL
                     goods_col_index = self.set_values_to_row(sheet, sku_row_info, sku_row_index, goods_col_index)
                 price = format(sku.price/100, '.2f')
                 sku_info_list = (sku.option1, sku.option2, sku.title, price, sku.inventory_quantity)

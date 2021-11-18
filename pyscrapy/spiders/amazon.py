@@ -9,6 +9,7 @@ import time
 from pyscrapy.spiders.basespider import BaseSpider
 from urllib.parse import urlencode
 from Config import Config
+import re
 # from translate import Translator
 
 
@@ -23,7 +24,7 @@ class AmazonSpider(BaseSpider):
         'RANDOMIZE_DOWNLOAD_DELAY': True,
         'COOKIES_ENABLED': False,
         'CONCURRENT_REQUESTS_PER_DOMAIN': 4,  # default 8
-        'CONCURRENT_REQUESTS': 8,  # default 16 recommend 5
+        'CONCURRENT_REQUESTS': 8,  # default 16 recommend 5-8
         'IMAGES_STORE': Config.ROOT_PATH + "/runtime/images",
         'COMPONENTS_NAME_LIST_DENY': [],
         'SELENIUM_ENABLED': False
@@ -34,12 +35,15 @@ class AmazonSpider(BaseSpider):
     xpath_review = "div[@class='a-icon-row a-spacing-none']/a[2]"
     xpath_goods_price = '//div[@class="a-section a-spacing-small"]//span[@class="a-price a-text-price a-size-medium apexPriceToPay"]/span[1]'
     xpath_goods_details_items = '//ul[@class="a-unordered-list a-vertical a-spacing-mini"]/li/span'
+    xpath_goods_rank_detail = '//div[@id="detailBulletsWrapper_feature_div"]/ul[1]/li/span'
+    re_goods_rank_in_root = r"商品里排第(.+?)名"
     url_params = {
         "language": 'zh_CN'
     }
 
     top_goods_urls = [
         '/Best-Sellers-Womens-Activewear-Skirts-Skorts/zgbs/fashion/23575633011?{}'
+        # '/bestsellers/fashion/2371062011?{}'
     ]
 
     goods_model_list: list
@@ -78,8 +82,14 @@ class AmazonSpider(BaseSpider):
         if self.check_robot_happened(response):
             return False
         goods_eles = response.xpath(self.xpath_goods_items)
+        rank_in = 1
         for ele in goods_eles:
-            url = ele.xpath("a/@href").get().strip()
+            url_ele = ele.xpath("a/@href")
+            if not url_ele:
+                print('Skip===============================' + str(rank_in))
+                rank_in += 1
+                continue
+            url = url_ele.get().strip()
             if not url.startswith("http"):
                 url = self.base_url + url
 
@@ -91,8 +101,8 @@ class AmazonSpider(BaseSpider):
             reviews_num = 0
             if review_ele:
                 review_text = review_ele.xpath('text()').get()
-                print('===================review_text=================')
-                print(review_text)
+                # print('===================review_text=================')
+                # print(review_text)
                 reviews_num = int(review_text.replace(',', ''))
 
             model = self.db_session.query(Goods).filter(Goods.site_id == self.site_id, Goods.code == code).first()
@@ -103,6 +113,9 @@ class AmazonSpider(BaseSpider):
             goods_item["title"] = title
             goods_item["reviews_num"] = reviews_num
             goods_item["image_urls"] = [image]
+            details = {'rank_in': rank_in}
+            goods_item["details"] = details
+            rank_in += 1
             yield Request(self.get_product_url_by_code(code), callback=self.parse_goods_detail, meta=dict(item=goods_item))
 
             if response.meta['page'] == 1:
@@ -120,9 +133,9 @@ class AmazonSpider(BaseSpider):
             return ele.xpath('text()').get().strip()
         return ''
 
-    @staticmethod
-    def get_goods_rank_list(response: TextResponse):
-        xpath_eles = '//ul[@class="a-unordered-list a-nostyle a-vertical zg_hrsr"]/li'
+    def get_goods_rank_list(self, response: TextResponse):
+        print('======get_goods_rank_list============================')
+        xpath_eles = self.xpath_goods_rank_detail + '/ul/li'
         eles = response.xpath(xpath_eles)
         if not eles:
             return []
@@ -138,12 +151,23 @@ class AmazonSpider(BaseSpider):
     def check_robot_happened(response: TextResponse):
         xpath_form = '//div[@class="a-box-inner a-padding-extra-large"]/form/div[1]/div/div/h4/text()'
         ele = response.xpath(xpath_form)  # Type the characters you see in this image:
-        print('===============check_robot_happened=======================')
-        print(ele)
+        # print('===============check_robot_happened=======================')
+        # print(ele)  # []
         if ele:
             # TODO 切换IP继续爬
             raise RuntimeError("===============check_robot_happened=======================")
         return False
+
+    def get_rank_num_in_root(self, text: str) -> int:
+        print('====get_rank_num_in_root=======================================')
+        root_rank_info = re.findall(self.re_goods_rank_in_root, text)
+        print(root_rank_info)
+        if not root_rank_info:
+            return 0
+        rank_text = root_rank_info[0]
+        rank_num = int(rank_text.replace(',', ''))
+        print(rank_num)
+        return rank_num
 
     def parse_goods_detail(self, response: TextResponse):
         item = response.meta['item']
@@ -159,7 +183,7 @@ class AmazonSpider(BaseSpider):
         item['price'] = price
 
         details_eles = response.xpath(self.xpath_goods_details_items)
-        details = {}
+        details = item['details']
         items = []
         for ele in details_eles:
             detail_text = ele.xpath('text()').get().strip()
@@ -167,7 +191,16 @@ class AmazonSpider(BaseSpider):
         details['items'] = items
         details['sale_at'] = self.get_goods_detail_feature('上架时间', response)
         details['asin'] = self.get_goods_detail_feature('ASIN', response)
-        details['rank_list'] = self.get_goods_rank_list(response)
+
+        rank_ele = response.xpath(self.xpath_goods_rank_detail)
+        rank_list = []
+        root_rank = 0
+        if rank_ele:
+            rank_list = self.get_goods_rank_list(response)
+            text = response.xpath(self.xpath_goods_rank_detail + '[contains(string(),"")]').get()
+            root_rank = self.get_rank_num_in_root(text)  # root_rank
+        details['rank_list'] = rank_list
+        details['root_rank'] = root_rank
         item['details'] = details
         print('=============parse_goods_detail=============end===========')
         print(item)

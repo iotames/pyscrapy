@@ -14,7 +14,7 @@ class AmazonOutput(BaseOutput):
     def output(self):
         sheet = self.work_sheet
         # sheet.sheet_format.defaultRowHeight = 30
-        title_row = ('商品ID', '亚马逊ASIN', '图片', '商品标题', '商品链接', '上架时间', '更新时间', '价格/US$', '评论数', '商品描述', '排名')
+        title_row = ('商品ID', '亚马逊ASIN', '图片', '商品标题', '商品链接', '上架时间', '更新时间', '价格/US$', '评论数', '大类排名', '商品描述', '排名')
         title_col = 1
         for title in title_row:
             sheet.cell(1, title_col, title)
@@ -33,6 +33,7 @@ class AmazonOutput(BaseOutput):
 
             sale_at = details['sale_at']
             asin = details['asin']
+            root_rank = details['root_rank']
             goods_url = AmazonSpider.base_url + '/dp/' + goods.code
             rank_list = details['rank_list']
             rank_detail = ''
@@ -44,7 +45,7 @@ class AmazonOutput(BaseOutput):
                 details_items += item + "\n|"
             goods_info_list = [
                 goods.id, asin, image, goods.title, goods_url, sale_at, time_str, goods.price,
-                goods.reviews_num, details_items, rank_detail
+                goods.reviews_num, root_rank, details_items, rank_detail
             ]
             print('================')
             print(goods_info_list)
