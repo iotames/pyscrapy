@@ -1,5 +1,6 @@
 from pyscrapy.models import Site, SpiderRunLog
 from api.BaseController import BaseController
+from api.tables import Spiders as SpidersTable, SpiderRunLogs as SpiderRunLogsTable
 
 
 class SpiderController(BaseController):
@@ -25,4 +26,12 @@ class SpiderController(BaseController):
                    }
             data.append(row)
         return data
+
+    @staticmethod
+    def get_table_columns(name: str) -> list:
+        tables_cols = {
+            SpidersTable.name: SpidersTable().columns,
+            SpiderRunLogsTable.name: SpiderRunLogsTable().columns
+        }
+        return tables_cols[name]
 

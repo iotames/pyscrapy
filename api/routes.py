@@ -32,6 +32,12 @@ def get_spider_logs():
     return Response.success({"items": items})
 
 
+@app.route('/api/table/columns')
+def get_table_columns():
+    name = request.args.get("name")
+    return Response.success({"items": SpiderController.get_table_columns(name)})
+
+
 @app.errorhandler(404)
 def page_redirect(error):
     print('====================404=========')

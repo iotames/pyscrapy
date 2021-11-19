@@ -9,7 +9,7 @@ app = Flask(
     static_url_path='/'
 )
 # https://blog.csdn.net/joker_zsl/article/details/116452374  flask踩坑记录：flask的响应结果总是按首字母排序
-app.config['JSON_SORT_KEYS'] = False
+# app.config['JSON_SORT_KEYS'] = False
 
 CORS(app, supports_credentials=True)
 from api import routes
