@@ -48,13 +48,14 @@ class GympluscoffeeOutput(BaseOutput):
             title_col += 1
         self.goods_model_list = self.db_session.query(Goods).filter(Goods.site_id == self.site_id).all()
 
-        goods_urls = []
-        for model in self.goods_model_list:
-            if model.url in goods_urls:
-                # 剔除可能重复的商品项
-                self.goods_model_list.remove(model)
-            else:
-                goods_urls.append(model.url)
+        # TODO 新版本使用，不兼容就版本。需要导入旧数据
+        # goods_urls = []
+        # for model in self.goods_model_list:
+        #     if model.url in goods_urls:
+        #         # 剔除可能重复的商品项
+        #         self.goods_model_list.remove(model)
+        #     else:
+        #         goods_urls.append(model.url)
 
         sku_row_index = 2
 
@@ -163,6 +164,7 @@ class GympluscoffeeOutput(BaseOutput):
                 row_data[23].value = "---"
                 row_data[24].value = "---"
                 row_data[25].value = "---"
+                row_data[26].value = "---"
                 del_rows_index_list.append(row_index)
                 del_rows_list.append(url_sku)
             else:
@@ -186,5 +188,5 @@ class GympluscoffeeOutput(BaseOutput):
 
 if __name__ == '__main__':
     gc = GympluscoffeeOutput()
-    gc.update_excel(gc.output_dir + "/gympluscoffee_2021-11-16_16_56.xlsx")
+    gc.update_excel(gc.output_dir + "/gympluscoffee_2021-11-19_09_22.xlsx")
     # gc.output_to_excel()

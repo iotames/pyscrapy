@@ -1,11 +1,19 @@
+from urllib.parse import urlencode
 import re
 from scrapy.http import TextResponse
+
+BASE_URL = "https://www.amazon.com"
 
 
 class GoodsRankingList(object):
     """
     商品排行榜数据解析类
     """
+
+    # '/bestsellers/sporting-goods'  # 运动与户外用品销售排行榜
+    # '/bestsellers/sporting-goods/706814011'  # 户外休闲销售排行榜
+    # '/bestsellers/fashion/2371062011?language=zh_CN'  # 服装、鞋靴和珠宝饰品 - 网球服 销量排行榜
+    # '/new-releases/fashion/2371062011'  # 服装、鞋靴和珠宝饰品 - 网球服 新品排行榜
 
     xpath_goods_items = '//*[@id="zg-ordered-list"]/li/span/div/span'
     xpath_url = 'a/@href'
@@ -19,8 +27,8 @@ class GoodsDetail(object):
     商品详情数据解析类
     """
 
-    xpath_goods_price = '//div[@class="a-section a-spacing-small"]//span[@class="a-price a-text-price a-size-medium apexPriceToPay"]/span[1]'
-    xpath_goods_detail_items = '//ul[@class="a-unordered-list a-vertical a-spacing-mini"]/li/span'
+    xpath_goods_price = '//div[@class="a-section a-spacing-small"]//span[@class="a-price a-text-price a-size-medium apexPriceToPay"]/span[1]/text()'
+    xpath_goods_detail_items = '//ul[@class="a-unordered-list a-vertical a-spacing-mini"]/li/span/text()'
     xpath_goods_rank_detail = '//div[@id="detailBulletsWrapper_feature_div"]/ul[1]/li/span'
     re_goods_rank_in_root = r"商品里排第(.+?)名"
 
@@ -59,4 +67,19 @@ class GoodsDetail(object):
         if ele:
             return ele.xpath('text()').get().strip()
         return ''
+
+
+class Goods(object):
+
+    @staticmethod
+    def get_url_by_code(code: str, params=None) -> str:
+        if params:
+            return "{}/dp/{}?{}".format(BASE_URL, code, urlencode(params))
+        return "{}/dp/{}".format(BASE_URL, code)
+
+    @staticmethod
+    def get_code_by_url(url: str) -> str:
+        urls = url.split('/')
+        index = urls.index('dp')
+        return urls[index+1]
 

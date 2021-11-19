@@ -10,7 +10,7 @@ from pyscrapy.spiders.basespider import BaseSpider
 from urllib.parse import urlencode
 from Config import Config
 import re
-from pyscrapy.extracts.amazon import GoodsRankingList as XRankingList, GoodsDetail as XDetail
+from pyscrapy.extracts.amazon import GoodsRankingList as XRankingList, GoodsDetail as XDetail, Goods as XGoods
 # from translate import Translator
 
 
@@ -37,24 +37,10 @@ class AmazonSpider(BaseSpider):
 
     top_goods_urls = [
         '/Best-Sellers-Womens-Activewear-Skirts-Skorts/zgbs/fashion/23575633011?{}'
-        # '/bestsellers/fashion/2371062011?{}'  # 新品排行榜
-        # /new-releases/fashion/2371062011  # 销量排行榜
+        # '/bestsellers/sporting-goods/706814011?{}'  # 户外休闲销售排行榜
     ]
 
     goods_model_list: list
-
-    @staticmethod
-    def get_product_code_by_url(url: str) -> str:
-        # TODO => extracts.GoodsDetail
-        urls = url.split('/')
-        index = urls.index('dp')
-        return urls[index+1]
-
-    def get_product_url_by_code(self, code: str) -> str:
-        # TODO => extracts.GoodsDetail
-        if 'pg' in self.url_params:
-            del self.url_params['pg']
-        return self.base_url + "/dp/{}?{}".format(code, urlencode(self.url_params))
 
     def __init__(self, name=None, **kwargs):
         super(AmazonSpider, self).__init__(name=name, **kwargs)
@@ -92,7 +78,7 @@ class AmazonSpider(BaseSpider):
             if not url.startswith("http"):
                 url = self.base_url + url
 
-            code = self.get_product_code_by_url(url)
+            code = XGoods.get_code_by_url(url)
             title = ele.xpath(XRankingList.xpath_goods_title).get()
             image = ele.xpath(XRankingList.xpath_goods_img).get()
             review_ele = ele.xpath(XRankingList.xpath_review)
@@ -105,6 +91,7 @@ class AmazonSpider(BaseSpider):
 
             model = self.db_session.query(Goods).filter(Goods.site_id == self.site_id, Goods.code == code).first()
             goods_item = AmazonGoodsItem()
+            # goods_item["url"] = url
             goods_item["model"] = model
             goods_item["image"] = image
             goods_item["code"] = code
@@ -114,7 +101,7 @@ class AmazonSpider(BaseSpider):
             details = {'rank_in': rank_in}
             goods_item["details"] = details
             rank_in += 1
-            yield Request(self.get_product_url_by_code(code), callback=self.parse_goods_detail, meta=dict(item=goods_item))
+            yield Request(url, callback=self.parse_goods_detail, meta=dict(item=goods_item))
 
             if response.meta['page'] == 1:
                 yield Request(
@@ -141,18 +128,27 @@ class AmazonSpider(BaseSpider):
 
         price_ele = response.xpath(XDetail.xpath_goods_price)
         price = 0
+        price_text = ''
         if price_ele:
-            price_text: str = price_ele.xpath("text()").get()
-            price = price_text.split('US$')[1]
-            item['price_text'] = price_text
+            price_text: str = price_ele.get()
+            price_info = price_text.split('US$')
+            if len(price_info) > 1:
+                price = price_info[1]
+        item['price_text'] = price_text
         item['price'] = price
 
-        details_eles = response.xpath(XDetail.xpath_goods_detail_items)
         details = item['details']
+
+        details_eles = response.xpath(XDetail.xpath_goods_detail_items)
+        print('=====goods_detail_items==XPATH=============')
+        print(details_eles)
+
         items = []
         for ele in details_eles:
-            detail_text = ele.xpath('text()').get().strip()
-            items.append(detail_text)
+            detail_text = ele.get().strip()
+            if detail_text:
+                items.append(detail_text)
+
         details['items'] = items
         details['sale_at'] = XDetail.get_goods_detail_feature('上架时间', response)
         details['asin'] = XDetail.get_goods_detail_feature('ASIN', response)
