@@ -5,6 +5,24 @@
 from scrapy import Item, Field
 
 
+class BaseGoodsItem(Item):
+    image_urls = Field()
+    # images = Field()
+    image_paths = Field()
+    model = Field()
+
+    spider_name = Field()
+
+    code = Field()  # id
+    title = Field()
+    url = Field()
+    price = Field()
+    price_text = Field()
+    image = Field()
+    details = Field()
+    reviews_num = Field()
+
+
 class GympluscoffeeCategoryItem(Item):
     site_id = Field()
     model = Field()
@@ -91,7 +109,7 @@ class SweatybettyGoodsItem(Item):
 
 class AmazonGoodsItem(Item):
     image_urls = Field()
-    images = Field()
+    # images = Field()
     image_paths = Field()
     model = Field()
 

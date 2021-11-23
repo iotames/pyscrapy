@@ -1,5 +1,5 @@
-from pyscrapy.items import StrongerlabelGoodsItem, GympluscoffeeGoodsItem, SweatybettyGoodsItem, AmazonGoodsItem
-from pyscrapy.spiders import StrongerlabelSpider, GympluscoffeeSpider, SweatybettySpider, AmazonSpider
+from pyscrapy.items import StrongerlabelGoodsItem, GympluscoffeeGoodsItem, SweatybettyGoodsItem, AmazonGoodsItem, BaseGoodsItem
+from pyscrapy.spiders import StrongerlabelSpider, GympluscoffeeSpider, SweatybettySpider, AmazonSpider, BaseSpider
 from pyscrapy.models import Goods, GoodsCategory, GoodsCategoryX, GoodsQuantityLog
 import datetime
 import time
@@ -166,6 +166,41 @@ class GoodsAmazon(Base):
                 continue
             # if key == 'url' and value.startswith('/'):
             #     value = spider.base_url + value
+            if key == 'details':
+                value = json.dumps(value)
+            attrs[key] = value
+
+        model: Goods = item['model'] if 'model' in item else None
+        if model:
+            opt_str = 'SUCCESS UPDATE id = {} : '.format(str(model.id))
+            # for attr_key, attr_value in attrs.items():
+            #     setattr(model, attr_key, attr_value)
+            attrs['updated_at'] = int(time.time())  # update方法无法自动更新时间戳
+            # CONCURRENT_REQUESTS （并发请求数） 值过小， 可能导致经常要更新多次的问题
+            db_session.query(Goods).filter(Goods.id == model.id).update(attrs)
+        else:
+            opt_str = 'SUCCESS ADD '
+            model = Goods(**attrs)
+            db_session.add(model)
+        db_session.commit()
+        print(opt_str + ' GOODS : ' + json.dumps(attrs))
+
+
+class GoodsBase(Base):
+
+    def process_item(self, item: BaseGoodsItem, spider: BaseSpider):
+        if 'spider_name' not in item:
+            print('spider_name not in BaseGoodsItem')
+            return False
+
+        db_session = self.db_session
+        not_update = ['image_urls', 'image_paths', 'model', 'spider_name']
+        attrs = {'site_id': spider.site_id}
+        for key, value in item.items():
+            if key in not_update:
+                if key == 'image_paths' and value:
+                    attrs['local_image'] = value[0]
+                continue
             if key == 'details':
                 value = json.dumps(value)
             attrs[key] = value

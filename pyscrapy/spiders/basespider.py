@@ -4,7 +4,7 @@ from ..helpers import Logger
 from Config import Config
 from ..database import Database
 from ..models import Site, SpiderRunLog
-# from sqlalchemy import and_, or_
+from scrapy.exceptions import UsageError
 import datetime
 from config.spider import Spider as SpiderConfig
 
@@ -28,6 +28,12 @@ class BaseSpider(Spider):
         'COMPONENTS_NAME_LIST_DENY': [],
         'SELENIUM_ENABLED': False
     }
+
+    CHILD_GOODS_LIST = 'goods_list'
+    CHILD_GOODS_DETAIL = 'goods_detail'
+    CHILD_GOODS_CATEGORIES = 'goods_categories'
+    goods_model_list: list
+    spider_child = CHILD_GOODS_DETAIL
 
     @classmethod
     def get_site_url(cls, url: str) -> str:
@@ -69,11 +75,18 @@ class BaseSpider(Spider):
             self.log_id = int(kwargs['log_id'])
         self.log_id = self.add_spider_log(self.log_id)
 
+        # 初始化mylogger配置
         logs_dir = ''
         if 'logs_dir' in kwargs:
             logs_dir = kwargs['logs_dir']
         self.mylogger = Logger(logs_dir)
         self.mylogger.echo_msg = True
+
+        # 校验爬虫子操作
+        if 'spider_child' not in kwargs:
+            msg = 'lost param spider_child'
+            raise UsageError(msg)
+        self.spider_child = kwargs['spider_child']
 
     def add_spider_log(self, log_id=None) -> int:
         if self.app_env == SpiderConfig.ENV_DEVELOPMENT:

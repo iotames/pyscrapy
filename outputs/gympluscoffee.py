@@ -165,6 +165,7 @@ class GympluscoffeeOutput(BaseOutput):
                 row_data[24].value = "---"
                 row_data[25].value = "---"
                 row_data[26].value = "---"
+                row_data[27].value = "---"
                 del_rows_index_list.append(row_index)
                 del_rows_list.append(url_sku)
             else:
