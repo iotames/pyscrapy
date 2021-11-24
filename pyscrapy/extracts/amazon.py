@@ -19,7 +19,7 @@ class GoodsRankingList(object):
     xpath_url = 'a/@href'
     xpath_goods_img = 'a/span/div/img/@src'
     xpath_goods_title = 'a/span/div/img/@alt'
-    xpath_review = "div[@class='a-icon-row a-spacing-none']/a[2]"
+    xpath_review = "div[@class='a-icon-row a-spacing-none']/a[2]/text()"
 
 
 class GoodsDetail(object):
@@ -82,4 +82,29 @@ class Goods(object):
         urls = url.split('/')
         index = urls.index('dp')
         return urls[index+1]
+
+    @staticmethod
+    def get_site_url(url: str) -> str:
+        if url.startswith('http'):
+            return url
+        if url.startswith('/'):
+            return BASE_URL + url
+        return BASE_URL + '/' + url
+
+
+class GoodsReviews(object):
+    """
+    商品评论解析类
+    """
+
+    @staticmethod
+    def get_simple_reviews_url(url, page=1):
+        re_text = r"product-reviews/(.+?)/"
+        urls = re.findall(re_text, url)
+        asin = urls[0]
+        result_url = BASE_URL + '/product-reviews/' + asin
+        if page > 1:
+            page_str = str(page)
+            result_url = result_url + '/ref=cm_cr_arp_d_paging_btm_next_{}?pageNumber={}'.format(page_str, page_str)
+        return result_url
 

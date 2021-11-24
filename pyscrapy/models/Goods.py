@@ -6,6 +6,7 @@ class Goods(BaseModel):
 
     __tablename__ = 'goods'
     code = Column(String(64), comment='商品编码')
+    asin = Column(String(64), comment='亚马逊商品ASIN')
     category_id = Column(Integer, default=0)
     category_name = Column(String(128), comment='分类名')
     site_id = Column(Integer, default=0)

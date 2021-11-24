@@ -33,7 +33,7 @@ if __name__ == '__main__':
     dirpath = Config.get_logs_dir()
     args = {
         'logs_dir': dirpath,
-        'spider_child': GympluscoffeeSpider.CHILD_GOODS_DETAIL,
+        'spider_child': GympluscoffeeSpider.CHILD_GOODS_LIST,
         'log_id': "",  # "39"
     }
-    Spider.crawl('myprotein', spider_args=args)
+    Spider.crawl('amazon', spider_args=args)

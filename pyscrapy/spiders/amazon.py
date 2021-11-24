@@ -11,6 +11,7 @@ from urllib.parse import urlencode
 from Config import Config
 import re
 from pyscrapy.extracts.amazon import GoodsRankingList as XRankingList, GoodsDetail as XDetail, Goods as XGoods
+from pyscrapy.grabs.amazon import GoodsRankingList as GrabGoodsList, GoodsInRankList
 # from translate import Translator
 
 
@@ -66,49 +67,25 @@ class AmazonSpider(BaseSpider):
             # TODO
             print('check_robot_happened')
             raise RuntimeError('check_robot_happened')
-        goods_eles = response.xpath(XRankingList.xpath_goods_items)
+        grab = GrabGoodsList(response)
+        goods_eles = grab.elements
         rank_in = 1
         for ele in goods_eles:
-            url_ele = ele.xpath(XRankingList.xpath_url)
-            if not url_ele:
-                print('Skip===============================' + str(rank_in))
-                rank_in += 1
+            ele = GoodsInRankList(ele)
+            url = ele.url
+            if not url:
                 continue
-            url = url_ele.get().strip()
-            if not url.startswith("http"):
-                url = self.base_url + url
-
-            code = XGoods.get_code_by_url(url)
-            title = ele.xpath(XRankingList.xpath_goods_title).get()
-            image = ele.xpath(XRankingList.xpath_goods_img).get()
-            review_ele = ele.xpath(XRankingList.xpath_review)
-            reviews_num = 0
-            if review_ele:
-                review_text = review_ele.xpath('text()').get()
-                # print('===================review_text=================')
-                # print(review_text)
-                reviews_num = int(review_text.replace(',', ''))
-
-            model = self.db_session.query(Goods).filter(Goods.site_id == self.site_id, Goods.code == code).first()
-            goods_item = AmazonGoodsItem()
-            # goods_item["url"] = url
-            goods_item["model"] = model
-            goods_item["image"] = image
-            goods_item["code"] = code
-            goods_item["title"] = title
-            goods_item["reviews_num"] = reviews_num
-            goods_item["image_urls"] = [image]
-            details = {'rank_in': rank_in}
-            goods_item["details"] = details
+            goods_item = ele.item
+            goods_item["details"] = {'rank_in': rank_in}
             rank_in += 1
             yield Request(url, callback=self.parse_goods_detail, meta=dict(item=goods_item))
 
-            if response.meta['page'] == 1:
-                yield Request(
-                    response.url.replace('pg=1', 'pg=2'),
-                    callback=self.parse_top_goods_list,
-                    meta=dict(page=2)
-                )
+        if response.meta['page'] == 1:
+            yield Request(
+                response.url.replace('pg=1', 'pg=2'),
+                callback=self.parse_top_goods_list,
+                meta=dict(page=2)
+            )
 
     @staticmethod
     def check_robot_happened(response: TextResponse):

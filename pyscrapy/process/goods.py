@@ -164,14 +164,15 @@ class GoodsAmazon(Base):
                 if key == 'image_paths' and value:
                     attrs['local_image'] = value[0]
                 continue
-            # if key == 'url' and value.startswith('/'):
-            #     value = spider.base_url + value
-            if key == 'details':
-                value = json.dumps(value)
             attrs[key] = value
 
         model: Goods = item['model'] if 'model' in item else None
+        model = self.get_real_model(attrs, model, spider)
         if model:
+            if 'details' in attrs:
+                details = json.loads(model.details)
+                details.update(attrs['details'])
+                attrs['details'] = json.dumps(details)
             opt_str = 'SUCCESS UPDATE id = {} : '.format(str(model.id))
             # for attr_key, attr_value in attrs.items():
             #     setattr(model, attr_key, attr_value)
@@ -179,6 +180,8 @@ class GoodsAmazon(Base):
             # CONCURRENT_REQUESTS （并发请求数） 值过小， 可能导致经常要更新多次的问题
             db_session.query(Goods).filter(Goods.id == model.id).update(attrs)
         else:
+            if 'details' in attrs:
+                attrs['details'] = json.dumps(attrs['details'])
             opt_str = 'SUCCESS ADD '
             model = Goods(**attrs)
             db_session.add(model)
@@ -187,18 +190,6 @@ class GoodsAmazon(Base):
 
 
 class GoodsBase(Base):
-
-    def get_real_model(self, attrs: dict, model: Goods, spider: BaseSpider):
-        # 剔除重复的URL, 防止重复采集
-        if model:
-            return model
-        if 'url' in attrs:
-            model = self.db_session.query(Goods).filter(
-                Goods.url == attrs["url"], Goods.site_id == spider.site_id
-            ).first()
-            if model:
-                print('===Waring!!!=======Skip=URL==: ' + attrs['url'])
-        return model
 
     def process_item(self, item: BaseGoodsItem, spider: BaseSpider):
         if 'spider_name' not in item:
