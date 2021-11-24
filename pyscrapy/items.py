@@ -13,7 +13,8 @@ class BaseGoodsItem(Item):
 
     spider_name = Field()
 
-    code = Field()  # id
+    code = Field()
+    status = Field()
     title = Field()
     url = Field()
     price = Field()

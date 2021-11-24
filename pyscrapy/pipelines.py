@@ -68,11 +68,11 @@ class ImagePipeline(ImagesPipeline):
         return dir_path + os.path.sep + cls.get_guid_by_url(url) + ".jpg"
 
     def get_media_requests(self, item, info: ImagesPipeline.SpiderInfo):
-        # print('=========ImagePipeline=======get_media_requests==========')
+        print('=========ImagePipeline=======get_media_requests====(Download image)======')
         urls = ItemAdapter(item).get(self.images_urls_field, [])  # item['image_urls']
+        print(urls)
         spider = info.spider
         # return [Request(u) for u in urls]
-        print('===========get image url========')
         for image_url in urls:
             meta = None
             if spider.name == 'strongerlabel':
@@ -87,7 +87,7 @@ class ImagePipeline(ImagesPipeline):
 
     def item_completed(self, results, item, info: ImagesPipeline.SpiderInfo):
         print('==========ImagePipeline======item_completed==========')
-        # print(results)
+        print(results)
         # results [] or [(True, {'url': '', 'path': 'dir/file.jpg', 'checksum': '', 'status': 'uptodate'})]
         image_paths = [x['path'] for ok, x in results if ok]
         adapter = ItemAdapter(item)

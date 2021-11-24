@@ -1,14 +1,13 @@
-
 from scrapy.http import TextResponse
 from scrapy import Request
 from pyscrapy.items import BaseGoodsItem
 from pyscrapy.models import Goods
 import json
-# from sqlalchemy import and_, or_
+from sqlalchemy import and_, or_
 import time
 from pyscrapy.spiders.basespider import BaseSpider
 from urllib.parse import urlencode
-# from translate import Translator
+from Config import Config
 
 
 class MyproteinSpider(BaseSpider):
@@ -17,23 +16,32 @@ class MyproteinSpider(BaseSpider):
 
     base_url = "https://www.myprotein.com"
 
-    # custom_settings = {
-    #     # 'DOWNLOAD_DELAY': 3,
-    #     # 'RANDOMIZE_DOWNLOAD_DELAY': True,
-    #     # 'CONCURRENT_REQUESTS_PER_DOMAIN': 1, default 8
-    #     'CONCURRENT_REQUESTS': 16,  # default 16 recommend 5
-    # }
+    custom_settings = {
+        # 'DOWNLOAD_DELAY': 3,
+        # 'RANDOMIZE_DOWNLOAD_DELAY': True,
+        # 'CONCURRENT_REQUESTS_PER_DOMAIN': 1, default 8
+        'CONCURRENT_REQUESTS': 32,  # default 16 recommend 5
+        'IMAGES_STORE': Config.ROOT_PATH + "/runtime/images",
+        'COMPONENTS_NAME_LIST_DENY': [],
+        'SELENIUM_ENABLED': False
+    }
 
     goods_list_urls = [
         "/clothing/mens/view-the-whole-range.list",
-        # "/clothing/womens/view-the-whole-range.list",
-        # "/clothing/soft-accessories.list"
+        "/clothing/womens/view-the-whole-range.list",
+        "/clothing/soft-accessories.list"
     ]
 
     xpath_goods_count = '//p[@class="responsiveProductListHeader_resultsCount"]/text()'
     xpath_last_page = '//a[@class="responsivePaginationButton responsivePageSelector   responsivePaginationButton--last"]/text()'
     xpath_goods_item = '//ul[@class="productListProducts_products"]/li/div[@class="athenaProductBlock"]'
-    xpath_goods_code = '@rel'
+
+    xpath_goods_overview = '//div[@id="product-description-content-2"]/div/div/p[{}]/text()'  # 1 2 3
+    xpath_goods_benefits = '//div[@id="product-description-content-lg-4"]/div/div/ul/li/text()'
+    xpath_goods_range = '//div[@class="productDescription_contentWrapper"][1]/div[2]/div/text()'  # 适用范围类别
+    xpath_goods_title = '//div[@class="athenaProductPage_lastColumn"]//h1[@class="productName_title"]/text()'
+    xpath_goods_price_text = '//div[@class="athenaProductPage_lastColumn"]//p[@class="productPrice_price "]/text()'
+    xpath_goods_price = '//div[@class="athenaProductPage_lastColumn"]//span[@class="productPrice_schema productPrice_priceAmount"]/text()'
 
     def get_goods_count(self, response: TextResponse):
         ele = response.xpath(self.xpath_goods_count)
@@ -53,6 +61,8 @@ class MyproteinSpider(BaseSpider):
 
     def __init__(self, name=None, **kwargs):
         super(MyproteinSpider, self).__init__(name=name, **kwargs)
+        self.domain = self.name + '.com'
+        self.base_url = "https://www." + self.domain
 
     def start_requests(self):
         if self.spider_child == self.CHILD_GOODS_LIST:
@@ -67,15 +77,20 @@ class MyproteinSpider(BaseSpider):
         # TODO 点一次未更新完整，要多点几次。原因未知
         if self.spider_child == self.CHILD_GOODS_DETAIL:
             # 2小时内的采集过的商品不会再更新
-            before_time = time.time() - (2 * 3600)
-            self.goods_model_list = self.db_session.query(Goods).filter(
-                Goods.site_id == self.site_id,
-                Goods.updated_at < before_time
-            ).all()
+            before_time = time.time()
+            if self.app_env == self.spider_config.ENV_PRODUCTION:
+                before_time = time.time() - (2 * 3600)
+            self.goods_model_list = self.db_session.query(Goods).filter(and_(
+                Goods.site_id == self.site_id, or_(
+                    Goods.status == Goods.STATUS_UNKNOWN,
+                    Goods.updated_at < before_time)
+            )).all()
             goods_list_len = len(self.goods_model_list)
-            print(goods_list_len)
+            print('goods_list_len : {}'.format(str(goods_list_len)))
             if goods_list_len > 0:
                 yield self.request_detail(0)
+            else:
+                raise RuntimeError('待更新的商品数量为0, 退出运行')
 
     def request_detail(self, model_index: int):
         model = self.goods_model_list[model_index]
@@ -88,21 +103,47 @@ class MyproteinSpider(BaseSpider):
 
     def parse_goods_detail_page(self, response: TextResponse):
         print('parse_goods_detail_page====================================')
-        item = response.meta['item']
-        try:
-            composition = response.xpath("/text()").get().strip()
-            fabric = composition.split(":")[1].strip()
-            details = item['details']
-            details["fabric"] = fabric
-            item['details'] = details
-        except AttributeError:
-            print("AttributeError: =============================================================")
-        yield item
 
-    @staticmethod
-    def get_product_code(li_id: str):
-        id1 = li_id.split("-")
-        return id1[1]
+        item = BaseGoodsItem()
+
+        model_index = response.meta['model_index']
+        model = self.goods_model_list[model_index]
+        title = response.xpath(self.xpath_goods_title).get().strip()
+        ele = response.xpath(self.xpath_goods_price_text)
+        if ele:
+            price_text = ele.get().strip()
+            price = response.xpath(self.xpath_goods_price).get().strip()
+            item["price_text"] = price_text
+            item['price'] = price
+            item['status'] = Goods.STATUS_AVAILABLE
+        else:
+            item['status'] = Goods.STATUS_SOLD_OUT  # '//button[@class="productAddToBasket productAddToBasket-soldOut"]'
+        overview = []
+        for i in range(1, 6):
+            overview_ele = response.xpath(self.xpath_goods_overview.format(str(i)))
+            if overview_ele:
+                overview.append(overview_ele.get().strip())
+        benefits = []
+        for ele in response.xpath(self.xpath_goods_benefits):
+            benefits.append(ele.get().strip())
+        goods_range = ""
+        ele = response.xpath(self.xpath_goods_range)
+        if ele:
+            goods_range = ele.get().strip()
+        details = json.loads(model.details)
+        details['overview'] = overview
+        details['benefits'] = benefits
+        details['range'] = goods_range
+
+        item['spider_name'] = self.name
+        item["model"] = model
+        item['title'] = title
+
+        item['details'] = details
+        # print(item)
+        yield item
+        if model_index < (len(self.goods_model_list)-1):
+            yield self.request_detail(model_index+1)
 
     def parse_goods_list(self, response: TextResponse):
         page = response.meta['page']

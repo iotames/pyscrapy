@@ -190,7 +190,7 @@ class GoodsBase(Base):
 
     def process_item(self, item: BaseGoodsItem, spider: BaseSpider):
         if 'spider_name' not in item:
-            print('spider_name not in BaseGoodsItem')
+            print('spider_name not in BaseGoodsItem. Skip process_item!!!')
             return False
 
         db_session = self.db_session

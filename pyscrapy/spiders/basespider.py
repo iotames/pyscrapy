@@ -21,6 +21,7 @@ class BaseSpider(Spider):
     site_id: int
     log_id: int
     app_env: str
+    spider_config: SpiderConfig
 
     # 该属性cls静态调用 无法继承覆盖。 必须在继承的类中重写
     custom_settings = {
@@ -68,6 +69,7 @@ class BaseSpider(Spider):
 
         spider_config = SpiderConfig()
         self.app_env = spider_config.get_config().get("env")
+        self.spider_config = spider_config
 
         # 检查是否传入 log_id 参数
         self.log_id = 0
@@ -98,6 +100,7 @@ class BaseSpider(Spider):
         log = self.db_session.query(SpiderRunLog).filter(SpiderRunLog.id == log_id).first()
         if log:
             log.datetime = now_datetime
+            log.status = SpiderRunLog.STATUS_RUNNING
         else:
             logattr["status"] = SpiderRunLog.STATUS_RUNNING
             log = SpiderRunLog(**logattr)
