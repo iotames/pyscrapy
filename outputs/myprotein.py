@@ -13,7 +13,8 @@ class MyproteinOutput(BaseOutput):
     def output(self):
         sheet = self.work_sheet
         # sheet.sheet_format.defaultRowHeight = 30
-        title_row = ('商品ID', 'code', '图片', '商品标题', '商品链接', '上架时间', '更新时间', '价格/US$', '评论数', '大类排名', '商品描述', '排名')
+        title_row = ('商品ID', 'code', '图片', '分类', '商品标题', '商品链接', '更新时间', '价格/£', '评论数', '状态',
+                     '品牌', '评分', '应用范围', '商品概述', '商品特性')
         title_col = 1
         for title in title_row:
             sheet.cell(1, title_col, title)
@@ -29,22 +30,23 @@ class MyproteinOutput(BaseOutput):
             if goods.local_image:
                 image = self.get_image_info(goods.local_image)
             details = json.loads(goods.details)
-
-            sale_at = details['sale_at']
-
-            root_rank = details['root_rank']
+            brand = details['brand']
+            rating_value = details['rating_value']
+            goods_range = details['range'] if 'range' in details else ''
+            overview = ''
+            if 'overview' in details:
+                for oview in details['overview']:
+                    overview += oview + '\n'
+            benefits = ''
+            if 'benefits' in details:
+                for benefit in details['benefits']:
+                    benefits += benefit + "\n"
             goods_url = goods.url
-            rank_list = details['rank_list']
-            rank_detail = ''
-            for rank in rank_list:
-                # AmazonSpider.get_site_url(rank['url'])
-                rank_detail += rank['category_text'] + " : " + rank['rank_text'] + '\n|'
-            details_items = ""
-            for item in details['items']:
-                details_items += item + "\n|"
+
             goods_info_list = [
-                goods.id, goods.code, image, goods.title, goods_url, sale_at, time_str, goods.price,
-                goods.reviews_num, root_rank, details_items, rank_detail
+                goods.id, goods.code, image, goods.category_name, goods.title, goods_url, time_str, goods.price,
+                goods.reviews_num, Goods.statuses_map[goods.status], brand, rating_value,
+                goods_range, overview, benefits
             ]
             print('================')
             print(goods_info_list)

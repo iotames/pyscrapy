@@ -12,6 +12,7 @@ class BaseGoodsItem(Item):
     model = Field()
 
     spider_name = Field()
+    category_name = Field()
 
     code = Field()
     status = Field()

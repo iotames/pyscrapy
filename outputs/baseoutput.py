@@ -1,3 +1,4 @@
+import PIL
 from openpyxl import Workbook, load_workbook
 from openpyxl.worksheet.worksheet import Worksheet
 from Config import Config
@@ -59,11 +60,15 @@ class BaseOutput:
             if isinstance(cell_value, dict):
                 if cell_value['type'] == Image:
                     # print('===========================================Image===' + cell_value['path'])
-                    image = Image(cell_value['path'])
-                    image.width, image.height = cell_value['size']
-                    image.anchor = get_column_letter(start_col) + str(row_index)
-                    print(image.anchor)
-                    sheet.add_image(image)
+                    try:
+                        image = Image(cell_value['path'])
+                        image.width, image.height = cell_value['size']
+                        image.anchor = get_column_letter(start_col) + str(row_index)
+                        print(image.anchor)
+                        sheet.add_image(image)
+                    except PIL.UnidentifiedImageError as e:
+                        sheet.cell(row_index, start_col, '')
+
                 if cell_value['type'] == str:
                     sheet.cell(row_index, start_col, cell_value['path'])
             else:

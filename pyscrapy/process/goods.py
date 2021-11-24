@@ -188,6 +188,18 @@ class GoodsAmazon(Base):
 
 class GoodsBase(Base):
 
+    def get_real_model(self, attrs: dict, model: Goods, spider: BaseSpider):
+        # 剔除重复的URL, 防止重复采集
+        if model:
+            return model
+        if 'url' in attrs:
+            model = self.db_session.query(Goods).filter(
+                Goods.url == attrs["url"], Goods.site_id == spider.site_id
+            ).first()
+            if model:
+                print('===Waring!!!=======Skip=URL==: ' + attrs['url'])
+        return model
+
     def process_item(self, item: BaseGoodsItem, spider: BaseSpider):
         if 'spider_name' not in item:
             print('spider_name not in BaseGoodsItem. Skip process_item!!!')
@@ -206,6 +218,9 @@ class GoodsBase(Base):
             attrs[key] = value
 
         model: Goods = item['model'] if 'model' in item else None
+        # 剔除重复的URL, 防止重复采集
+        if spider.spider_child == spider.CHILD_GOODS_LIST:
+            model = self.get_real_model(attrs, model, spider)
         if model:
             opt_str = 'SUCCESS UPDATE id = {} : '.format(str(model.id))
             # for attr_key, attr_value in attrs.items():
