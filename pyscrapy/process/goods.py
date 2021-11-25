@@ -98,12 +98,11 @@ class GoodsGympluscoffee(Base):
                 continue
             if key == 'url' and value.startswith('/'):
                 value = spider.base_url + value
-            if key == 'details':
-                value = json.dumps(value)
             attrs[key] = value
 
         model: Goods = item['model'] if 'model' in item else None
         if model:
+            self.update_details(attrs, model)
             opt_str = 'SUCCESS UPDATE id = {} : '.format(str(model.id))
             # for attr_key, attr_value in attrs.items():
             #     setattr(model, attr_key, attr_value)
@@ -111,6 +110,7 @@ class GoodsGympluscoffee(Base):
             # CONCURRENT_REQUESTS （并发请求数） 值过小， 可能导致经常要更新多次的问题
             db_session.query(Goods).filter(Goods.id == model.id).update(attrs)
         else:
+            self.update_details(attrs)
             opt_str = 'SUCCESS ADD '
             model = Goods(**attrs)
             db_session.add(model)
@@ -130,14 +130,11 @@ class GoodsSweatybetty(Base):
                 if key == 'image_paths' and value:
                     attrs['local_image'] = value[0]
                 continue
-            # if key == 'url' and value.startswith('/'):
-            #     value = spider.base_url + value
-            if key == 'details':
-                value = json.dumps(value)
             attrs[key] = value
 
         model: Goods = item['model'] if 'model' in item else None
         if model:
+            self.update_details(attrs, model)
             opt_str = 'SUCCESS UPDATE id = {} : '.format(str(model.id))
             # for attr_key, attr_value in attrs.items():
             #     setattr(model, attr_key, attr_value)
@@ -145,6 +142,7 @@ class GoodsSweatybetty(Base):
             # CONCURRENT_REQUESTS （并发请求数） 值过小， 可能导致经常要更新多次的问题
             db_session.query(Goods).filter(Goods.id == model.id).update(attrs)
         else:
+            self.update_details(attrs)
             opt_str = 'SUCCESS ADD '
             model = Goods(**attrs)
             db_session.add(model)
@@ -169,10 +167,7 @@ class GoodsAmazon(Base):
         model: Goods = item['model'] if 'model' in item else None
         model = self.get_real_model(attrs, model, spider)
         if model:
-            if 'details' in attrs:
-                details = json.loads(model.details)
-                details.update(attrs['details'])
-                attrs['details'] = json.dumps(details)
+            self.update_details(attrs, model)
             opt_str = 'SUCCESS UPDATE id = {} : '.format(str(model.id))
             # for attr_key, attr_value in attrs.items():
             #     setattr(model, attr_key, attr_value)
@@ -180,8 +175,7 @@ class GoodsAmazon(Base):
             # CONCURRENT_REQUESTS （并发请求数） 值过小， 可能导致经常要更新多次的问题
             db_session.query(Goods).filter(Goods.id == model.id).update(attrs)
         else:
-            if 'details' in attrs:
-                attrs['details'] = json.dumps(attrs['details'])
+            self.update_details(attrs)
             opt_str = 'SUCCESS ADD '
             model = Goods(**attrs)
             db_session.add(model)
@@ -204,8 +198,6 @@ class GoodsBase(Base):
                 if key == 'image_paths' and value:
                     attrs['local_image'] = value[0]
                 continue
-            if key == 'details':
-                value = json.dumps(value)
             attrs[key] = value
 
         model: Goods = item['model'] if 'model' in item else None
@@ -213,6 +205,7 @@ class GoodsBase(Base):
         if spider.spider_child == spider.CHILD_GOODS_LIST:
             model = self.get_real_model(attrs, model, spider)
         if model:
+            self.update_details(attrs, model)
             opt_str = 'SUCCESS UPDATE id = {} : '.format(str(model.id))
             # for attr_key, attr_value in attrs.items():
             #     setattr(model, attr_key, attr_value)
@@ -220,6 +213,7 @@ class GoodsBase(Base):
             # CONCURRENT_REQUESTS （并发请求数） 值过小， 可能导致经常要更新多次的问题
             db_session.query(Goods).filter(Goods.id == model.id).update(attrs)
         else:
+            self.update_details(attrs)
             opt_str = 'SUCCESS ADD '
             model = Goods(**attrs)
             db_session.add(model)

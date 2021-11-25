@@ -30,22 +30,33 @@ class GoodsDetail(object):
     xpath_goods_price = '//div[@class="a-section a-spacing-small"]//span[@class="a-price a-text-price a-size-medium apexPriceToPay"]/span[1]/text()'
     xpath_goods_detail_items = '//ul[@class="a-unordered-list a-vertical a-spacing-mini"]/li/span/text()'
     xpath_goods_rank_detail = '//div[@id="detailBulletsWrapper_feature_div"]/ul[1]/li/span'
-    re_goods_rank_in_root = r"商品里排第(.+?)名"
+    re_goods_rank_num = r"商品里排第(.+?)名"
+    re_root_category_name = r">查看商品销售排行榜(.+?)<"
+
+    @classmethod
+    def get_rank_num(cls, text: str) -> int:
+        print(text)
+        rank_info = re.findall(cls.re_goods_rank_num, text)
+        print(rank_info)
+        if not rank_info:
+            return 0
+        rank_text = rank_info[0]
+        return int(rank_text.replace(',', ''))
+
+    @classmethod
+    def get_root_category_name(cls, text: str) -> str:
+        info = re.findall(cls.re_root_category_name, text)
+        if not info:
+            return ''
+        return info[0]
 
     @classmethod
     def get_rank_num_in_root(cls, text: str) -> int:
         print('====get_rank_num_in_root=======================================')
-        root_rank_info = re.findall(cls.re_goods_rank_in_root, text)
-        print(root_rank_info)
-        if not root_rank_info:
-            return 0
-        rank_text = root_rank_info[0]
-        rank_num = int(rank_text.replace(',', ''))
-        print(rank_num)
-        return rank_num
+        return cls.get_rank_num(text)
 
     @classmethod
-    def get_goods_rank_list(cls, response: TextResponse):
+    def get_goods_rank_list(cls, response: TextResponse) -> list:
         print('======get_goods_rank_list============================')
         xpath_eles = cls.xpath_goods_rank_detail + '/ul/li'
         eles = response.xpath(xpath_eles)
@@ -53,10 +64,13 @@ class GoodsDetail(object):
             return []
         data = []
         for ele in eles:
-            rank_text = ele.xpath('span/text()').get().strip()  # 商品里排第19名
             category_text = ele.xpath('span/a/text()').get().strip()  # 女士运动裙裤
+            rank_text = ele.xpath('span/text()').get().strip()  # 商品里排第19名
+            print(category_text)
+            print(rank_text)
             url = ele.xpath('span/a/@href').get()  # /-/zh/gp/bestsellers/fashion/2211990011/ref=pd_zg_hrsr_fashion
-            data.append({'rank_text': rank_text, 'category_text': category_text, 'url': url})
+            rank_data = {'rank_num': cls.get_rank_num(rank_text), 'rank_text': rank_text, 'category_text': category_text, 'url': url}
+            data.append(rank_data)
         return data
 
     @staticmethod

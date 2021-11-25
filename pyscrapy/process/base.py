@@ -4,6 +4,7 @@ from Config import Config
 from service import Singleton
 from pyscrapy.models import Goods
 from pyscrapy.spiders import BaseSpider
+import json
 
 
 class Base(Singleton):
@@ -27,3 +28,14 @@ class Base(Singleton):
             if model:
                 print('===Waring!!!====URL EXISTS===Skip=URL==: ' + attrs['url'])
         return model
+
+    @staticmethod
+    def update_details(attrs: dict, model=None):
+        if 'details' in attrs:
+            if model:
+                details = json.loads(model.details)
+                details.update(attrs['details'])
+                attrs['details'] = json.dumps(details)
+            if not model:
+                attrs['details'] = json.dumps(attrs['details'])
+
