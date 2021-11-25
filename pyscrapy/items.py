@@ -115,6 +115,8 @@ class AmazonGoodsItem(Item):
     image_paths = Field()
     model = Field()
 
+    asin = Field()
+
     code = Field()  # id
     title = Field()
     url = Field()
@@ -123,6 +125,17 @@ class AmazonGoodsItem(Item):
     image = Field()
     details = Field()
     reviews_num = Field()
+
+
+class GoodsReviewItem(Item):
+    goods_id = Field()
+    rating_value = Field()
+    title = Field()
+    sku_text = Field()
+    url = Field()
+    color = Field()
+    review_time = Field()
+    body = Field()
 
 
 class PyscrapyItem(Item):

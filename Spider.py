@@ -1,5 +1,5 @@
 from scrapy import cmdline
-from pyscrapy.spiders import GympluscoffeeSpider, StrongerlabelSpider
+from pyscrapy.spiders import GympluscoffeeSpider, StrongerlabelSpider, AmazonSpider
 from Config import Config
 from service import DB
 from pyscrapy.models import Table
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     dirpath = Config.get_logs_dir()
     args = {
         'logs_dir': dirpath,
-        'spider_child': GympluscoffeeSpider.CHILD_GOODS_LIST,
+        'spider_child': AmazonSpider.CHILD_GOODS_REVIEWS,
         'log_id': "",  # "39"
     }
     Spider.crawl('amazon', spider_args=args)

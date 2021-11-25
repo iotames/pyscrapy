@@ -10,6 +10,8 @@ import threading
 class Singleton(object):
     _instance_lock = threading.Lock()
 
+    meta = {}
+
     def __init__(self, *args, **kwargs):
         pass
 

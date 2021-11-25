@@ -34,6 +34,13 @@ class GoodsDetail(object):
     re_root_category_name = r">查看商品销售排行榜(.+?)<"
 
     @classmethod
+    def get_rank_html(cls, response: TextResponse) -> str:
+        rank_ele = response.xpath(cls.xpath_goods_rank_detail)
+        if rank_ele:
+            return response.xpath(cls.xpath_goods_rank_detail + '[contains(string(),"")]').get()
+        return ''
+
+    @classmethod
     def get_rank_num(cls, text: str) -> int:
         print(text)
         rank_info = re.findall(cls.re_goods_rank_num, text)
@@ -111,14 +118,62 @@ class GoodsReviews(object):
     商品评论解析类
     """
 
-    @staticmethod
-    def get_simple_reviews_url(url, page=1):
+    reviews_url = BASE_URL + "/product-reviews/{}"
+    reviews_url_more = reviews_url + '/ref=cm_cr_arp_d_paging_btm_next_{}?pageNumber={}'
+
+    xpath_reviews_count = '//*[@id="filter-info-section"]/div/span/text()'
+    xpath_reviews_items = '//div[@class="a-section review aok-relative"]'
+    xpath_reviews_sku = 'div/div/div[3]/a/text()'
+    xpath_reviews_rating = 'div/div/div[2]/a[1]/@title'
+    xpath_reviews_title = 'div/div/div[2]/a[2]/text()'
+    xpath_reviews_url = 'div/div/div[2]/a[2]/@href'
+    xpath_reviews_title_no_a = 'div/div/div[2]/span[2]/span[1]'
+    xpath_review_body = 'div/div/div[@class="a-row a-spacing-small review-data"]/span/span/text()'
+
+    @classmethod
+    def get_simple_reviews_url(cls, url, page=1):
         re_text = r"product-reviews/(.+?)/"
         urls = re.findall(re_text, url)
         asin = urls[0]
-        result_url = BASE_URL + '/product-reviews/' + asin
+        result_url = cls.reviews_url.format(asin)
         if page > 1:
             page_str = str(page)
-            result_url = result_url + '/ref=cm_cr_arp_d_paging_btm_next_{}?pageNumber={}'.format(page_str, page_str)
+            result_url = cls.reviews_url_more.format(asin, page_str, page_str)
         return result_url
+
+    @classmethod
+    def get_reviews_url_by_asin(cls, asin, page=1, language='zh_CN') -> str:
+        url = cls.reviews_url.format(asin) + "?language=" + language
+        if page > 1:
+            pgstr = str(page)
+            url = cls.reviews_url_more.format(asin, pgstr, pgstr) + "&language=" + language
+        return url
+
+    @classmethod
+    def get_color_in_sku_text(cls, sku, lang='cn'):
+        lang_color = '颜色:'
+        lang_size = '尺寸:'
+        if lang == 'en':
+            lang_color = 'Color:'
+            lang_size = 'Size:'
+        color_index = sku.find(lang_color)
+        color = ''
+        if color_index < 0:
+            # 没有出现颜色
+            return ''
+        if color_index > 0:
+            # 颜色不在起始位
+            colors = sku.split(lang_color)
+            color = colors[1].strip()
+        if color_index == 0:
+            # 颜色在起始位
+            if sku.find(lang_size) < 0:
+                colors = sku.split(lang_color)
+                color = colors[1].strip()
+            if sku.find(lang_size) > 0:
+                colors = sku.split(lang_size)
+                sku = colors[0].strip()
+                colors = sku.split(lang_color)
+                color = colors[1].strip()
+        return color
 
