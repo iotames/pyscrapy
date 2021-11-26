@@ -8,7 +8,7 @@
 from itemadapter import ItemAdapter
 from scrapy.settings import Settings
 from .items import GympluscoffeeGoodsItem, GympluscoffeeCategoryItem, StrongerlabelGoodsItem, \
-    GympluscoffeeGoodsSkuItem, SweatybettyGoodsItem, AmazonGoodsItem, BaseGoodsItem
+    GympluscoffeeGoodsSkuItem, SweatybettyGoodsItem, AmazonGoodsItem, BaseGoodsItem, GoodsReviewAmazonItem
 from scrapy import Item, Request
 from scrapy.pipelines.images import ImagesPipeline
 # from scrapy.exceptions import DropItem
@@ -18,6 +18,7 @@ import os
 from pyscrapy.process.goods import GoodsStrongerlabel, GoodsGympluscoffee, GoodsSweatybetty, GoodsAmazon, GoodsBase
 from pyscrapy.process.category import CategoryGympluscoffee
 from pyscrapy.process.goods_sku import SkuGympluscoffee
+from pyscrapy.process.goods_review import ReviewAmazon
 
 process_map = {
     StrongerlabelGoodsItem: GoodsStrongerlabel.get_instance(),
@@ -26,7 +27,8 @@ process_map = {
     GympluscoffeeGoodsSkuItem: SkuGympluscoffee.get_instance(),
     SweatybettyGoodsItem: GoodsSweatybetty(),
     AmazonGoodsItem: GoodsAmazon(),
-    BaseGoodsItem: GoodsBase()
+    BaseGoodsItem: GoodsBase(),
+    GoodsReviewAmazonItem: ReviewAmazon()
 }
 
 

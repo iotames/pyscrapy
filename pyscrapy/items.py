@@ -134,8 +134,12 @@ class GoodsReviewItem(Item):
     sku_text = Field()
     url = Field()
     color = Field()
-    review_time = Field()
+    review_date = Field()
     body = Field()
+
+
+class GoodsReviewAmazonItem(GoodsReviewItem):
+    code = Field()
 
 
 class PyscrapyItem(Item):

@@ -9,6 +9,11 @@ class AmazonGoodsDetail(BasePage):
     __rank_html = None
 
     @property
+    def title(self):
+        print('get text  title title')
+        return self.get_text(XDetail.xpath_goods_title)
+
+    @property
     def price_text(self) -> str:
         ele = self.response.xpath(XDetail.xpath_goods_price)
         if not ele:
@@ -78,11 +83,16 @@ class AmazonGoodsDetail(BasePage):
             item = AmazonGoodsItem()
 
         ele = cls(response)
+        item['url'] = response.url
+        item['title'] = ele.title
         item['price_text'] = ele.price_text
         item['price'] = ele.price
 
         if 'asin' not in item:
             item['asin'] = ele.asin
+
+        # if 'code' not in item:
+        #     item['code'] = ele.asin
 
         details = {}
         if 'details' in item:
@@ -91,7 +101,6 @@ class AmazonGoodsDetail(BasePage):
         details['items'] = ele.details_items
         details['sale_at'] = ele.sale_at_text
         details['asin'] = ele.asin
-
         details['rank_list'] = ele.rank_list
         details['root_rank'] = ele.root_category_rank_num
         details['root_category_name'] = ele.root_category_name

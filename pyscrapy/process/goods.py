@@ -5,7 +5,7 @@ import datetime
 import time
 import json
 from .base import Base
-from service.Singleton import Singleton
+# from service.Singleton import Singleton
 
 
 def add_or_update_goods_quantity_log(model: Goods, log_id: int, db_session):
@@ -181,7 +181,6 @@ class GoodsAmazon(Base):
             model = Goods(**attrs)
             db_session.add(model)
         db_session.commit()
-        Singleton.get_instance().meta['goods_id'] = model.id
         print(opt_str + ' GOODS : ' + json.dumps(attrs))
 
 

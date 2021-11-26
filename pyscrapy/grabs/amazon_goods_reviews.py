@@ -1,7 +1,8 @@
 from scrapy.http import TextResponse
 from pyscrapy.extracts.amazon import GoodsReviews as XReviews
 from pyscrapy.grabs.amazon import BasePage
-from pyscrapy.items import GoodsReviewItem
+from pyscrapy.grabs.basegrab import BaseElement
+from pyscrapy.items import GoodsReviewAmazonItem
 from pyscrapy.models import Goods as GoodsModel
 from scrapy import Request
 
@@ -41,67 +42,94 @@ class AmazonGoodsReviews(BasePage):
 
     @classmethod
     def parse(cls, response: TextResponse):
+        meta = response.meta
+        page = meta['page'] if 'page' in meta else 1
+        print('===============page : ' + str(page))
         if cls.check_robot_happened(response):
             return False
-        meta = response.meta
 
         if 'item' in meta:
             item = response.meta['item']
         else:
-            item = GoodsReviewItem()
-
-        page = meta['page'] if 'page' in meta else 1
-        # if 'page' in meta:
-        #     page = meta['page']
+            item = GoodsReviewAmazonItem()
 
         goods_id = meta['goods_id'] if 'goods_id' in meta else 0
-        # if 'goods_id' in meta:
-        #     goods_id = meta['goods_id']
 
         page_ele = cls(response)
         reviews_num = page_ele.reviews_count
         total_page = int(reviews_num / 10) + 1
         eles = page_ele.elements
         for ele in eles:
+            review = GoodsReview(ele)
             item['goods_id'] = goods_id
-            rating_ele = ele.xpath(XReviews.xpath_reviews_rating)
-            rating_value = 0
-            if rating_ele:
-                rating_value = int(rating_ele.get().split('.')[0])
-            title = ''
-            title_ele = ele.xpath(XReviews.xpath_reviews_title)
-            if title_ele:
-                title = title_ele.get().strip()
-            sku_text = ''
-            sku_ele = ele.xpath(XReviews.xpath_reviews_sku)
-            if sku_ele:
-                sku_text = sku_ele.get().strip()
-            body = ''
-            body_ele = ele.xpath(XReviews.xpath_review_body)
-            if body_ele:
-                body = body_ele.get().strip()
-            # TODO 封装 ele 判断和获取text
-            url = ''
-            url_ele = ele.xpath(XReviews.xpath_reviews_url)
-            if url_ele:
-                url = url_ele.get().strip()
-            color = ''
-            if sku_text:
-                color = XReviews.get_color_in_sku_text(sku_text)
-            review_time = ''
-            item['rating_value'] = rating_value
-            item['title'] = title
-            item['sku_text'] = sku_text
-            item['body'] = body
-            print(item)
+            item['code'] = review.code
+            item['rating_value'] = review.rating_value
+            item['title'] = review.title
+            item['sku_text'] = review.sku_text
+            item['body'] = review.body
+            item['review_date'] = review.review_date
+            item['url'] = review.url
+            item['color'] = review.color
             yield item
+
+        print('===============total_page : ' + str(total_page))
         if page < total_page:
+            next_page = page+1
+            print('==================next page : ' + str(next_page))
             asin = meta['asin']
-            next_url = XReviews.get_reviews_url_by_asin(asin, (page+1))
+            next_url = XReviews.get_reviews_url_by_asin(asin, next_page)
             yield Request(
                 next_url,
                 cls.parse,
-                meta=dict(goods_id=goods_id, asin=asin)
+                meta=dict(goods_id=goods_id, asin=asin, page=next_page)
             )
 
+
+class GoodsReview(BaseElement):
+
+    @property
+    def code(self):
+        return self.get_text(XReviews.xpath_review_id)
+
+    @property
+    def title(self):
+        title1 = self.get_text(XReviews.xpath_review_title)
+        if title1:
+            return title1
+        return self.get_text(XReviews.xpath_review_title_no_a)
+
+    @property
+    def sku_text(self):
+        return self.get_text(XReviews.xpath_review_sku)
+
+    @property
+    def body(self):
+        return self.get_text(XReviews.xpath_review_body)
+
+    @property
+    def rating_value(self):
+        text = self.get_text(XReviews.xpath_review_rating)
+        if text:
+            return int(text.split('.')[0])
+        return 0
+
+    @property
+    def url(self):
+        return self.get_text(XReviews.xpath_review_url)
+
+    @property
+    def review_date(self):
+        text = self.get_text(XReviews.xpath_review_date)
+        if text:
+            tt = text.split(' ')
+            if len(tt) > 1:
+                return tt[0].strip()
+        return ''
+
+    @property
+    def color(self):
+        sku_text = self.sku_text
+        if sku_text:
+            return XReviews.get_color_in_sku_text(sku_text)
+        return ''
 

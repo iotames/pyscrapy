@@ -27,6 +27,7 @@ class GoodsDetail(object):
     商品详情数据解析类
     """
 
+    xpath_goods_title = '//*[@id="productTitle"]/text()'
     xpath_goods_price = '//div[@class="a-section a-spacing-small"]//span[@class="a-price a-text-price a-size-medium apexPriceToPay"]/span[1]/text()'
     xpath_goods_detail_items = '//ul[@class="a-unordered-list a-vertical a-spacing-mini"]/li/span/text()'
     xpath_goods_rank_detail = '//div[@id="detailBulletsWrapper_feature_div"]/ul[1]/li/span'
@@ -122,13 +123,16 @@ class GoodsReviews(object):
     reviews_url_more = reviews_url + '/ref=cm_cr_arp_d_paging_btm_next_{}?pageNumber={}'
 
     xpath_reviews_count = '//*[@id="filter-info-section"]/div/span/text()'
+
     xpath_reviews_items = '//div[@class="a-section review aok-relative"]'
-    xpath_reviews_sku = 'div/div/div[3]/a/text()'
-    xpath_reviews_rating = 'div/div/div[2]/a[1]/@title'
-    xpath_reviews_title = 'div/div/div[2]/a[2]/text()'
-    xpath_reviews_url = 'div/div/div[2]/a[2]/@href'
-    xpath_reviews_title_no_a = 'div/div/div[2]/span[2]/span[1]'
+    xpath_review_id = '@id'
+    xpath_review_sku = 'div/div/div[3]/a/text()'
+    xpath_review_rating = 'div/div/div[2]/a[1]/@title'
+    xpath_review_title = 'div/div/div[2]/a[2]/text()'
+    xpath_review_url = 'div/div/div[2]/a[2]/@href'
+    xpath_review_title_no_a = 'div/div/div[2]/span[2]/span[1]/text()'
     xpath_review_body = 'div/div/div[@class="a-row a-spacing-small review-data"]/span/span/text()'
+    xpath_review_date = 'div//span[@class="a-size-base a-color-secondary review-date"]/text()'
 
     @classmethod
     def get_simple_reviews_url(cls, url, page=1):

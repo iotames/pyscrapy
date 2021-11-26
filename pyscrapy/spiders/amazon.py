@@ -14,7 +14,7 @@ from pyscrapy.grabs.amazon_goods_list import GoodsRankingList
 from pyscrapy.grabs.amazon_goods import AmazonGoodsDetail
 from pyscrapy.grabs.amazon_goods_reviews import AmazonGoodsReviews
 from pyscrapy.extracts.amazon import Goods as XGoods, GoodsReviews as XGoodsReviews
-from service.Singleton import Singleton
+# from service.Singleton import Singleton
 
 # from translate import Translator
 
@@ -29,7 +29,7 @@ class AmazonSpider(BaseSpider):
         'DOWNLOAD_DELAY': 3,
         'RANDOMIZE_DOWNLOAD_DELAY': True,
         'COOKIES_ENABLED': False,
-        'CONCURRENT_REQUESTS_PER_DOMAIN': 4,  # default 8
+        'CONCURRENT_REQUESTS_PER_DOMAIN': 1,  # default 8
         'CONCURRENT_REQUESTS': 1,  # default 16 recommend 5-8
         'IMAGES_STORE': Config.ROOT_PATH + "/runtime/images",
         'COMPONENTS_NAME_LIST_DENY': [],
@@ -72,19 +72,18 @@ class AmazonSpider(BaseSpider):
         if self.spider_child == self.CHILD_GOODS_REVIEWS:
             asin = "B08Q82QYSV"
             goods_url = XGoods.get_url_by_code(asin, self.url_params)
-            yield Request(
-                goods_url,
-                callback=AmazonGoodsDetail.parse,
-                headers=dict(referer=self.base_url)
-            )
-            time.sleep(5)
-            goods_id = Singleton.get_instance().meta['goods_id']  # KeyError: 'goods_id'
+            # yield Request(
+            #     goods_url,
+            #     callback=AmazonGoodsDetail.parse,
+            #     headers=dict(referer=self.base_url)
+            # )
+            # time.sleep(5)
             reviews_url = XGoodsReviews.get_reviews_url_by_asin(asin)
             yield Request(
                 reviews_url,
                 callback=AmazonGoodsReviews.parse,
                 headers=dict(referer=goods_url),
-                meta=dict(goods_id=goods_id, asin=asin)
+                meta=dict(asin=asin, goods_id=40)  # goods_id=goods_id
             )
 
 
