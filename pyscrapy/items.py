@@ -129,6 +129,7 @@ class AmazonGoodsItem(Item):
 
 class GoodsReviewItem(Item):
     goods_id = Field()
+    goods_code = Field()
     rating_value = Field()
     title = Field()
     sku_text = Field()

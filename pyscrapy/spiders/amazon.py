@@ -72,18 +72,19 @@ class AmazonSpider(BaseSpider):
         if self.spider_child == self.CHILD_GOODS_REVIEWS:
             asin = "B08Q82QYSV"
             goods_url = XGoods.get_url_by_code(asin, self.url_params)
-            # yield Request(
-            #     goods_url,
-            #     callback=AmazonGoodsDetail.parse,
-            #     headers=dict(referer=self.base_url)
-            # )
-            # time.sleep(5)
+
+            yield Request(
+                goods_url,
+                callback=AmazonGoodsDetail.parse,
+                headers=dict(referer=self.base_url)
+            )
+
             reviews_url = XGoodsReviews.get_reviews_url_by_asin(asin)
             yield Request(
                 reviews_url,
                 callback=AmazonGoodsReviews.parse,
                 headers=dict(referer=goods_url),
-                meta=dict(asin=asin, goods_id=40)  # goods_id=goods_id
+                meta=dict(asin=asin, goods_code=asin)  # goods_id=goods_id
             )
 
 

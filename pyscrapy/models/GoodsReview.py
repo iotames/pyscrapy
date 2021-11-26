@@ -9,6 +9,7 @@ class GoodsReview(BaseModel):
     site_id = Column(Integer, default=0)
     goods_id = Column(Integer, default=0)
     code = Column(String(64), comment='评论ID')
+    goods_code = Column(String(64), comment='商品编码')
     rating_value = Column(Integer, default=0, comment='评分星级1-5')
     title = Column(String(255), comment='评论标题')
     sku_text = Column(String(128), comment='颜色规格')

@@ -44,6 +44,7 @@ class AmazonGoodsReviews(BasePage):
     def parse(cls, response: TextResponse):
         meta = response.meta
         page = meta['page'] if 'page' in meta else 1
+        asin = meta['asin']
         print('===============page : ' + str(page))
         if cls.check_robot_happened(response):
             return False
@@ -62,6 +63,7 @@ class AmazonGoodsReviews(BasePage):
         for ele in eles:
             review = GoodsReview(ele)
             item['goods_id'] = goods_id
+            item['goods_code'] = asin
             item['code'] = review.code
             item['rating_value'] = review.rating_value
             item['title'] = review.title
@@ -76,7 +78,6 @@ class AmazonGoodsReviews(BasePage):
         if page < total_page:
             next_page = page+1
             print('==================next page : ' + str(next_page))
-            asin = meta['asin']
             next_url = XReviews.get_reviews_url_by_asin(asin, next_page)
             yield Request(
                 next_url,
@@ -100,6 +101,11 @@ class GoodsReview(BaseElement):
 
     @property
     def sku_text(self):
+        ele = self.element.xpath(XReviews.xpath_review_sku)
+        if ele:
+            elex = ele.xpath('string(.)')
+            if elex:
+                return elex.extract()[0]  # .get()
         return self.get_text(XReviews.xpath_review_sku)
 
     @property

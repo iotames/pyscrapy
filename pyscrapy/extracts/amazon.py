@@ -126,9 +126,9 @@ class GoodsReviews(object):
 
     xpath_reviews_items = '//div[@class="a-section review aok-relative"]'
     xpath_review_id = '@id'
-    xpath_review_sku = 'div/div/div[3]/a/text()'
+    xpath_review_sku = 'div/div/div[3]/a'
     xpath_review_rating = 'div/div/div[2]/a[1]/@title'
-    xpath_review_title = 'div/div/div[2]/a[2]/text()'
+    xpath_review_title = 'div/div/div[2]/a[2]/span/text()'
     xpath_review_url = 'div/div/div[2]/a[2]/@href'
     xpath_review_title_no_a = 'div/div/div[2]/span[2]/span[1]/text()'
     xpath_review_body = 'div/div/div[@class="a-row a-spacing-small review-data"]/span/span/text()'
