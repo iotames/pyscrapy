@@ -6,7 +6,7 @@ import json
 from sqlalchemy import and_, or_
 import time
 from pyscrapy.spiders.basespider import BaseSpider
-from urllib.parse import urlencode
+from pyscrapy.grabs.basegrab import BaseResponse, BaseElement
 from Config import Config
 
 
@@ -43,6 +43,8 @@ class MyproteinSpider(BaseSpider):
     xpath_goods_title = '//div[@class="athenaProductPage_lastColumn"]//h1[@class="productName_title"]/text()'
     xpath_goods_price_text = '//div[@class="athenaProductPage_lastColumn"]//p[@class="productPrice_price "]/text()'
     xpath_goods_price = '//div[@class="athenaProductPage_lastColumn"]//span[@class="productPrice_schema productPrice_priceAmount"]/text()'
+    xpath_goods_price_rr_text = '//div[@class="athenaProductPage_lastColumn"]//p[@class="productPrice_rrp"]/text()'
+    xpath_goods_price_saving_text = '//div[@class="athenaProductPage_lastColumn"]//p[@class="productPrice_savingAmount"]/text()'
 
     def get_goods_count(self, response: TextResponse):
         ele = response.xpath(self.xpath_goods_count)
@@ -108,11 +110,11 @@ class MyproteinSpider(BaseSpider):
         item = BaseGoodsItem()
 
         model = response.meta['model']
-        title = response.xpath(self.xpath_goods_title).get().strip()
-        ele = response.xpath(self.xpath_goods_price_text)
-        if ele:
-            price_text = ele.get().strip()
-            price = response.xpath(self.xpath_goods_price).get().strip()
+        page_ele = BaseResponse(response)
+        title = page_ele.get_text(self.xpath_goods_title)
+        price_text = page_ele.get_text(self.xpath_goods_price_text)
+        if price_text:
+            price = page_ele.get_text(self.xpath_goods_price)
             item["price_text"] = price_text
             item['price'] = price
             item['status'] = Goods.STATUS_AVAILABLE
@@ -120,11 +122,10 @@ class MyproteinSpider(BaseSpider):
             item['status'] = Goods.STATUS_SOLD_OUT  # '//button[@class="productAddToBasket productAddToBasket-soldOut"]'
         overview = []
         for i in range(1, 6):
-            overview_ele = response.xpath(self.xpath_goods_overview.format(str(i)))
-            if overview_ele:
-                text = overview_ele.get().strip()
-                if text:
-                    overview.append(text)
+            text = page_ele.get_text(self.xpath_goods_overview.format(str(i)))
+            if text:
+                overview.append(text)
+
         benefits = []
         for ele in response.xpath(self.xpath_goods_benefits):
             text = ele.get().strip()
@@ -143,6 +144,8 @@ class MyproteinSpider(BaseSpider):
 
         details['overview'] = overview
         details['benefits'] = benefits
+        details['price_rr_text'] = page_ele.get_text(self.xpath_goods_price_rr_text)
+        details['price_saving_text'] = page_ele.get_text(self.xpath_goods_price_saving_text)
 
         item['spider_name'] = self.name
         item["model"] = model
@@ -160,30 +163,30 @@ class MyproteinSpider(BaseSpider):
 
         for goods in goods_items:
             print('============parse_goods_list=====start=================')
-            product_id = goods.xpath('span/@data-product-id').get()
-            title = goods.xpath('span/@data-product-title').get().strip()
-            # title = goods.xpath('a/div/h3/text()').get().strip()
-            brand = goods.xpath('span/@data-product-brand').get()
+            ele = BaseElement(goods)
+            product_id = ele.get_text('span/@data-product-id')
+            title = ele.get_text('span/@data-product-title')  # 'a/div/h3/text()'
+            brand = ele.get_text('span/@data-product-brand')
             print(brand)
-            price_text = goods.xpath('span/@data-product-price').get().strip()
+            price_text = ele.get_text('span/@data-product-price')
             print(price_text)
             price = 0
             if price_text:
                 price = price_text.split('£')[1]
-            # price_text = goods.xpath('div//span[@class="athenaProductBlock_priceValue"]/text()').get()
-            image = goods.xpath('div/a/img/@src').get()
+            image = ele.get_text('div/a/img/@src')
             print(image)
-            url = self.get_site_url(goods.xpath('div/a/@href').get())
+            url = self.get_site_url(ele.get_text('div/a/@href'))
             print(url)
-            rating_value_ele = goods.xpath('div[@class="athenaProductBlock_rating"]/span[@class="athenaProductBlock_ratingValue"]/text()')
+            rating_value_text = ele.get_text('div[@class="athenaProductBlock_rating"]/span[@class="athenaProductBlock_ratingValue"]/text()')
             rating_value = 0
-            if rating_value_ele:
-                print(rating_value_ele.get())
-                rating_value = float(rating_value_ele.get())
-            review_count_ele = goods.xpath('div[@class="athenaProductBlock_rating"]/span[@class="athenaProductBlock_reviewCount"]/text()')
+            print(rating_value_text)
+            if rating_value_text:
+                rating_value = float(rating_value_text)
+
+            review_count_text = ele.get_text('div[@class="athenaProductBlock_rating"]/span[@class="athenaProductBlock_reviewCount"]/text()')
             review_count = 0
-            if review_count_ele:
-                review_count = int(review_count_ele.get())
+            if review_count_text:
+                review_count = int(review_count_text)
             print('============parse_goods_list=====end================='+str(page))
             model = self.db_session.query(Goods).filter(Goods.site_id == self.site_id, Goods.code == product_id).first()
             details = {'brand': brand, 'rating_value': rating_value}

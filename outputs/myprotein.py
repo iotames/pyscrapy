@@ -13,7 +13,7 @@ class MyproteinOutput(BaseOutput):
     def output(self):
         sheet = self.work_sheet
         # sheet.sheet_format.defaultRowHeight = 30
-        title_row = ('商品ID', 'code', '图片', '分类', '商品标题', '商品链接', '更新时间', '价格/£', '评论数', '状态',
+        title_row = ('商品ID', 'code', '图片', '分类', '商品标题', '商品链接', '更新时间', '价格/£', '零售价（RRP）', '节省', '评论数', '状态',
                      '品牌', '评分', '应用范围', '商品概述', '商品特性')
         title_col = 1
         for title in title_row:
@@ -45,8 +45,8 @@ class MyproteinOutput(BaseOutput):
 
             goods_info_list = [
                 goods.id, goods.code, image, goods.category_name, goods.title, goods_url, time_str, goods.price,
-                goods.reviews_num, Goods.statuses_map[goods.status], brand, rating_value,
-                goods_range, overview, benefits
+                details['price_rr_text'], details['price_saving_text'], goods.reviews_num,
+                Goods.statuses_map[goods.status], brand, rating_value, goods_range, overview, benefits
             ]
             print('================')
             print(goods_info_list)
