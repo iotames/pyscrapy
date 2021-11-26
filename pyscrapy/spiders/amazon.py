@@ -13,7 +13,7 @@ import re
 from pyscrapy.grabs.amazon_goods_list import GoodsRankingList
 from pyscrapy.grabs.amazon_goods import AmazonGoodsDetail
 from pyscrapy.grabs.amazon_goods_reviews import AmazonGoodsReviews
-from pyscrapy.extracts.amazon import Goods as XGoods, GoodsReviews as XGoodsReviews
+from pyscrapy.extracts.amazon import Common as XAmazon, GoodsReviews as XGoodsReviews
 # from service.Singleton import Singleton
 
 # from translate import Translator
@@ -71,20 +71,21 @@ class AmazonSpider(BaseSpider):
                 )
         if self.spider_child == self.CHILD_GOODS_REVIEWS:
             asin = "B08Q82QYSV"
-            goods_url = XGoods.get_url_by_code(asin, self.url_params)
-
-            yield Request(
-                goods_url,
-                callback=AmazonGoodsDetail.parse,
-                headers=dict(referer=self.base_url)
-            )
-
+            goods_url = XAmazon.get_url_by_code(asin, self.url_params)
             reviews_url = XGoodsReviews.get_reviews_url_by_asin(asin)
-            yield Request(
+            next_request = Request(
                 reviews_url,
                 callback=AmazonGoodsReviews.parse,
                 headers=dict(referer=goods_url),
-                meta=dict(asin=asin, goods_code=asin)  # goods_id=goods_id
+                meta=dict(goods_code=asin)  # goods_id=goods_id
             )
+            yield Request(
+                goods_url,
+                callback=AmazonGoodsDetail.parse,
+                headers=dict(referer=self.base_url),
+                meta=dict(next_request=next_request)
+            )
+
+
 
 

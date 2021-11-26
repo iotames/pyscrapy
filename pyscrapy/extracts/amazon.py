@@ -31,6 +31,7 @@ class GoodsDetail(object):
     xpath_goods_price = '//div[@class="a-section a-spacing-small"]//span[@class="a-price a-text-price a-size-medium apexPriceToPay"]/span[1]/text()'
     xpath_goods_detail_items = '//ul[@class="a-unordered-list a-vertical a-spacing-mini"]/li/span/text()'
     xpath_goods_rank_detail = '//div[@id="detailBulletsWrapper_feature_div"]/ul[1]/li/span'
+    xpath_goods_image = '//div[@id="imgTagWrapperId"]/img/@src'
     re_goods_rank_num = r"商品里排第(.+?)名"
     re_root_category_name = r">查看商品销售排行榜(.+?)<"
 
@@ -91,19 +92,7 @@ class GoodsDetail(object):
         return ''
 
 
-class Goods(object):
-
-    @staticmethod
-    def get_url_by_code(code: str, params=None) -> str:
-        if params:
-            return "{}/dp/{}?{}".format(BASE_URL, code, urlencode(params))
-        return "{}/dp/{}".format(BASE_URL, code)
-
-    @staticmethod
-    def get_code_by_url(url: str) -> str:
-        urls = url.split('/')
-        index = urls.index('dp')
-        return urls[index+1]
+class Common(object):
 
     @staticmethod
     def get_site_url(url: str) -> str:
@@ -112,6 +101,18 @@ class Goods(object):
         if url.startswith('/'):
             return BASE_URL + url
         return BASE_URL + '/' + url
+
+    @staticmethod
+    def get_url_by_code(code: str, params=None) -> str:
+        if params:
+            return "{}/dp/{}?{}".format(BASE_URL, code, urlencode(params))
+        return "{}/dp/{}".format(BASE_URL, code)
+
+    @staticmethod
+    def get_code_by_goods_url(url: str) -> str:
+        urls = url.split('/')
+        index = urls.index('dp')
+        return urls[index + 1]
 
 
 class GoodsReviews(object):

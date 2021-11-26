@@ -1,4 +1,4 @@
-from pyscrapy.extracts.amazon import GoodsRankingList as XRankingList, Goods as XGoods
+from pyscrapy.extracts.amazon import GoodsRankingList as XRankingList, Common as XAmazon
 from pyscrapy.grabs.amazon import BasePage
 from pyscrapy.grabs.basegrab import BaseElement
 from pyscrapy.grabs.amazon_goods import AmazonGoodsDetail
@@ -44,7 +44,7 @@ class GoodsInRankList(BaseElement):
         if not url_ele:
             return ''
         url = url_ele.get().strip()
-        url = XGoods.get_site_url(url)
+        url = XAmazon.get_site_url(url)
         return url
 
     @property
@@ -53,13 +53,11 @@ class GoodsInRankList(BaseElement):
         if not ele:
             return 0
         review_text = ele.get()
-        # print('===================review_text=================')
-        # print(review_text)
         return int(review_text.replace(',', ''))
 
     @property
     def code(self):
-        return XGoods.get_code_by_url(self.url)
+        return XAmazon.get_code_by_goods_url(self.url)
 
     @property
     def item(self) -> AmazonGoodsItem:

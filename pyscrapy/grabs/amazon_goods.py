@@ -9,8 +9,11 @@ class AmazonGoodsDetail(BasePage):
     __rank_html = None
 
     @property
+    def image(self):
+        return self.get_text(XDetail.xpath_goods_image)
+
+    @property
     def title(self):
-        print('get text  title title')
         return self.get_text(XDetail.xpath_goods_title)
 
     @property
@@ -91,8 +94,10 @@ class AmazonGoodsDetail(BasePage):
         if 'asin' not in item:
             item['asin'] = ele.asin
 
-        # if 'code' not in item:
-        #     item['code'] = ele.asin
+        if 'image' not in item:
+            image = ele.image
+            item['image'] = image
+            item['image_urls'] = [image]
 
         details = {}
         if 'details' in item:
@@ -108,4 +113,6 @@ class AmazonGoodsDetail(BasePage):
         print('=============parse_goods_detail=============end===========')
         print(item)
         yield item
+        if 'next_request' in meta:
+            yield meta['next_request']
 

@@ -1,5 +1,5 @@
 from scrapy.http import TextResponse
-from pyscrapy.extracts.amazon import GoodsReviews as XReviews
+from pyscrapy.extracts.amazon import GoodsReviews as XReviews, Common as XAmazon
 from pyscrapy.grabs.amazon import BasePage
 from pyscrapy.grabs.basegrab import BaseElement
 from pyscrapy.items import GoodsReviewAmazonItem
@@ -43,9 +43,9 @@ class AmazonGoodsReviews(BasePage):
     @classmethod
     def parse(cls, response: TextResponse):
         meta = response.meta
+        goods_code = meta['goods_code']
         page = meta['page'] if 'page' in meta else 1
-        asin = meta['asin']
-        print('===============page : ' + str(page))
+        goods_id = meta['goods_id'] if 'goods_id' in meta else 0
         if cls.check_robot_happened(response):
             return False
 
@@ -54,8 +54,6 @@ class AmazonGoodsReviews(BasePage):
         else:
             item = GoodsReviewAmazonItem()
 
-        goods_id = meta['goods_id'] if 'goods_id' in meta else 0
-
         page_ele = cls(response)
         reviews_num = page_ele.reviews_count
         total_page = int(reviews_num / 10) + 1
@@ -63,7 +61,7 @@ class AmazonGoodsReviews(BasePage):
         for ele in eles:
             review = GoodsReview(ele)
             item['goods_id'] = goods_id
-            item['goods_code'] = asin
+            item['goods_code'] = goods_code
             item['code'] = review.code
             item['rating_value'] = review.rating_value
             item['title'] = review.title
@@ -77,12 +75,12 @@ class AmazonGoodsReviews(BasePage):
         print('===============total_page : ' + str(total_page))
         if page < total_page:
             next_page = page+1
-            print('==================next page : ' + str(next_page))
-            next_url = XReviews.get_reviews_url_by_asin(asin, next_page)
+            print('=======current page:  ' + str(page) + '====next page : ' + str(next_page))
+            next_url = XReviews.get_reviews_url_by_asin(goods_code, next_page)
             yield Request(
                 next_url,
                 cls.parse,
-                meta=dict(goods_id=goods_id, asin=asin, page=next_page)
+                meta=dict(goods_id=goods_id, goods_code=goods_code, page=next_page)
             )
 
 
@@ -121,7 +119,7 @@ class GoodsReview(BaseElement):
 
     @property
     def url(self):
-        return self.get_text(XReviews.xpath_review_url)
+        return XAmazon.get_site_url(self.get_text(XReviews.xpath_review_url))
 
     @property
     def review_date(self):
