@@ -119,7 +119,7 @@ class GoodsReview(BaseElement):
 
     @property
     def url(self):
-        return XAmazon.get_site_url(self.get_text(XReviews.xpath_review_url))
+        return self.get_url(self.get_text(XReviews.xpath_review_url))
 
     @property
     def review_date(self):

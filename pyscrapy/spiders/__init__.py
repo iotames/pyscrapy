@@ -7,3 +7,4 @@ from .strongerlabel import StrongerlabelSpider
 from .sweatybetty import SweatybettySpider
 from .amazon import AmazonSpider
 from .basespider import BaseSpider
+from .shein import SheinSpider

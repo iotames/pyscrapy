@@ -94,13 +94,7 @@ class GoodsDetail(object):
 
 class Common(object):
 
-    @staticmethod
-    def get_site_url(url: str) -> str:
-        if url.startswith('http'):
-            return url
-        if url.startswith('/'):
-            return BASE_URL + url
-        return BASE_URL + '/' + url
+    BASE_URL = BASE_URL
 
     @staticmethod
     def get_url_by_code(code: str, params=None) -> str:

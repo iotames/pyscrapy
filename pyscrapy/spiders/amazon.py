@@ -22,7 +22,7 @@ from pyscrapy.extracts.amazon import Common as XAmazon, GoodsReviews as XGoodsRe
 class AmazonSpider(BaseSpider):
 
     name = 'amazon'
-    base_url = "https://www.amazon.com"
+    base_url = XAmazon.BASE_URL
 
     # 该属性cls静态调用 无法继承覆盖
     custom_settings = {

@@ -44,7 +44,7 @@ class GoodsInRankList(BaseElement):
         if not url_ele:
             return ''
         url = url_ele.get().strip()
-        url = XAmazon.get_site_url(url)
+        url = self.get_url(url)
         return url
 
     @property

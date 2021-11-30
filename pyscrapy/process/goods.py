@@ -211,7 +211,7 @@ class GoodsBase(Base):
             # for attr_key, attr_value in attrs.items():
             #     setattr(model, attr_key, attr_value)
             attrs['updated_at'] = int(time.time())  # update方法无法自动更新时间戳
-            # CONCURRENT_REQUESTS （并发请求数） 值过小， 可能导致经常要更新多次的问题
+            # CONCURRENT_REQUESTS （并发请求数） 值过小， 可能导致经常要更新多次的问题. 也可能是网址重复
             db_session.query(Goods).filter(Goods.id == model.id).update(attrs)
         else:
             self.update_details(attrs)
