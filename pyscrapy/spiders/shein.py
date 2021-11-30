@@ -3,6 +3,7 @@ from pyscrapy.spiders.basespider import BaseSpider
 from urllib.parse import urlencode
 from Config import Config
 from pyscrapy.grabs.shein_goods_list import GoodsList
+from pyscrapy.grabs.shein_goods import GoodsDetail
 from pyscrapy.models import Goods
 from pyscrapy.extracts.shein import BASE_URL
 
@@ -17,11 +18,11 @@ class SheinSpider(BaseSpider):
 
     # 该属性cls静态调用 无法继承覆盖
     custom_settings = {
-        'DOWNLOAD_DELAY': 3,
-        'RANDOMIZE_DOWNLOAD_DELAY': True,
+        # 'DOWNLOAD_DELAY': 3,
+        # 'RANDOMIZE_DOWNLOAD_DELAY': True,
         'COOKIES_ENABLED': False,
-        'CONCURRENT_REQUESTS_PER_DOMAIN': 8,  # default 8
-        'CONCURRENT_REQUESTS': 16,  # default 16 recommend 5-8
+        # 'CONCURRENT_REQUESTS_PER_DOMAIN': 8,  # default 8
+        # 'CONCURRENT_REQUESTS': 16,  # default 16 recommend 5-8
         'IMAGES_STORE': Config.ROOT_PATH + "/runtime/images",
         'COMPONENTS_NAME_LIST_DENY': [],
         'SELENIUM_ENABLED': False
@@ -59,6 +60,7 @@ class SheinSpider(BaseSpider):
             for model in self.goods_model_list:
                 yield Request(
                     model.url,
+                    callback=GoodsDetail.parse,
                     headers=dict(referer=self.base_url)
                 )
 

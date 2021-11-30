@@ -14,20 +14,31 @@ class GoodsList(BasePage):
     def elements(self) -> list:
         return self.response.xpath(XGoodsList.xpath_items)
 
+    @property
+    def categories(self) -> list:
+        return self.response.xpath(XGoodsList.xpath_categories)
+
     @classmethod
     def parse(cls, response: TextResponse):
         # if cls.check_robot_happened(response):
         #     return False
         grab = cls(response)
+        categories_map = {}
+        for cat in grab.categories:
+            ele = Categories(cat)
+            if ele.cat_id not in categories_map:
+                categories_map[ele.cat_id] = {'cat_id': ele.cat_id, 'cat_name': ele.cat_name, 'parent_id': ele.parent_id}
+
         for ele in grab.elements:
             ele = GoodsInList(ele)
             url = ele.url
             if not url:
                 continue
             goods_item = ele.item
-            print(goods_item)
-            yield goods_item
-            # yield Request(url, callback=GoodsDetail.parse, meta=dict(item=goods_item))
+            # print(goods_item)
+            # yield goods_item
+            # print('==============next request===========' + url)
+            yield Request(url, callback=GoodsDetail.parse, meta=dict(item=goods_item, categories_map=categories_map))
         # if response.meta['page'] == 1:
         #     yield Request(
         #         response.url.replace('pg=1', 'pg=2'),
@@ -46,7 +57,7 @@ class GoodsInList(BaseElement):
 
     @property
     def category_code(self):
-        return XShein.get_category_id_by_url(self.url)
+        return XShein.get_cat_id_by_url(self.url)
 
     @property
     def code(self):
@@ -73,4 +84,19 @@ class GoodsInList(BaseElement):
         goods_item["title"] = self.title
         goods_item["image_urls"] = [image]
         return goods_item
+
+
+class Categories(BaseElement):
+
+    @property
+    def cat_id(self):
+        return self.get_text(XGoodsList.xpath_cat_id)
+
+    @property
+    def cat_name(self):
+        return self.get_text(XGoodsList.xpath_cat_name)
+
+    @property
+    def parent_id(self):
+        return self.get_text(XGoodsList.xpath_cat_parent_id)
 
