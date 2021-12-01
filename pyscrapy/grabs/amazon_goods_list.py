@@ -38,6 +38,8 @@ class GoodsRankingList(BasePage):
 
 class GoodsInRankList(BaseElement):
 
+    BASE_URL = XAmazon.BASE_URL
+
     @property
     def url(self) -> str:
         url_ele = self.element.xpath(XRankingList.xpath_url)

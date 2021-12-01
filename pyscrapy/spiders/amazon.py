@@ -41,7 +41,8 @@ class AmazonSpider(BaseSpider):
     }
 
     top_goods_urls = [
-        '/Best-Sellers-Womens-Activewear-Skirts-Skorts/zgbs/fashion/23575633011?{}'
+        # '/Best-Sellers-Womens-Activewear-Skirts-Skorts/zgbs/fashion/23575633011?{}'
+        '/bestsellers/fashion/10208103011?{}'  # 骑行短裤
         # '/bestsellers/sporting-goods/706814011?{}'  # 户外休闲销售排行榜
     ]
 
