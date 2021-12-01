@@ -33,7 +33,9 @@ class Base(Singleton):
     def update_details(attrs: dict, model=None):
         if 'details' in attrs:
             if model:
-                details = json.loads(model.details)
+                details = {}
+                if model.details:
+                    details = json.loads(model.details)
                 details.update(attrs['details'])
                 attrs['details'] = json.dumps(details)
             if not model:

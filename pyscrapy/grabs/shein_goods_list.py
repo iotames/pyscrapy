@@ -28,17 +28,22 @@ class GoodsList(BasePage):
             ele = Categories(cat)
             if ele.cat_id not in categories_map:
                 categories_map[ele.cat_id] = {'cat_id': ele.cat_id, 'cat_name': ele.cat_name, 'parent_id': ele.parent_id}
-
-        for ele in grab.elements:
+        goods_list = grab.elements
+        print('===========goods_list=====len=' + str(len(goods_list)))
+        countgoods = 0
+        for ele in goods_list:
             ele = GoodsInList(ele)
             url = ele.url
+            print('goods_url ======  ' + url)
             if not url:
                 continue
+            countgoods += 1
+            print('=========countgoods = ' + str(countgoods))
             goods_item = ele.item
             # print(goods_item)
             # yield goods_item
             # print('==============next request===========' + url)
-            yield Request(url, callback=GoodsDetail.parse, meta=dict(item=goods_item, categories_map=categories_map))
+            yield Request(url, callback=GoodsDetail.parse, meta=dict(item=goods_item, categories_map=categories_map, count=countgoods))
         # if response.meta['page'] == 1:
         #     yield Request(
         #         response.url.replace('pg=1', 'pg=2'),

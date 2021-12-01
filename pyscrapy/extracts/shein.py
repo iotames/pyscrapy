@@ -57,4 +57,8 @@ class GoodsList(object):
 class GoodsDetail(object):
 
     re_spu = r"\"spu\":\"(.+?)\","
+    re_brand = r"\"brand\":\"(.+?)\""
+    re_price = "\"price\":{(.+?)}},"
+    re_product_intro_data = "productIntroData:(.+?),\\n"
+    xpath_title = '//meta[@property="og:title"]/@content'
 
