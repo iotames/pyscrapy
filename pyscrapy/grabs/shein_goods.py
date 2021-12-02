@@ -109,8 +109,6 @@ class GoodsDetail(BaseResponse):
     @classmethod
     def parse(cls, response: TextResponse):
         meta = response.meta
-        print('=======goods=======' + response.url + '========count = ' + str(meta['count']))
-
         cls.__categories_map = meta['categories_map']
 
         if 'item' in meta:
@@ -136,14 +134,15 @@ class GoodsDetail(BaseResponse):
 
         spu = ele.spu
         details['spu'] = spu
-        details['color'] = ele.color
+        details['goods_id'] = ele.color['goods_id']
+        details['color'] = ele.color['color']
+        details['brand'] = ele.brand
         details['relation_colors'] = ele.relation_colors
-        # details['asin'] = ele.asin
         item['details'] = details
-        print('=============parse_goods_detail=============end===========')
-
-        yield ReviewRequest.get_once(data={'spu': spu}, meta={'item': item, 'goods_url': response.url})
-        # yield item
+        if spu:
+            yield ReviewRequest.get_once(data={'spu': spu}, meta={'item': item, 'goods_url': response.url})
+        else:
+            yield item
         if 'next_request' in meta:
             yield meta['next_request']
 

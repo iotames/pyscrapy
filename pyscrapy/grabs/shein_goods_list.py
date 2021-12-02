@@ -20,30 +20,29 @@ class GoodsList(BasePage):
 
     @classmethod
     def parse(cls, response: TextResponse):
-        # if cls.check_robot_happened(response):
-        #     return False
         grab = cls(response)
         categories_map = {}
         for cat in grab.categories:
             ele = Categories(cat)
+            # print('=========each category:===')
+            cate_info = {'cat_id': ele.cat_id, 'cat_name': ele.cat_name, 'parent_id': ele.parent_id}
+            # print(cate_info)
             if ele.cat_id not in categories_map:
-                categories_map[ele.cat_id] = {'cat_id': ele.cat_id, 'cat_name': ele.cat_name, 'parent_id': ele.parent_id}
+                categories_map[ele.cat_id] = cate_info
         goods_list = grab.elements
         print('===========goods_list=====len=' + str(len(goods_list)))
-        countgoods = 0
+        print(categories_map)
+        if not categories_map:
+            print('categories_map is empty')
+            return False
         for ele in goods_list:
             ele = GoodsInList(ele)
             url = ele.url
             print('goods_url ======  ' + url)
             if not url:
                 continue
-            countgoods += 1
-            print('=========countgoods = ' + str(countgoods))
             goods_item = ele.item
-            # print(goods_item)
-            # yield goods_item
-            # print('==============next request===========' + url)
-            yield Request(url, callback=GoodsDetail.parse, meta=dict(item=goods_item, categories_map=categories_map, count=countgoods))
+            yield Request(url, callback=GoodsDetail.parse, meta=dict(item=goods_item, categories_map=categories_map))
         # if response.meta['page'] == 1:
         #     yield Request(
         #         response.url.replace('pg=1', 'pg=2'),
@@ -70,6 +69,11 @@ class GoodsInList(BaseElement):
         return text.split('-')[1]
 
     @property
+    def rank_in(self) -> int:
+        text = self.get_text(XGoodsList.xpath_goods_id)
+        return int(text.split('-')[0]) + 1
+
+    @property
     def title(self):
         return self.get_text(XGoodsList.xpath_title)
 
@@ -88,6 +92,7 @@ class GoodsInList(BaseElement):
         goods_item["code"] = self.code
         goods_item["title"] = self.title
         goods_item["image_urls"] = [image]
+        goods_item["details"] = {"rank_in": self.rank_in}
         return goods_item
 
 

@@ -64,7 +64,7 @@ class BaseOutput:
                         image = Image(cell_value['path'])
                         image.width, image.height = cell_value['size']
                         image.anchor = get_column_letter(start_col) + str(row_index)
-                        print(image.anchor)
+                        # print(image.anchor)
                         sheet.add_image(image)
                     except PIL.UnidentifiedImageError as e:
                         sheet.cell(row_index, start_col, '')

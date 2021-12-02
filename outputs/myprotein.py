@@ -1,6 +1,5 @@
 from pyscrapy.models import Goods
 from outputs.baseoutput import BaseOutput
-from pyscrapy.spiders.amazon import AmazonSpider
 import json
 
 

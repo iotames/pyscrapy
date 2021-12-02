@@ -84,7 +84,7 @@ class AmazonOutput(BaseOutput):
             self.set_values_to_row(sheet, goods_info_list, goods_row_index, goods_col_index)
             goods_row_index += 1
 
-        sheet_reviews = self.wb.create_sheet('reviews')
+        sheet_reviews = self.wb.create_sheet(title='reviews', index=1)
         detail_rows = [('商品', '评论概要', '评论详情', '颜色', '评分', 'SKU', '评论源地址', '标记')]
         for goods in goods_list:
             reviews = self.db_session.query(GoodsReview).filter(

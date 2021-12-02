@@ -51,6 +51,18 @@ class GoodsList(object):
         <input type="radio" tabindex="-1" value="2186" class="S-radio__input-origin">
     </label> <!----> <!---->
 </section>
+
+<section role="option" class="side-filter__item-content-ul side-filter__item-content-ul_indent" style="display:none;">
+    <label role="radio" tabindex="0" data-cat-id="2186" data-parent-id="2181" class="S-radio eBpntH S-radio_radio12 S-radio_normal">
+        <span class="S-radio__input"><i class="S-radio__input-inner"></i></span>
+        <span class="S-radio__label">
+            Women Sports Sweatshirts
+        </span>
+        <input type="radio" tabindex="-1" value="2186" class="S-radio__input-origin">
+    </label> <!----> <!---->
+</section>
+
+
 """
 
 

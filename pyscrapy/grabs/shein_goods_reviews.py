@@ -45,7 +45,6 @@ class ReviewRequest(object):
         cls.query_params['offset'] = (cls.query_params['page'] - 1) * cls.query_params['limit']
         url = cls.url + "?" + urlencode(cls.query_params)
         meta['query_params'] = cls.query_params
-        print('get_once=========' + meta['goods_url'])
 
         return Request(
             url,
@@ -55,77 +54,73 @@ class ReviewRequest(object):
             # headers=self.headers
         )
 
-    # @classmethod
-    # def next_next(cls, rdata, item, meta):
+    @classmethod
+    def next_next(cls, rdata, item, meta):
+        rinfo = rdata['info']
+        msg = rdata['msg']  # ok
+        print('=========goods_reviews: {}'.format(msg))
+        reviews_list = []
+        first_review_time = ""
+        for rreview in rinfo['commentInfo']:
+            # image = rreview['comment_image'][0]['member_image_original']
+            review = {
+                'comment_timestamp': rreview['add_time'],
+                'comment_time': rreview['comment_time'],
+                'body': rreview['content'],  # 评论内容主体
+                'code': rreview['comment_id'],
+                'rank': rreview['comment_rank'],
+                'color': rreview['color'],  # 颜色
+                'goods_code': rreview['goods_id'],
+                'spu': rreview['spu'],
+                'order_timestamp': rreview['order_timestamp'],
+                'order_time': rreview['order_time'],
+                'size': rreview['size'],  # 尺码
+                'member_overall_fit': rreview['member_overall_fit']  # 1 合身 2 偏大  size_status member_size_flag
+            }
+            print(review)
+            if first_review_time == "":
+                first_review_time = review['comment_time']
+            reviews_list.append(review)
+
+        total = rinfo['commentInfoTotal']  # allTotal
+
+        if 'get_total_rank1' in meta:
+            item['details']['total_rank1'] = total
+            return item
+        else:
+            item['reviews_num'] = total
+            item['details']['first_review_time'] = first_review_time
+            query_params = meta['query_params'].copy()
+            query_params['comment_rank'] = 1
+            return Request(
+                url=cls.url + "?" + urlencode(query_params),
+                callback=cls.parse,
+                meta=dict(item=item, get_total_rank1=True, goods_url=meta['goods_url']),
+                dont_filter=True
+            )
 
     @classmethod
     def parse(cls, response: TextResponse):
-        # TODO 使用 return False 造成中断，导致数据采集不完整?? 其他原因？？......
         meta = response.meta
-        print('=============test meta================')
-        print(meta)
-        print('ReviewRequest===parse=========' + meta['goods_url'])
         item = meta['item']
-        next_next = True
+        # next_next = True
         if response.text == 'null':
             yield item
-            print('=====================goods_reviews=======null==============================' + meta['goods_url'])
-            next_next = False
+            print('=====================goods_reviews=======null==========')
+            return False
+            # next_next = False
 
-        if next_next:
-            rdata = response.json()
-            if rdata['code'] == -1:
-                yield item
-                print('=====================goods_reviews=======code=-1==========================' + meta['goods_url'])
-                next_next = False
+        # if next_next:
+        rdata = response.json()
+        if rdata['code'] == -1:
+            yield item
+            print('=====================goods_reviews=======code=-1========')
+            return False
+            # next_next = False
 
-            if next_next:
-                # return cls.next_next(rdata, item, meta): # TODO  yield return ...... ?
-                rinfo = rdata['info']
-                msg = rdata['msg']  # ok
-                print('======================goods_reviews: ' + msg)
-                reviews_list = []
-                first_review_time = ""
-                for rreview in rinfo['commentInfo']:
-                    # image = rreview['comment_image'][0]['member_image_original']
-                    review = {
-                        'comment_timestamp': rreview['add_time'],
-                        'comment_time': rreview['comment_time'],
-                        'body': rreview['content'],
-                        'code': rreview['comment_id'],
-                        'rank': rreview['comment_rank'],
-                        'color': rreview['color'],
-                        'goods_code': rreview['goods_id'],
-                        'spu': rreview['spu'],
-                        'order_timestamp': rreview['order_timestamp'],
-                        'order_time': rreview['order_time'],
-                        'size': rreview['size'],
-                        'member_overall_fit': rreview['member_overall_fit']  # 1 合身 2 偏大  size_status member_size_flag
-                    }
-                    print(review['member_overall_fit'])
-                    print(review['size'])
-                    print(review['color'])
-                    print(review['body'])
-                    if first_review_time == "":
-                        first_review_time = review['comment_time']
-                    reviews_list.append(review)
+            # if next_next:
+        yield cls.next_next(rdata, item, meta)
 
-                total = rinfo['commentInfoTotal']  # allTotal
-
-                if 'get_total_rank1' in meta:
-                    item['details']['total_rank1'] = total
-                    yield item
-                else:
-                    item['reviews_num'] = total
-                    item['details']['first_review_time'] = first_review_time
-                    query_params = meta['query_params'].copy()
-                    query_params['comment_rank'] = 1
-                    yield Request(
-                        url=cls.url + "?" + urlencode(query_params),
-                        callback=cls.parse,
-                        meta=dict(item=item, get_total_rank1=True, goods_url=meta['goods_url']),
-                        dont_filter=True
-                    )
         # total_picture = rinfo['pictureTotal']
         # print(total_picture)
         # print(rinfo['num'])
