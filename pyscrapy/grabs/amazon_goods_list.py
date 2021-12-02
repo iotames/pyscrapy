@@ -15,10 +15,13 @@ class GoodsRankingList(BasePage):
 
     @classmethod
     def parse(cls, response: TextResponse):
+        if response.status == 404:
+            print(response.text)
         if cls.check_robot_happened(response):
             return False
+        page = response.meta['page']
         grab = cls(response)
-        rank_in = 1
+        rank_in = 1 if page == 1 else 51
         for ele in grab.elements:
             ele = GoodsInRankList(ele)
             url = ele.url
@@ -28,7 +31,7 @@ class GoodsRankingList(BasePage):
             goods_item["details"] = {'rank_in': rank_in}
             rank_in += 1
             yield Request(url, callback=AmazonGoodsDetail.parse, meta=dict(item=goods_item))
-        if response.meta['page'] == 1:
+        if page == 1:
             yield Request(
                 response.url.replace('pg=1', 'pg=2'),
                 callback=cls.parse,

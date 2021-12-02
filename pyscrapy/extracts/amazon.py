@@ -28,12 +28,22 @@ class GoodsDetail(object):
     """
 
     xpath_goods_title = '//*[@id="productTitle"]/text()'
+    xpath_goods_price_base = '//div[@class="a-section a-spacing-small"]//td/span[@class="a-price a-text-price a-size-base"]/span[1]/text()'
     xpath_goods_price = '//div[@class="a-section a-spacing-small"]//span[@class="a-price a-text-price a-size-medium apexPriceToPay"]/span[1]/text()'
+    xpath_goods_price_save = '//div[@class="a-section a-spacing-small"]//span[@class="a-color-price"]/span[@class="a-price a-text-price a-size-base"]/span[1]/text()'
     xpath_goods_detail_items = '//ul[@class="a-unordered-list a-vertical a-spacing-mini"]/li/span/text()'
     xpath_goods_rank_detail = '//div[@id="detailBulletsWrapper_feature_div"]/ul[1]/li/span'
     xpath_goods_image = '//div[@id="imgTagWrapperId"]/img/@src'
-    re_goods_rank_num = r"商品里排第(.+?)名"
-    re_root_category_name = r">查看商品销售排行榜(.+?)<"
+    re_goods_rank_num_cn = r"商品里排第(.+?)名"
+    re_goods_rank_num_en = r"#(.+?) in "
+    re_root_category_name_cn = r">查看商品销售排行榜(.+?)<"
+    re_root_category_name_en = r">See Top 100 in (.+?))"
+
+    """
+    Best Sellers Rank: #4,639 in Clothing, Shoes & Jewelry (See Top 100 in Clothing, Shoes & Jewelry)
+        #2 in Men's Cycling Underwear
+        #2 in Men's Cycling Shorts
+    """
 
     @classmethod
     def get_rank_html(cls, response: TextResponse) -> str:
@@ -44,19 +54,21 @@ class GoodsDetail(object):
 
     @classmethod
     def get_rank_num(cls, text: str) -> int:
-        print(text)
-        rank_info = re.findall(cls.re_goods_rank_num, text)
-        print(rank_info)
+        rank_info = re.findall(cls.re_goods_rank_num_cn, text)
         if not rank_info:
-            return 0
+            rank_info = re.findall(cls.re_goods_rank_num_en, text)
+            if not rank_info:
+                return 0
         rank_text = rank_info[0]
         return int(rank_text.replace(',', ''))
 
     @classmethod
     def get_root_category_name(cls, text: str) -> str:
-        info = re.findall(cls.re_root_category_name, text)
+        info = re.findall(cls.re_root_category_name_cn, text)
         if not info:
-            return ''
+            info = re.findall(cls.re_root_category_name_en, text)
+            if not info:
+                return ''
         return info[0]
 
     @classmethod

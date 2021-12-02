@@ -24,13 +24,15 @@ class AmazonSpider(BaseSpider):
     name = 'amazon'
     base_url = XAmazon.BASE_URL
 
+    # handle_httpstatus_list = [404]
+
     # 该属性cls静态调用 无法继承覆盖
     custom_settings = {
         'DOWNLOAD_DELAY': 3,
         'RANDOMIZE_DOWNLOAD_DELAY': True,
         'COOKIES_ENABLED': False,
-        'CONCURRENT_REQUESTS_PER_DOMAIN': 1,  # default 8
-        'CONCURRENT_REQUESTS': 1,  # default 16 recommend 5-8
+        'CONCURRENT_REQUESTS_PER_DOMAIN': 3,  # default 8
+        'CONCURRENT_REQUESTS': 5,  # default 16 recommend 5-8
         'IMAGES_STORE': Config.ROOT_PATH + "/runtime/images",
         'COMPONENTS_NAME_LIST_DENY': [],
         'SELENIUM_ENABLED': False

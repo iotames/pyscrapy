@@ -18,19 +18,21 @@ class AmazonGoodsDetail(BasePage):
 
     @property
     def price_text(self) -> str:
-        ele = self.response.xpath(XDetail.xpath_goods_price)
-        if not ele:
-            return ''
-        return ele.get().strip()
+        print('=========price_text===' + self.get_text(XDetail.xpath_goods_price))
+        return self.get_text(XDetail.xpath_goods_price)
 
     @property
     def price(self):
-        if not self.price_text:
-            return 0
-        info = self.price_text.split('US$')
-        if len(info) > 1:
-            return info[1]
-        return 0
+        return self.get_price_by_text(self.price_text)
+
+    @property
+    def price_base(self):
+        text = self.get_text(XDetail.xpath_goods_price_base)
+        return self.get_price_by_text(text)
+
+    @property
+    def price_save(self):
+        return self.get_price_by_text(self.get_text(XDetail.xpath_goods_price_save))
 
     @property
     def details_items(self) -> list:
@@ -72,7 +74,10 @@ class AmazonGoodsDetail(BasePage):
 
     @property
     def sale_at_text(self) -> str:
-        return XDetail.get_goods_detail_feature('上架时间', self.response)
+        text = XDetail.get_goods_detail_feature('上架时间', self.response)
+        if not text:
+            text = XDetail.get_goods_detail_feature('Date First Available', self.response)  # November 1, 2021
+        return text
 
     @classmethod
     def parse(cls, response: TextResponse):
@@ -104,6 +109,8 @@ class AmazonGoodsDetail(BasePage):
             details = item['details']
 
         details['items'] = ele.details_items
+        details['price_base'] = ele.price_base
+        details['price_save'] = ele.price_save
         details['sale_at'] = ele.sale_at_text
         details['asin'] = ele.asin
         details['rank_list'] = ele.rank_list
