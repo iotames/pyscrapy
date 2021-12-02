@@ -50,7 +50,8 @@ class ReviewRequest(object):
         return Request(
             url,
             callback=cls.parse,
-            meta=meta
+            meta=meta,
+            dont_filter=True
             # headers=self.headers
         )
 
@@ -122,7 +123,8 @@ class ReviewRequest(object):
                     yield Request(
                         url=cls.url + "?" + urlencode(query_params),
                         callback=cls.parse,
-                        meta=dict(item=item, get_total_rank1=True, goods_url=meta['goods_url'])
+                        meta=dict(item=item, get_total_rank1=True, goods_url=meta['goods_url']),
+                        dont_filter=True
                     )
         # total_picture = rinfo['pictureTotal']
         # print(total_picture)
