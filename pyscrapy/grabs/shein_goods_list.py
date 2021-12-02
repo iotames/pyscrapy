@@ -38,7 +38,7 @@ class GoodsList(BasePage):
         for ele in goods_list:
             ele = GoodsInList(ele)
             url = ele.url
-            print('goods_url ======  ' + url)
+            print('=====shein_goods_list======goods_url ======  ' + url)
             if not url:
                 continue
             goods_item = ele.item
@@ -92,7 +92,7 @@ class GoodsInList(BaseElement):
         goods_item["code"] = self.code
         goods_item["title"] = self.title
         goods_item["image_urls"] = [image]
-        goods_item["details"] = {"rank_in": self.rank_in}
+        goods_item["details"] = {"rank_in": self.rank_in, "rank_score": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}}
         return goods_item
 
 

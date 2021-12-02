@@ -128,7 +128,7 @@ class GoodsDetail(BaseResponse):
         #     item['image'] = image
         #     item['image_urls'] = [image]
 
-        details = {}
+        details = {"rank_in": 0, "rank_score": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}}
         if 'details' in item:
             details = item['details']
 

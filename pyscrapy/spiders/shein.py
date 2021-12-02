@@ -18,7 +18,7 @@ class SheinSpider(BaseSpider):
 
     # 该属性cls静态调用 无法继承覆盖
     custom_settings = {
-        'LOG_LEVEL': 'WARNING',
+        # 'LOG_LEVEL': 'WARNING',
         # 'DOWNLOAD_DELAY': 3,
         # 'RANDOMIZE_DOWNLOAD_DELAY': True,
         'COOKIES_ENABLED': False,

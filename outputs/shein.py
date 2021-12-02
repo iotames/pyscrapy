@@ -13,7 +13,8 @@ class SheinOutput(BaseOutput):
         sheet = self.work_sheet
         # sheet.sheet_format.defaultRowHeight = 30
         title_row = ('ID', '图片', '排名', '上架时间（首个评论）', 'goods_id', 'SPU', '颜色', '品类', '商品标题', '商品链接', '更新时间',
-                     '价格/US$', '评论数', '销量(评论*20)', '销售额(估算)', '所属品牌', 'SKU数', '1星评论数')
+                     '价格/US$', '评论数', '销量(评论*20)', '销售额(估算)', '所属品牌', 'SKU数', '1星评论数', '2星评论数', '3星评论数',
+                     '4星评论数', '5星评论数', '颜色销量')
         title_col = 1
         for title in title_row:
             sheet.cell(1, title_col, title)
@@ -37,7 +38,7 @@ class SheinOutput(BaseOutput):
             spu = details['spu']
             goods_id = details['goods_id']
             color = details['color']
-            total_rank1 = details['total_rank1'] if 'total_rank1' in details else 0
+            rank_score = details['rank_score']
             relation_colors = details['relation_colors']
             sku_num = 1
             if relation_colors:
@@ -48,7 +49,8 @@ class SheinOutput(BaseOutput):
 
             goods_info_list = [
                 goods.id, image, details['rank_in'], first_at, goods_id, spu, color, category_name, goods.title, goods_url, updated_at,
-                goods.price, reviews_num, reviews_num*20, reviews_num*20*goods.price, brand, sku_num, total_rank1
+                goods.price, reviews_num, reviews_num*20, reviews_num*20*goods.price, brand, sku_num, rank_score["1"],
+                rank_score["2"], rank_score["3"], rank_score["4"], rank_score["5"]
             ]
             # 返回商品信息递增列 next col index
             self.set_values_to_row(sheet, goods_info_list, goods_row_index, goods_col_index)
