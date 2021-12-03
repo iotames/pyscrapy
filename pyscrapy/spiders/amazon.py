@@ -53,9 +53,12 @@ class AmazonSpider(BaseSpider):
 
     ]
 
+    asin_list = []
+
     CHILD_GOODS_LIST_STORE_PAGE = 'goods_list_store_page'
     CHILD_GOODS_LIST_RANKING = 'goods_list_ranking'
     CHILD_GOODS_REVIEWS = 'goods_reviews'
+    CHILD_GOODS_LIST_ASIN = 'goods_list_asin'
 
     goods_model_list: list
 
@@ -81,7 +84,7 @@ class AmazonSpider(BaseSpider):
                     yield Request(
                         self.get_site_url(url),
                         callback=GoodsListInStore.parse,
-                        meta=dict(store_model=store_model)
+                        meta=dict(merchant_id=store_model.id)
                     )
         if self.spider_child == self.CHILD_GOODS_LIST_RANKING:
             for url in self.top_goods_urls:
@@ -109,7 +112,15 @@ class AmazonSpider(BaseSpider):
                 headers=dict(referer=self.base_url),
                 meta=dict(next_request=next_request)
             )
-
+        if self.spider_child == self.CHILD_GOODS_LIST_ASIN:
+            for asin in self.asin_list:
+                # item = AmazonGoodsItem()
+                # item['merchant_id'] = mchid
+                # item['asin'] = asin
+                yield Request(
+                    XAmazon.get_url_by_code(asin),
+                    callback=GoodsListInStore.parse
+                )
 
 
 

@@ -1,3 +1,4 @@
+import json
 import os
 # ROOT_PATH = '/home/santic/projects/python/mitm'
 # dirpath = ROOT_PATH + '/helpers'
@@ -6,7 +7,7 @@ import os
 from mitmproxy import ctx
 from mitmproxy.http import HTTPFlow
 from pyscrapy.helpers import Logger
-
+from pyscrapy.extracts.amazon import GoodsListInStore
 logger = Logger()
 logger.echo_msg = True
 
@@ -47,11 +48,11 @@ def response(flow: HTTPFlow):
     response = flow.response
     request = flow.request
     if request.url.startswith('https://www.amazon.com/'):
-        if response.text.find('B0716H4QZ1') > -1:
+        if response.text.find("\"content\":{\"ASINList\":") > -1:
             urlmsg = "SUCCESS =============================" + request.url
-            conent = 'Content:' + response.text
             logger.debug(urlmsg)
-            logger.debug(conent)
+            asin_list = GoodsListInStore.get_asin_list(response.text)
+            logger.debug(json.dumps(asin_list))
 
 
     # response.text = response.text.replace('百度', '摆渡')

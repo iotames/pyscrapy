@@ -198,11 +198,18 @@ class GoodsListInStore(object):
     @classmethod
     def get_config_json(cls, text: str) -> dict:
         info = re.findall(cls.re_config_json, text)
+
+        def get_data(text1: str) -> dict:
+            if text1.find("\"content\":{\"ASINList\":") > -1:
+                config_str = "{" + text1 + "}}"
+                return json.loads(config_str)
+            return {}
+
         if info:
             if len(info) == 2:
-                if info[1].find("\"content\":{\"ASINList\":") > -1:
-                    config_str = "{" + info[1] + "}}"
-                    return json.loads(config_str)
+                return get_data(info[1])
+            if len(info) == 1:
+                return get_data(info[0])
         return {}
 
     @classmethod
