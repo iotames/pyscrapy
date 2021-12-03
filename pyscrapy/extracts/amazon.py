@@ -35,6 +35,7 @@ class GoodsDetail(object):
     xpath_goods_detail_items = '//ul[@class="a-unordered-list a-vertical a-spacing-mini"]/li/span/text()'
     xpath_goods_rank_detail = '//div[@id="detailBulletsWrapper_feature_div"]/ul[1]/li/span'
     xpath_goods_image = '//div[@id="imgTagWrapperId"]/img/@src'
+    xpath_reviews_text = '//*[@id="acrCustomerReviewText"]/text()'
     re_goods_rank_num_cn = r"商品里排第(.+?)名"
     re_goods_rank_num_en = r"#(.+?) in "
     re_root_category_name_cn = r">查看商品销售排行榜(.+?)<"
@@ -198,8 +199,10 @@ class GoodsListInStore(object):
     def get_config_json(cls, text: str) -> dict:
         info = re.findall(cls.re_config_json, text)
         if info:
-            config_str = "{" + info[1] + "}}"
-            return json.loads(config_str)
+            if len(info) == 2:
+                if info[1].find("\"content\":{\"ASINList\":") > -1:
+                    config_str = "{" + info[1] + "}}"
+                    return json.loads(config_str)
         return {}
 
     @classmethod

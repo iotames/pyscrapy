@@ -40,7 +40,16 @@ class AmazonSpider(BaseSpider):
     ]
 
     stores_urls = [
-        {'store_name': 'Baleaf', 'urls': ['/stores/page/105CBE98-4967-4033-8601-F8B84867E767']}
+        {'store_name': 'Baleaf', 'urls': ['/stores/page/105CBE98-4967-4033-8601-F8B84867E767']},
+        # {'store_name': 'sponeed', 'urls': [
+        #     '/stores/page/FB3810D0-2453-447E-86C3-45C094E7F3A0',
+        #     '/stores/page/65B90D63-5A93-422C-81F5-CD4297B1B65D',
+        #     '/stores/page/20758B24-570B-4AB8-B53E-6FD5DC9E8514',
+        #     '/stores/page/F36A4167-83B4-45CE-8C08-4F176153083D',
+        #     '/stores/page/FBBC92DD-D089-4156-899F-45B69C58F989',
+        #     '/stores/page/531253C5-D835-4521-8526-A0DAC4EF4C89',
+        #     '/stores/page/258CD320-5D69-43A6-B30D-06F1AFA70C4D'
+        # ]}
 
     ]
 

@@ -13,6 +13,15 @@ class AmazonGoodsDetail(BasePage):
         return self.get_text(XDetail.xpath_goods_image)
 
     @property
+    def reviews_num(self) -> int:
+        text = self.get_text(XDetail.xpath_reviews_text)
+        if text:
+            info = text.split(' ')
+            if len(info) == 2:
+                return int(info[0].replace(',', ''))
+        return 0
+
+    @property
     def title(self):
         return self.get_text(XDetail.xpath_goods_title)
 
@@ -93,6 +102,7 @@ class AmazonGoodsDetail(BasePage):
         ele = cls(response)
         item['url'] = response.url
         item['title'] = ele.title
+        item['reviews_num'] = ele.reviews_num
         item['price_text'] = ele.price_text
         item['price'] = ele.price
 
@@ -112,7 +122,7 @@ class AmazonGoodsDetail(BasePage):
         details['price_base'] = ele.price_base
         details['price_save'] = ele.price_save
         details['sale_at'] = ele.sale_at_text
-        details['asin'] = ele.asin
+        details['asin'] = ele.asin if 'asin' not in item else item['asin']
         details['rank_list'] = ele.rank_list
         details['root_rank'] = ele.root_category_rank_num
         details['root_category_name'] = ele.root_category_name
