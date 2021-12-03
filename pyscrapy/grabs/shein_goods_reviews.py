@@ -1,6 +1,10 @@
 from scrapy.http import TextResponse
 from scrapy import Request
 from urllib.parse import urlencode
+from pyscrapy.database import Database
+from sqlalchemy.orm.session import Session
+from Config import Config
+from pyscrapy.models import Goods, GoodsReview
 
 
 class ReviewRequest(object):
@@ -11,6 +15,8 @@ class ReviewRequest(object):
     """
 
     url = 'https://us.shein.com/goods_detail_nsw/getCommentInfoByAbc'
+
+    db_session: Session
 
     # headers = {
     #     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.104 Safari/537.36'
@@ -54,6 +60,16 @@ class ReviewRequest(object):
             # headers=self.headers
         )
 
+    def __init__(self):
+        db = Database(Config().get_database())
+        db.ROOT_PATH = Config.ROOT_PATH
+        self.db_session = db.get_db_session()
+
+    def get_all(self, spu: str):
+        goods_list = self.db_session.query(Goods).filter(Goods.asin == spu).first()
+        if not goods_list:
+            raise RuntimeError('spu商品不存在')
+
     @classmethod
     def get_data(cls, rdata: dict) -> dict:
         if rdata['code'] == -1:
@@ -84,21 +100,19 @@ class ReviewRequest(object):
     def parse(cls, response: TextResponse):
         meta = response.meta
         item = meta['item']
-        # next_next = True
         if response.text == 'null':
             yield item
             print('=====================goods_reviews=======null==========')
             return False
-            # next_next = False
 
-        # if next_next:
         rdata = response.json()
-        if rdata['code'] == -1:
+        data = cls.get_data(rdata)
+
+        if data['code'] == -1:
             yield item
             print('=====================goods_reviews=======code=-1========')
             return False
 
-        data = cls.get_data(rdata)
         reviews_list = data['items']
         if ('color_goods_index' not in meta) and ('comment_rank' not in meta):
             # 没有过滤颜色和星级
@@ -177,3 +191,5 @@ class ReviewRequest(object):
         # print(rinfo['num'])
 
 
+if __name__ == '__main__':
+    rev = ReviewRequest().get_all("W2004101375")
