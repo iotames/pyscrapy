@@ -8,6 +8,7 @@ from pyscrapy.grabs.amazon_goods import AmazonGoodsDetail
 from pyscrapy.grabs.amazon_goods_reviews import AmazonGoodsReviews
 from pyscrapy.extracts.amazon import Common as XAmazon, GoodsReviews as XGoodsReviews
 from pyscrapy.models import SiteMerchant
+from pyscrapy.items import AmazonGoodsItem
 
 
 class AmazonSpider(BaseSpider):
@@ -42,6 +43,7 @@ class AmazonSpider(BaseSpider):
     stores_urls = [
         {'store_name': 'Baleaf', 'urls': ['/stores/page/105CBE98-4967-4033-8601-F8B84867E767']},
         # {'store_name': 'sponeed', 'urls': [
+        # 7个网页中6个有反爬。 需要从XHR网络请求中抓取ASINList
         #     '/stores/page/FB3810D0-2453-447E-86C3-45C094E7F3A0',
         #     '/stores/page/65B90D63-5A93-422C-81F5-CD4297B1B65D',
         #     '/stores/page/20758B24-570B-4AB8-B53E-6FD5DC9E8514',
@@ -113,13 +115,20 @@ class AmazonSpider(BaseSpider):
                 meta=dict(next_request=next_request)
             )
         if self.spider_child == self.CHILD_GOODS_LIST_ASIN:
+            store_name = 'sponeed'
+            store_find = {'name': store_name, 'site_id': self.site_id}
+            store_model = self.db_session.query(SiteMerchant).filter_by(**store_find).first()
+            merchant_id = store_model.id
+            # 手动填写 asin_list
             for asin in self.asin_list:
-                # item = AmazonGoodsItem()
-                # item['merchant_id'] = mchid
-                # item['asin'] = asin
+                item = AmazonGoodsItem()
+                item['merchant_id'] = merchant_id
+                item['asin'] = asin
+                item['code'] = asin
                 yield Request(
                     XAmazon.get_url_by_code(asin),
-                    callback=GoodsListInStore.parse
+                    callback=AmazonGoodsDetail.parse,
+                    meta=dict(item=item)
                 )
 
 

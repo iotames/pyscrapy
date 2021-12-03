@@ -66,8 +66,9 @@ class AmazonOutput(BaseOutput):
             sale_at = details['sale_at']
             asin = details['asin']
             root_rank = details['root_rank']
-            goods_url = AmazonSpider.base_url + '/dp/' + goods.code
+            goods_url = goods.url
             rank_list = details['rank_list']
+            rank_in = details['rank_in'] if 'rank_in' in details else 0
             rank_detail = ''
             for rank in rank_list:
                 # AmazonSpider.get_site_url(rank['url'])
@@ -77,7 +78,7 @@ class AmazonOutput(BaseOutput):
                 details_items += item + "\n|"
             goods_info_list = [
                 goods.id, asin, image, goods.title, goods_url, sale_at, time_str, goods.price, details['price_base'],
-                details['price_save'], goods.reviews_num, root_rank, details['rank_in'], details_items, rank_detail
+                details['price_save'], goods.reviews_num, root_rank, rank_in, details_items, rank_detail
             ]
             print(goods_info_list)
             # 返回商品信息递增列 next col index

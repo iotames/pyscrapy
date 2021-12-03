@@ -106,7 +106,7 @@ class AmazonGoodsDetail(BasePage):
         item['price_text'] = ele.price_text
         item['price'] = ele.price
 
-        if 'asin' not in item:
+        if ele.asin:
             item['asin'] = ele.asin
 
         if 'image' not in item:
