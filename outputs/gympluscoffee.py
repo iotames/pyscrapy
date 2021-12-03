@@ -166,6 +166,7 @@ class GympluscoffeeOutput(BaseOutput):
                 row_data[25].value = "---"
                 row_data[26].value = "---"
                 row_data[27].value = "---"
+                row_data[28].value = "---"
                 del_rows_index_list.append(row_index)
                 del_rows_list.append(url_sku)
             else:
@@ -189,5 +190,5 @@ class GympluscoffeeOutput(BaseOutput):
 
 if __name__ == '__main__':
     gc = GympluscoffeeOutput()
-    gc.update_excel(gc.output_dir + "/gympluscoffee_2021-11-19_09_22.xlsx")
+    gc.update_excel(gc.output_dir + "/gympluscoffee_2021-12-03_09_48.xlsx")
     # gc.output_to_excel()

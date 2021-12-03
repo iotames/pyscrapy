@@ -1,11 +1,12 @@
 from urllib.parse import urlencode
 import re
+import json
 from scrapy.http import TextResponse
 
 BASE_URL = "https://www.amazon.com"
 
 
-class GoodsRankingList(object):
+class GoodsListInRanking(object):
     """
     商品排行榜数据解析类
     """
@@ -37,7 +38,7 @@ class GoodsDetail(object):
     re_goods_rank_num_cn = r"商品里排第(.+?)名"
     re_goods_rank_num_en = r"#(.+?) in "
     re_root_category_name_cn = r">查看商品销售排行榜(.+?)<"
-    re_root_category_name_en = r">See Top 100 in (.+?))"
+    re_root_category_name_en = r">See Top 100 in (.+?)\)"  # (字符必加反斜杠转义符
 
     """
     Best Sellers Rank: #4,639 in Clothing, Shoes & Jewelry (See Top 100 in Clothing, Shoes & Jewelry)
@@ -187,4 +188,24 @@ class GoodsReviews(object):
                 colors = sku.split(lang_color)
                 color = colors[1].strip()
         return color
+
+
+class GoodsListInStore(object):
+
+    re_config_json = "var config = {(.+?)}};\\n"
+
+    @classmethod
+    def get_config_json(cls, text: str) -> dict:
+        info = re.findall(cls.re_config_json, text)
+        if info:
+            config_str = "{" + info[1] + "}}"
+            return json.loads(config_str)
+        return {}
+
+    @classmethod
+    def get_asin_list(cls, text: str) -> list:
+        config = cls.get_config_json(text)
+        if config:
+            return config['content']['ASINList']
+        return []
 

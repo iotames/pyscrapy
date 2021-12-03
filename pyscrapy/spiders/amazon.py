@@ -1,22 +1,13 @@
 from scrapy.exceptions import UsageError
-from scrapy.http import TextResponse
 from scrapy import Request
-from pyscrapy.items import AmazonGoodsItem
-from pyscrapy.models import Goods
-import json
-from sqlalchemy import and_, or_
-import time
 from pyscrapy.spiders.basespider import BaseSpider
 from urllib.parse import urlencode
 from Config import Config
-import re
-from pyscrapy.grabs.amazon_goods_list import GoodsRankingList
+from pyscrapy.grabs.amazon_goods_list import GoodsRankingList, GoodsListInStore
 from pyscrapy.grabs.amazon_goods import AmazonGoodsDetail
 from pyscrapy.grabs.amazon_goods_reviews import AmazonGoodsReviews
 from pyscrapy.extracts.amazon import Common as XAmazon, GoodsReviews as XGoodsReviews
-# from service.Singleton import Singleton
-
-# from translate import Translator
+from pyscrapy.models import SiteMerchant
 
 
 class AmazonSpider(BaseSpider):
@@ -48,6 +39,12 @@ class AmazonSpider(BaseSpider):
         # '/bestsellers/sporting-goods/706814011?{}'  # 户外休闲销售排行榜
     ]
 
+    stores_urls = [
+        {'store_name': 'Baleaf', 'urls': ['/stores/page/105CBE98-4967-4033-8601-F8B84867E767']}
+
+    ]
+
+    CHILD_GOODS_LIST_STORE_PAGE = 'goods_list_store_page'
     CHILD_GOODS_LIST_RANKING = 'goods_list_ranking'
     CHILD_GOODS_REVIEWS = 'goods_reviews'
 
@@ -59,9 +56,24 @@ class AmazonSpider(BaseSpider):
             msg = 'lost param spider_child'
             raise UsageError(msg)
         self.spider_child = kwargs['spider_child']
-        # self.allowed_domains.append("api.bazaarvoice.com")
 
     def start_requests(self):
+        if self.spider_child == self.CHILD_GOODS_LIST_STORE_PAGE:
+            for store in self.stores_urls:
+                store_name = store['store_name']
+                store_find = {'name': store_name, 'site_id': self.site_id}
+                print(store_find)
+                store_model = self.db_session.query(SiteMerchant).filter_by(**store_find).first()
+                if not store_model:
+                    store_model = SiteMerchant(**store_find)
+                    self.db_session.add(store_model)
+                    self.db_session.commit()
+                for url in store['urls']:
+                    yield Request(
+                        self.get_site_url(url),
+                        callback=GoodsListInStore.parse,
+                        meta=dict(store_model=store_model)
+                    )
         if self.spider_child == self.CHILD_GOODS_LIST_RANKING:
             for url in self.top_goods_urls:
                 self.url_params['pg'] = "1"

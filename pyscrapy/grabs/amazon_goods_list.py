@@ -1,4 +1,4 @@
-from pyscrapy.extracts.amazon import GoodsRankingList as XRankingList, Common as XAmazon
+from pyscrapy.extracts.amazon import GoodsListInRanking as XRankingList, Common as XAmazon, GoodsListInStore as XStoreGoods
 from pyscrapy.grabs.amazon import BasePage
 from pyscrapy.grabs.basegrab import BaseElement
 from pyscrapy.grabs.amazon_goods import AmazonGoodsDetail
@@ -76,4 +76,23 @@ class GoodsInRankList(BaseElement):
         goods_item["reviews_num"] = self.reviews_num
         goods_item["image_urls"] = [image]
         return goods_item
+
+
+class GoodsListInStore(BasePage):
+
+    @classmethod
+    def parse(cls, response: TextResponse):
+        if cls.check_robot_happened(response):
+            raise RuntimeError('check_robot_happened')
+        store_model = response.meta['store_model']
+        asin_list = XStoreGoods.get_asin_list(response.text)
+        for asin in asin_list:
+            item = AmazonGoodsItem()
+            item['merchant_id'] = store_model.id
+            yield Request(
+                XAmazon.get_url_by_code(asin, {"language": 'zh_CN'}),
+                callback=AmazonGoodsDetail.parse,
+                meta=dict(item=item)
+            )
+
 

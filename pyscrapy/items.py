@@ -109,22 +109,9 @@ class SweatybettyGoodsItem(Item):
     reviews_num = Field()
 
 
-class AmazonGoodsItem(Item):
-    image_urls = Field()
-    # images = Field()
-    image_paths = Field()
-    model = Field()
-
+class AmazonGoodsItem(BaseGoodsItem):
     asin = Field()
-
-    code = Field()  # id
-    title = Field()
-    url = Field()
-    price = Field()
-    price_text = Field()
-    image = Field()
-    details = Field()
-    reviews_num = Field()
+    merchant_id = Field()
 
 
 class GoodsReviewItem(Item):

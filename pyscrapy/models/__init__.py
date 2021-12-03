@@ -10,3 +10,4 @@ from .GoodsQuantityLog import GoodsQuantityLog
 from .GoodsSkuQuantityLog import GoodsSkuQuantityLog
 from .GoodsReview import GoodsReview
 from .Translator import Translator
+from .SiteMerchant import SiteMerchant
