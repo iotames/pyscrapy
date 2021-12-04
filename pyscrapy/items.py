@@ -115,6 +115,7 @@ class AmazonGoodsItem(BaseGoodsItem):
 
 
 class GoodsReviewItem(Item):
+    code = Field()
     goods_id = Field()
     goods_code = Field()
     rating_value = Field()
@@ -127,7 +128,9 @@ class GoodsReviewItem(Item):
 
 
 class GoodsReviewAmazonItem(GoodsReviewItem):
-    code = Field()
+    """
+    亚马逊商品评论
+    """
 
 
 class PyscrapyItem(Item):

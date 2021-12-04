@@ -139,10 +139,14 @@ class GoodsDetail(BaseResponse):
         details['brand'] = ele.brand
         details['relation_colors'] = ele.relation_colors
         item['details'] = details
+        # yield item
         if spu:
-            yield ReviewRequest.get_once(data={'spu': spu}, meta={'item': item, 'goods_url': response.url})
+            rev = ReviewRequest(spu)
+            yield rev.get_simple(meta={'goods_item': item})
+            # yield rev.get_schema(meta={'goods_item': item})
         else:
             yield item
+
         if 'next_request' in meta:
             yield meta['next_request']
 

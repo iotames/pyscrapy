@@ -5,6 +5,7 @@ from pyscrapy.database import Database
 from sqlalchemy.orm.session import Session
 from Config import Config
 from pyscrapy.models import Goods, GoodsReview
+from pyscrapy.items import GoodsReviewItem, BaseGoodsItem
 
 
 class ReviewRequest(object):
@@ -18,9 +19,15 @@ class ReviewRequest(object):
 
     db_session: Session
 
+    data: dict
+
     # headers = {
     #     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.104 Safari/537.36'
     # }
+
+    SORT_ASC = 'time_asc'
+    SORT_DESC = 'time_desc'
+    SORT_DEFAULT = ''
 
     _lang = 'en'
     _ver = '1.1.8'
@@ -31,44 +38,85 @@ class ReviewRequest(object):
     is_picture = ''  # 包含图片
     comment_rank = ''  # 1 2 3 4 5 星级
     size = ''  # S M L XXL
-    sort = 'time_asc'  # 排序： time_asc 时间顺序(由远及近); time_desc 时间逆序; default ''
+    sort = SORT_ASC  # 排序： time_asc 时间顺序(由远及近); time_desc 时间逆序; default ''
     limit = 3
+    tag_id = ''
 
-    query_params = {
-        '_lang': _lang,
-        '_ver': _ver,
-        'rule_id': rule_id,
-        'sort': sort,
-        'limit': limit,
-        'page': page,
-        'comment_rank': comment_rank
-    }
+    spu: str
+    goods_color_index: int
 
-    @classmethod
-    def get_once(cls, data: dict, meta=None):
-        # self.query_params['spu'] = spu
-        cls.query_params.update(data)
-        cls.query_params['offset'] = (cls.query_params['page'] - 1) * cls.query_params['limit']
-        url = cls.url + "?" + urlencode(cls.query_params)
-        meta['query_params'] = cls.query_params
+    TYPE_ALL = 'all'
+    TYPE_SCHEMA = 'schema'
+    TYPE_UPDATE = 'update'
+    TYPE_SIMPLE = 'simple'
+    filter_type = TYPE_ALL
 
-        return Request(
-            url,
-            callback=cls.parse,
-            meta=meta,
-            dont_filter=True
-            # headers=self.headers
-        )
+    @property
+    def query_params(self):
+        params = {
+            '_lang': self._lang,
+            '_ver': self._ver,
+            'rule_id': self.rule_id,
+            'sort': self.sort,
+            'limit': self.limit,
+            'page': self.page,
+            'size': self.size,
+            'spu': self.spu,
+            'offset': (self.page - 1) * self.limit,
+            'goods_id': self.goods_id,
+            'is_picture': self.is_picture,
+            'tag_id': self.tag_id
+        }
+        if self.comment_rank:
+            params['comment_rank'] = self.comment_rank
+        return params
 
-    def __init__(self):
+    def get_schema(self, meta=None):
+        self.filter_type = self.TYPE_SCHEMA
+        self.limit = 3
+        return Request(self.request_url, callback=self.parse, meta=meta, dont_filter=True)
+
+    def get_simple(self, meta=None):
+        self.filter_type = self.TYPE_SIMPLE
+        self.limit = 3
+        return Request(self.request_url, callback=self.parse, meta=meta, dont_filter=True)
+
+    @property
+    def request_url(self):
+        return self.url + "?" + urlencode(self.query_params)
+
+    def __init__(self, spu: str):
+        self.spu = spu
         db = Database(Config().get_database())
         db.ROOT_PATH = Config.ROOT_PATH
         self.db_session = db.get_db_session()
 
-    def get_all(self, spu: str):
-        goods_list = self.db_session.query(Goods).filter(Goods.asin == spu).first()
-        if not goods_list:
+    def get_all(self):
+        goods_model = self.db_session.query(Goods).filter(Goods.asin == self.spu).first()
+        if not goods_model:
             raise RuntimeError('spu商品不存在')
+        self.filter_type = self.TYPE_ALL
+        self.limit = 100
+        review_item = GoodsReviewItem()
+        review_item['goods_id'] = goods_model.id
+        review_item['goods_code'] = goods_model.code
+        goods_item = BaseGoodsItem()
+        meta = {'review_item': review_item, 'goods_item': goods_item}
+        return Request(self.request_url, callback=self.parse, meta=meta, dont_filter=True)
+
+    def update(self):
+        self.filter_type = self.TYPE_UPDATE
+        self.limit = 100
+        self.sort = self.SORT_DESC
+        goods_model = self.db_session.query(Goods).filter(Goods.asin == self.spu).first()
+        if not goods_model:
+            raise RuntimeError('spu商品不存在')
+        review_item = GoodsReviewItem()
+        review_item['goods_id'] = goods_model.id
+        review_item['goods_code'] = goods_model.code
+        goods_item = BaseGoodsItem()
+        meta = {'review_item': review_item, 'goods_item': goods_item}
+        return Request(self.request_url, callback=self.parse, meta=meta, dont_filter=True)
 
     @classmethod
     def get_data(cls, rdata: dict) -> dict:
@@ -94,102 +142,117 @@ class ReviewRequest(object):
             }
             items.append(review)
         total = rinfo['commentInfoTotal']  # allTotal
+        # total_picture = rinfo['pictureTotal']
+        # print(total_picture)
+        # print(rinfo['num'])
         return dict(code=0, msg='ok', total=total, items=items)
 
-    @classmethod
-    def parse(cls, response: TextResponse):
+    def next_process(self, meta, data: dict):
+        reviews_list = data['items']
+        item = meta['goods_item']
+        if not self.goods_id and not self.comment_rank and not self.size:
+            item['reviews_num'] = data['total']
+            if self.sort == self.SORT_ASC and self.page == 1:
+                first_review_time = reviews_list[0]['comment_time']
+                item['details']['first_review_time'] = first_review_time
+        # query_params = meta['query_params'].copy()
+        # for i in range(1, 6):
+        # 1星评论
+        return Request(
+            url=self.request_url,
+            callback=self.parse,
+            meta=dict(goods_item=item),
+            dont_filter=True
+        )
+
+    def is_last_page(self) -> bool:
+        total_reviews = self.data['total']
+        had_len = (self.page - 1) * self.limit + len(self.data['items'])
+        if total_reviews == had_len:
+            return True
+        return False
+
+    def parse(self, response: TextResponse):
         meta = response.meta
-        item = meta['item']
+        item = meta['goods_item']
         if response.text == 'null':
             yield item
             print('=====================goods_reviews=======null==========')
             return False
 
         rdata = response.json()
-        data = cls.get_data(rdata)
+        self.data = self.get_data(rdata)
+        data = self.data
 
         if data['code'] == -1:
             yield item
             print('=====================goods_reviews=======code=-1========')
             return False
 
-        reviews_list = data['items']
-        if ('color_goods_index' not in meta) and ('comment_rank' not in meta):
-            # 没有过滤颜色和星级
-            if reviews_list:
-                item['details']['first_review_time'] = reviews_list[0]['comment_time']
-                item['reviews_num'] = data['total']
-                query_params = meta['query_params'].copy()
-                # for i in range(1, 6):
-                # 1星评论
-                query_params['comment_rank'] = 1
-                yield Request(
-                    url=cls.url + "?" + urlencode(query_params),
-                    callback=cls.parse,
-                    meta=dict(item=item, query_params=query_params, comment_rank=1),
-                    dont_filter=True
-                )
+        total_reviews = data['total']
+        item['reviews_num'] = total_reviews
+
+        if self.filter_type == self.TYPE_SIMPLE:
+            yield item
+
+        if self.filter_type == self.TYPE_UPDATE:
+            yield item
+
+        if self.filter_type == self.TYPE_ALL:
+            item['reviews_num'] = total_reviews
+            # TODO save review
+            if self.is_last_page():
+                #  review_item
+                yield item
             else:
-                # 列表为空
+                self.page += 1
+                yield self.next_process(meta, data)
+
+        if self.filter_type == self.TYPE_SCHEMA:
+            # 没有过滤颜色和星级
+            if not self.comment_rank and not self.goods_id and not data['items']:
                 for irank in range(1, 6):
                     item['details']['rank_score'][str(irank)] = 0  # {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}
                 if item['details']['relation_colors']:
                     for icolor in range(len(item['details']['relation_colors'])):
                         item['details']['relation_colors'][icolor]["reviews_num"] = 0
                 yield item
-
-        if 'comment_rank' in meta:
-            rank = meta['comment_rank']
-            if rank < 5:
-                if 'rank_score' not in item['details']:
-                    item['details']['rank_score'] = {str(rank): data['total']}
-                else:
-                    item['details']['rank_score'][str(rank)] = data['total']
-                query_params = meta['query_params'].copy()
-                query_params['comment_rank'] += 1
-                rank += 1
-                yield Request(
-                    url=cls.url + "?" + urlencode(query_params),
-                    callback=cls.parse,
-                    meta=dict(item=item, query_params=query_params, comment_rank=rank),
-                    dont_filter=True
-                )
             else:
-                item['details']['rank_score'][str(rank)] = data['total']
+                self.comment_rank = 1
+                yield self.next_process(meta, data)
+
+            if self.comment_rank:
+                if self.comment_rank < 5:
+                    if 'rank_score' not in item['details']:
+                        item['details']['rank_score'] = {str(self.comment_rank): data['total']}
+                    else:
+                        item['details']['rank_score'][str(self.comment_rank)] = data['total']
+                    self.comment_rank += 1
+                    meta['goods_item'] = item
+                    yield self.next_process(meta, data)
+                else:
+                    item['details']['rank_score'][str(self.comment_rank)] = data['total']
+                    self.comment_rank = ""
+                    if item['details']['relation_colors']:
+                        self.goods_color_index = 0
+                        self.goods_id = item['details']['relation_colors'][self.goods_color_index]['goods_id']
+                        meta['goods_item'] = item
+                        yield self.next_process(meta, data)
+                    else:
+                        yield item
+
+            if self.goods_id:
                 query_params = meta['query_params'].copy()
-                del query_params['comment_rank']
-                if item['details']['relation_colors']:
-                    goods_id = item['details']['relation_colors'][0]['goods_id']
+                colorii = self.goods_color_index
+                item['details']['relation_colors'][colorii]["reviews_num"] = data['total']
+                if (len(item['details']['relation_colors']) - colorii) > 1:
+                    goods_id = item['details']['relation_colors'][colorii]['goods_id']
                     query_params['goods_id'] = goods_id
-                    yield Request(
-                        url=cls.url + "?" + urlencode(query_params),
-                        callback=cls.parse,
-                        meta=dict(item=item, query_params=query_params, color_goods_index=0),
-                        dont_filter=True
-                    )
+                    self.goods_color_index += 1
+                    yield self.next_process(meta, data)
                 else:
                     yield item
 
-        if 'color_goods_index' in meta:
-            query_params = meta['query_params'].copy()
-            colorii = meta['color_goods_index']
-            item['details']['relation_colors'][colorii]["reviews_num"] = data['total']
-            if (len(item['details']['relation_colors']) - colorii) > 1:
-                goods_id = item['details']['relation_colors'][colorii]['goods_id']
-                query_params['goods_id'] = goods_id
-                colorii += 1
-                yield Request(
-                    url=cls.url + "?" + urlencode(query_params),
-                    callback=cls.parse,
-                    meta=dict(item=item, query_params=query_params, color_goods_index=colorii),
-                    dont_filter=True
-                )
-            else:
-                yield item
-        # total_picture = rinfo['pictureTotal']
-        # print(total_picture)
-        # print(rinfo['num'])
-
 
 if __name__ == '__main__':
-    rev = ReviewRequest().get_all("W2004101375")
+    rev = ReviewRequest("W2004101375").get_all()

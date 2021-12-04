@@ -34,8 +34,11 @@ class SheinSpider(BaseSpider):
         'sort': 7  # ?sort=7 top reviews
     }
 
-    top_goods_urls = [
-        '/category/Active-sc-00856973.html'  # 女装运动服
+    category_goods_list = [
+        {
+            'total_page': 40,
+            'url': '/category/Active-sc-00856973.html'  # 女装运动服
+        }
     ]
 
     CHILD_GOODS_LIST = 'goods_list'
@@ -47,18 +50,24 @@ class SheinSpider(BaseSpider):
 
     def start_requests(self):
         if self.spider_child == self.CHILD_GOODS_LIST:
-            for url in self.top_goods_urls:
-                url = "{}{}?{}".format(self.base_url, url, urlencode(self.url_params))
-                yield Request(
-                    url,
-                    callback=GoodsList.parse,
-                    headers=dict(referer=self.base_url),
-                    meta=dict(page=1)
-                )
+            for category in self.category_goods_list:
+                total_page = category['total_page']
+                page = 1
+                for page in range(1, (total_page + 1)):
+                    url = "{}{}?{}".format(self.base_url, category['url'], urlencode({'page': page, 'sort': 7}))
+                    print(url)
+                    yield Request(
+                        url,
+                        callback=GoodsList.parse,
+                        headers=dict(referer=self.base_url),
+                        meta=dict(page=page)
+                    )
+                page += 1
         if self.spider_child == self.CHILD_GOODS_DETAIL:
             self.goods_model_list = self.db_session.query(Goods).filter(
                 Goods.site_id == self.site_id
             ).all()
+            print('===============total : = ' + str(len(self.goods_model_list)))
             for model in self.goods_model_list:
                 yield Request(
                     model.url,

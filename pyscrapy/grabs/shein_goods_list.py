@@ -20,6 +20,7 @@ class GoodsList(BasePage):
 
     @classmethod
     def parse(cls, response: TextResponse):
+        page = response.meta['page']
         grab = cls(response)
         categories_map = {}
         for cat in grab.categories:
@@ -36,14 +37,16 @@ class GoodsList(BasePage):
             print('categories_map is empty')
             return False
         for ele in goods_list:
-            ele = GoodsInList(ele)
-            url = ele.url
+            goods_ele = GoodsInList(ele)
+            goods_ele.page = page
+            url = goods_ele.url
             print('=====shein_goods_list======goods_url ======  ' + url)
             if not url:
                 continue
-            goods_item = ele.item
+            goods_item = goods_ele.item
+            # yield goods_item
             yield Request(url, callback=GoodsDetail.parse, meta=dict(item=goods_item, categories_map=categories_map))
-        # if response.meta['page'] == 1:
+        # if page == 1:
         #     yield Request(
         #         response.url.replace('pg=1', 'pg=2'),
         #         callback=cls.parse,
@@ -54,6 +57,8 @@ class GoodsList(BasePage):
 class GoodsInList(BaseElement):
 
     BASE_URL = XGoodsList.BASE_URL
+
+    page = 1
 
     @property
     def url(self) -> str:
@@ -71,7 +76,8 @@ class GoodsInList(BaseElement):
     @property
     def rank_in(self) -> int:
         text = self.get_text(XGoodsList.xpath_goods_id)
-        return int(text.split('-')[0]) + 1
+        rank_in_page = int(text.split('-')[0]) + 1
+        return rank_in_page + (self.page - 1)*120
 
     @property
     def title(self):
