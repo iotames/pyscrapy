@@ -30,6 +30,7 @@ class SheinSpider(BaseSpider):
     }
 
     url_params = {
+        'page': 1,
         'sort': 7  # ?sort=7 top reviews
     }
 

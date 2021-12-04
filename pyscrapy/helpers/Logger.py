@@ -51,12 +51,11 @@ class Logger:
         if not type(data) is str:
             data = json.dumps(data, ensure_ascii=False)
 
-        enter_str = "\r\n"
         long_line = "=====================start========================"
         time_str = time.strftime("%Y%m%d %H:%M:%S", time.localtime())
         begin_str = time_str + long_line
-        data = "\n" + data
-        input_str = begin_str + data + enter_str
+        data = os.linesep + data
+        input_str = begin_str + data + os.linesep  # Windows '\r\n', Linux '\n', Mac'\r'
         if self.echo_msg:
             print(data)
         file.write(input_str)

@@ -206,6 +206,10 @@ class GoodsListInStore(object):
             return {}
 
         if info:
+            # for ii in info:
+            #     data = get_data(ii)
+            #     if data:
+            #         return data
             if len(info) == 2:
                 return get_data(info[1])
             if len(info) == 1:
