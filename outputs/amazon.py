@@ -9,6 +9,7 @@ from openpyxl.styles import PatternFill
 class AmazonOutput(BaseOutput):
 
     site_name = 'amazon'
+    cell_fill = PatternFill("solid", fgColor="1874CD")
     goods_id_to_title = {}
     colors_show_times = {}
     
@@ -44,7 +45,7 @@ class AmazonOutput(BaseOutput):
     def output(self):
         sheet = self.work_sheet
         # sheet.sheet_format.defaultRowHeight = 30
-        title_row = ('商品ID', '亚马逊ASIN', '分类', '图片', '商品标题', '商品链接', '上架时间', '更新时间', '价格/US$', '原价', '节省',
+        title_row = ('商品ID', 'code', '亚马逊ASIN', '分类', '图片', '商品标题', '商品链接', '上架时间', '更新时间', '价格/US$', '原价', '节省',
                      '评论数', '大类排名', '当前排名', '商品描述', '所有排名')
         title_col = 1
         for title in title_row:
@@ -77,13 +78,24 @@ class AmazonOutput(BaseOutput):
             for item in details['items']:
                 details_items += item + "\n|"
             goods_info_list = [
-                goods.id, asin, goods.category_name, image, goods.title, goods_url, sale_at, time_str, goods.price, details['price_base'],
+                goods.id, goods.code, asin, goods.category_name, image, goods.title, goods_url, sale_at, time_str, goods.price, details['price_base'],
                 details['price_save'], goods.reviews_num, root_rank, rank_in, details_items, rank_detail
             ]
             print(goods_info_list)
             # 返回商品信息递增列 next col index
             self.set_values_to_row(sheet, goods_info_list, goods_row_index, goods_col_index)
             goods_row_index += 1
+
+        # 标记重复的ASIN
+        total_asin_list = []
+        for row in sheet.rows:
+            cell = row[2]
+            asin = cell.value
+            if asin in total_asin_list:
+                cell.fill = self.cell_fill
+                print(asin)
+            else:
+                total_asin_list.append(asin)
 
         sheet_reviews = self.wb.create_sheet(title='reviews', index=1)
         detail_rows = [('商品', '评论概要', '评论详情', '颜色', '评分', 'SKU', '评论源地址', '标记')]
@@ -94,17 +106,17 @@ class AmazonOutput(BaseOutput):
                     GoodsReview.goods_id == goods.id
                 )).all()
             self.set_reviews_colors(reviews, detail_rows, False)
-        fill = PatternFill("solid", fgColor="1874CD")
+
         for row in detail_rows:
             sheet_reviews.append(row)
         for row in sheet_reviews.rows:
             for cell in row:
                 if type(cell.value) == str:
                     if cell.value.find("size") > -1:
-                        cell.fill = fill
+                        cell.fill = self.cell_fill
                         row[7].value = 1
                     if cell.value.find("Size") > -1:
-                        cell.fill = fill
+                        cell.fill = self.cell_fill
                         row[7].value = 1
 
         self.wb.save(self.output_file)
