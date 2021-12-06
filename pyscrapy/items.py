@@ -13,6 +13,7 @@ class BaseGoodsItem(Item):
 
     spider_name = Field()
     category_name = Field()
+    category_id = Field()
 
     code = Field()
     status = Field()

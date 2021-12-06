@@ -14,5 +14,6 @@ class RankingGoods(BaseModel):
     goods_code = Column(String(64))
     goods_spu = Column(String(64))
     goods_title = Column(String(255))
+    goods_url = Column(String(255))
 
 

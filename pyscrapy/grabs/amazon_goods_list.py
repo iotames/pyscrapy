@@ -21,15 +21,15 @@ class GoodsRankingList(BasePage):
             return False
         page = response.meta['page']
         grab = cls(response)
-        rank_in = 1 if page == 1 else 51
+        rank_num = 1 if page == 1 else 51
         for ele in grab.elements:
             ele = GoodsInRankList(ele)
             url = ele.url
             if not url:
                 continue
             goods_item = ele.item
-            goods_item["details"] = {'rank_in': rank_in}
-            rank_in += 1
+            goods_item["details"] = {'rank_num': rank_num}
+            rank_num += 1
             yield Request(url, callback=AmazonGoodsDetail.parse, meta=dict(item=goods_item))
         if page == 1:
             yield Request(

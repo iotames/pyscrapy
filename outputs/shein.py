@@ -48,7 +48,7 @@ class SheinOutput(BaseOutput):
             reviews_num = goods.reviews_num
 
             goods_info_list = [
-                goods.id, image, details['rank_in'], first_at, goods_id, spu, color, category_name, goods.title, goods_url, updated_at,
+                goods.id, image, details['rank_num'], first_at, goods_id, spu, color, category_name, goods.title, goods_url, updated_at,
                 goods.price, reviews_num, reviews_num*20, reviews_num*20*goods.price, brand, sku_num, rank_score["1"],
                 rank_score["2"], rank_score["3"], rank_score["4"], rank_score["5"]
             ]

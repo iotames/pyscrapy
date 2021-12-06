@@ -9,6 +9,8 @@ class GoodsCategory(BaseModel):
 
     site_id = Column(Integer, default=0)
     parent_id = Column(Integer, default=0)
+    code = Column(String(64), default=0)
+    parent_code = Column(String(64), default=0)
     name = Column(String(64))
     url = Column(String(255))
 

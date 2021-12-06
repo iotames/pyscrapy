@@ -101,24 +101,29 @@ class GoodsDetail(BaseResponse):
         return XShein.get_cat_id_by_url(self.url)
 
     @property
-    def category_name(self):
+    def category_name(self) -> str:
         if self.cat_id in self.__categories_map:
-            return self.__categories_map[self.cat_id]['cat_name']
+            return self.__categories_map[self.cat_id].name
         return ''
+
+    @property
+    def category_id(self) -> int:
+        if self.cat_id in self.__categories_map:
+            return self.__categories_map[self.cat_id].id
+        return 0
 
     @classmethod
     def parse(cls, response: TextResponse):
         meta = response.meta
         cls.__categories_map = meta['categories_map']
+        goods_model = meta['goods_model'] if 'goods_model' in meta else None
 
-        if 'item' in meta:
-            item = response.meta['item']
-        else:
-            item = BaseGoodsItem()
-
+        item = response.meta['item'] if 'item' in meta else BaseGoodsItem()
         ele = cls(response)
+        item['model'] = goods_model
         item['url'] = ele.url
         item['category_name'] = ele.category_name
+        item['category_id'] = ele.category_id
         item['title'] = ele.title
         item['price_text'] = ele.price_text
         item['price'] = ele.price
@@ -128,7 +133,9 @@ class GoodsDetail(BaseResponse):
         #     item['image'] = image
         #     item['image_urls'] = [image]
 
-        details = {"rank_in": 0, "rank_score": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}}
+        details = {"rank_num": 0, "rank_score": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}}
+        if goods_model:
+            details = json.loads(goods_model.details)
         if 'details' in item:
             details = item['details']
 
@@ -139,7 +146,6 @@ class GoodsDetail(BaseResponse):
         details['brand'] = ele.brand
         details['relation_colors'] = ele.relation_colors
         item['details'] = details
-        # yield item
         if spu:
             rev = ReviewRequest(spu)
             yield rev.get_simple(meta={'goods_item': item})

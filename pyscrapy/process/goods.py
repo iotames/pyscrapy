@@ -1,6 +1,6 @@
 from pyscrapy.items import StrongerlabelGoodsItem, GympluscoffeeGoodsItem, SweatybettyGoodsItem, AmazonGoodsItem, BaseGoodsItem
 from pyscrapy.spiders import StrongerlabelSpider, GympluscoffeeSpider, SweatybettySpider, AmazonSpider, BaseSpider
-from pyscrapy.models import Goods, GoodsCategory, GoodsCategoryX, GoodsQuantityLog
+from pyscrapy.models import Goods, GoodsCategory, GoodsCategoryX, GoodsQuantityLog, RankingGoods
 import datetime
 import time
 import json
@@ -194,7 +194,11 @@ class GoodsBase(Base):
         db_session = self.db_session
         not_update = ['image_urls', 'image_paths', 'model', 'spider_name']
         attrs = {'site_id': spider.site_id}
+        rank_num = 0
         for key, value in item.items():
+            if key == 'details':
+                if 'rank_num' in value:
+                    rank_num = value['rank_num']
             if key in not_update:
                 if key == 'image_paths' and value:
                     attrs['local_image'] = value[0]
@@ -203,8 +207,8 @@ class GoodsBase(Base):
 
         model: Goods = item['model'] if 'model' in item else None
         # 剔除重复的URL, 防止重复采集
-        if spider.spider_child == spider.CHILD_GOODS_LIST:
-            model = self.get_real_model(attrs, model, spider)
+        # if spider.spider_child == spider.CHILD_GOODS_LIST:
+        model = self.get_real_model(attrs, model, spider)
         if model:
             self.update_details(attrs, model)
             opt_str = 'SUCCESS UPDATE id = {} : '.format(str(model.id))
@@ -219,4 +223,26 @@ class GoodsBase(Base):
             model = Goods(**attrs)
             db_session.add(model)
         db_session.commit()
+        if spider.ranking_log:
+            xlog = spider.ranking_log
+            xd_find = {'site_id': spider.site_id, 'ranking_log_id': xlog.id, 'goods_id': model.id}
+            db_session = RankingGoods.get_db_session()
+            xgoods = RankingGoods.get_model(db_session, xd_find)
+            update_data = {
+                'spider_run_log_id': spider.log_id,
+                'goods_code': model.code,
+                'rank_num': rank_num,
+                'goods_spu': model.asin,
+                'goods_title': model.title,
+                'goods_url': model.url
+            }
+            xd_find.update()
+            if xgoods:
+                RankingGoods.update_model(db_session, update_data, xd_find)
+            else:
+                xd_find.update(update_data)
+                xgoods = RankingGoods(**xd_find)
+                db_session.add(xgoods)
+            db_session.commit()
+
         print(opt_str + ' GOODS : ' + json.dumps(attrs))

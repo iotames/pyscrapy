@@ -22,6 +22,7 @@ class BaseSpider(Spider):
     log_id: int
     app_env: str
     spider_config: SpiderConfig
+    ranking_log = None
 
     # 该属性cls静态调用 无法继承覆盖。 必须在继承的类中重写
     custom_settings = {
@@ -110,7 +111,7 @@ class BaseSpider(Spider):
         return self.log_id
 
     def closed(self, reason):
-        print("============Close Spider : " + self.name)
+        print("============Close Base Spider : " + self.name)
         print(reason)  # finished
         print(self.log_id)
         if self.app_env == SpiderConfig.ENV_DEVELOPMENT:

@@ -3,6 +3,7 @@ from pyscrapy.grabs.basegrab import BaseElement
 from pyscrapy.items import BaseGoodsItem
 from scrapy.http import TextResponse
 from pyscrapy.extracts.shein import Common as XShein
+from pyscrapy.models import GoodsCategory
 from scrapy import Request
 from pyscrapy.grabs.shein_goods import GoodsDetail
 from pyscrapy.extracts.shein import GoodsList as XGoodsList
@@ -20,32 +21,38 @@ class GoodsList(BasePage):
 
     @classmethod
     def parse(cls, response: TextResponse):
-        page = response.meta['page']
+        meta = response.meta
+        page = meta['page'] if 'page' in meta else 1
         grab = cls(response)
-        categories_map = {}
-        for cat in grab.categories:
-            ele = Categories(cat)
-            # print('=========each category:===')
-            cate_info = {'cat_id': ele.cat_id, 'cat_name': ele.cat_name, 'parent_id': ele.parent_id}
-            # print(cate_info)
-            if ele.cat_id not in categories_map:
-                categories_map[ele.cat_id] = cate_info
+        spider = meta['spider']
+        categories_map = meta['categories_map']
+
+        if 'only_category' in meta:
+            for cat in grab.categories:
+                ele = Categories(cat)
+                dbs = GoodsCategory.get_db_session()
+                cate_info = {'code': ele.cat_id, 'name': ele.cat_name, 'parent_code': ele.parent_id, 'site_id': spider.site_id}
+                cmodel = GoodsCategory.get_model(dbs, cate_info)
+                if not cmodel:
+                    GoodsCategory.create_model(dbs, cate_info)
+                dbs.commit()
+                print(cate_info)
+            return True
+
         goods_list = grab.elements
         print('===========goods_list=====len=' + str(len(goods_list)))
-        print(categories_map)
-        if not categories_map:
-            print('categories_map is empty')
-            return False
         for ele in goods_list:
             goods_ele = GoodsInList(ele)
             goods_ele.page = page
-            url = goods_ele.url
-            print('=====shein_goods_list======goods_url ======  ' + url)
-            if not url:
+            if not goods_ele.url:
+                print('=====Skip======goods_url ======')
                 continue
             goods_item = goods_ele.item
-            # yield goods_item
-            yield Request(url, callback=GoodsDetail.parse, meta=dict(item=goods_item, categories_map=categories_map))
+            goods_item["spider_name"] = spider.name
+            goods_item["category_id"] = categories_map[goods_ele.category_code].id
+            goods_item["category_name"] = categories_map[goods_ele.category_code].name
+            yield goods_item
+            # yield Request(url, callback=GoodsDetail.parse, meta=dict(item=goods_item, categories_map=categories_map))
         # if page == 1:
         #     yield Request(
         #         response.url.replace('pg=1', 'pg=2'),
@@ -74,7 +81,7 @@ class GoodsInList(BaseElement):
         return text.split('-')[1]
 
     @property
-    def rank_in(self) -> int:
+    def rank_num(self) -> int:
         text = self.get_text(XGoodsList.xpath_goods_id)
         rank_in_page = int(text.split('-')[0]) + 1
         return rank_in_page + (self.page - 1)*120
@@ -92,13 +99,13 @@ class GoodsInList(BaseElement):
     def item(self) -> BaseGoodsItem:
         goods_item = BaseGoodsItem()
         image = self.image
-        goods_item["spider_name"] = "shein"
+
         goods_item["url"] = self.url
         goods_item["image"] = self.image
         goods_item["code"] = self.code
         goods_item["title"] = self.title
         goods_item["image_urls"] = [image]
-        goods_item["details"] = {"rank_in": self.rank_in, "rank_score": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}}
+        goods_item["details"] = {"rank_num": self.rank_num, "rank_score": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}}
         return goods_item
 
 
