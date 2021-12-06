@@ -134,6 +134,12 @@ class GoodsReviewAmazonItem(GoodsReviewItem):
     """
 
 
+class GoodsReviewSheinItem(GoodsReviewItem):
+    """
+    us.shein.com
+    """
+
+
 class PyscrapyItem(Item):
     # print('========start==PyscrapyItem===process_item===')
     # define the fields for your item here like:

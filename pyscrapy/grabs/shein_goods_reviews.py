@@ -4,7 +4,8 @@ from urllib.parse import urlencode
 from pyscrapy.database import Database
 from sqlalchemy.orm.session import Session
 from Config import Config
-from pyscrapy.models import Goods, GoodsReview
+from pyscrapy.models import Goods
+import copy
 from pyscrapy.items import GoodsReviewItem, BaseGoodsItem
 
 
@@ -91,8 +92,10 @@ class ReviewRequest(object):
         db.ROOT_PATH = Config.ROOT_PATH
         self.db_session = db.get_db_session()
 
-    def get_all(self):
-        goods_model = self.db_session.query(Goods).filter(Goods.asin == self.spu).first()
+    def get_all(self, meta=None):
+        goods_model = meta['goods_model'] if 'goods_model' in meta else None
+        if not goods_model:
+            goods_model = self.db_session.query(Goods).filter(Goods.asin == self.spu).first()
         if not goods_model:
             raise RuntimeError('spu商品不存在')
         self.filter_type = self.TYPE_ALL
@@ -100,7 +103,8 @@ class ReviewRequest(object):
         review_item = GoodsReviewItem()
         review_item['goods_id'] = goods_model.id
         review_item['goods_code'] = goods_model.code
-        goods_item = BaseGoodsItem()
+
+        goods_item = meta['goods_item'] if 'goods_item' in meta else BaseGoodsItem()
         meta = {'review_item': review_item, 'goods_item': goods_item}
         return Request(self.request_url, callback=self.parse, meta=meta, dont_filter=True)
 
@@ -199,8 +203,18 @@ class ReviewRequest(object):
             yield item
 
         if self.filter_type == self.TYPE_ALL:
+            review_base = meta['review_item']
+
+            for review in data['items']:
+                review_item = copy.copy(review_base)
+                review_item['rating_value'] = review['rank']
+                review_item['sku_text'] = review['color'] + "|" + review['size']
+                review_item['color'] = review['color']
+                review_item['review_date'] = review['comment_time']
+                review_item['body'] = review['body']
+                yield review_item
+
             item['reviews_num'] = total_reviews
-            # TODO save review
             if self.is_last_page():
                 #  review_item
                 yield item

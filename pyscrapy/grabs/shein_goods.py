@@ -119,6 +119,7 @@ class GoodsDetail(BaseResponse):
         goods_model = meta['goods_model'] if 'goods_model' in meta else None
 
         item = response.meta['item'] if 'item' in meta else BaseGoodsItem()
+        item['spider_name'] = meta['spider'].name
         ele = cls(response)
         item['model'] = goods_model
         item['url'] = ele.url
@@ -148,7 +149,8 @@ class GoodsDetail(BaseResponse):
         item['details'] = details
         if spu:
             rev = ReviewRequest(spu)
-            yield rev.get_simple(meta={'goods_item': item})
+            yield rev.get_all(meta={'goods_item': item, 'goods_model': goods_model})
+            # yield rev.get_simple(meta={'goods_item': item})
             # yield rev.get_schema(meta={'goods_item': item})
         else:
             yield item
