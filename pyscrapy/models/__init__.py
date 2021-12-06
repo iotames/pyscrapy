@@ -11,3 +11,5 @@ from .GoodsSkuQuantityLog import GoodsSkuQuantityLog
 from .GoodsReview import GoodsReview
 from .Translator import Translator
 from .SiteMerchant import SiteMerchant
+from .RankingGoods import RankingGoods
+from .RankingLog import RankingLog

@@ -31,7 +31,8 @@ class SheinSpider(BaseSpider):
 
     url_params = {
         'page': 1,
-        'sort': 7  # ?sort=7 top reviews
+        # {"recommend": "", "top reviews": 7, "most popular": 8, "new arrivals": 9, "price low to high": 10, "price high to low": 11}
+        'sort': 7
     }
 
     category_goods_list = [

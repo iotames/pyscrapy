@@ -1,5 +1,5 @@
-from pyscrapy.models import BaseModel, Site, Goods, GoodsSku, GoodsCategory, SiteMerchant, \
-    GoodsCategoryX, SpiderRunLog, GoodsQuantityLog, GoodsSkuQuantityLog, Translator, GoodsReview
+from pyscrapy.models import BaseModel, Site, Goods, GoodsSku, GoodsCategory, SiteMerchant, GoodsCategoryX, \
+    SpiderRunLog, GoodsQuantityLog, GoodsSkuQuantityLog, Translator, GoodsReview, RankingGoods, RankingLog
 from sqlalchemy.engine import Engine
 from Config import Config
 from service import DB
