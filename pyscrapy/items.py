@@ -16,6 +16,7 @@ class BaseGoodsItem(Item):
     category_id = Field()
 
     code = Field()
+    asin = Field()
     status = Field()
     title = Field()
     url = Field()
@@ -111,11 +112,12 @@ class SweatybettyGoodsItem(Item):
 
 
 class AmazonGoodsItem(BaseGoodsItem):
-    asin = Field()
     merchant_id = Field()
 
 
 class GoodsReviewItem(Item):
+    model = Field()
+
     code = Field()
     goods_id = Field()
     goods_code = Field()

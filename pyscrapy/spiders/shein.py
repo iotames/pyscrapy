@@ -110,11 +110,7 @@ class SheinSpider(BaseSpider):
         if self.spider_child == self.CHILD_GOODS_LIST_TOP_REVIEWS:
             db_session = RankingLog.get_db_session()
             # '/category/Active-sc-00856973.html'  # 女装运动服
-            ranking_log = db_session.query(RankingLog).filter(and_(
-                RankingLog.site_id == self.site_id,
-                RankingLog.rank_type == EnumGoodsRanking.TYPE_TOP_REVIEWS,
-                RankingLog.created_at > (time.time() - 3600*24)
-            )).first()
+            ranking_log = self.get_ranking_log()
             if not ranking_log:
                 attrs = {
                     'site_id': self.site_id,
@@ -130,13 +126,12 @@ class SheinSpider(BaseSpider):
             meta = dict(spider=self, categories_map=self.categories_map)
             self.ranking_log = ranking_log
             yield self.get_request_goods_list(url, meta)
+
         if self.spider_child == self.CHILD_GOODS_DETAIL_TOP_REVIEWS:
-            db_session = RankingLog.get_db_session()
-            ranking_log = db_session.query(RankingLog).filter(and_(
-                RankingLog.site_id == self.site_id,
-                RankingLog.rank_type == EnumGoodsRanking.TYPE_TOP_REVIEWS,
-                RankingLog.created_at > (time.time() - 3600 * 24)
-            )).first()
+            ranking_log = self.get_ranking_log()
+            if not ranking_log:
+                raise RuntimeError('RankingLog not found !')
+            db_session = RankingGoods.get_db_session()
             ranking_goods_list = RankingGoods.get_all_model(db_session, {'ranking_log_id': ranking_log.id})
             print('==================goods_list_len = ' + str(len(ranking_goods_list)))
             for xgd in ranking_goods_list:
@@ -147,6 +142,15 @@ class SheinSpider(BaseSpider):
                     headers=dict(referer=self.base_url),
                     meta=dict(spider=self, categories_map=self.categories_map, goods_model=model)
                 )
+
+    def get_ranking_log(self):
+        db_session = RankingLog.get_db_session()
+        ranking_log = db_session.query(RankingLog).filter(and_(
+            RankingLog.site_id == self.site_id,
+            RankingLog.rank_type == EnumGoodsRanking.TYPE_TOP_REVIEWS,
+            RankingLog.created_at > (time.time() - 3600 * 24)
+        )).first()
+        return ranking_log
 
     def get_categories_map(self):
         db_session = GoodsCategory.get_db_session()

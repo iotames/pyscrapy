@@ -4,8 +4,6 @@ from pyscrapy.items import BaseGoodsItem
 from scrapy.http import TextResponse
 from pyscrapy.extracts.shein import Common as XShein
 from pyscrapy.models import GoodsCategory
-from scrapy import Request
-from pyscrapy.grabs.shein_goods import GoodsDetail
 from pyscrapy.extracts.shein import GoodsList as XGoodsList
 
 

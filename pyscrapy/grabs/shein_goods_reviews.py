@@ -4,9 +4,9 @@ from urllib.parse import urlencode
 from pyscrapy.database import Database
 from sqlalchemy.orm.session import Session
 from Config import Config
-from pyscrapy.models import Goods
+from pyscrapy.models import Goods, GoodsReview
 import copy
-from pyscrapy.items import GoodsReviewItem, BaseGoodsItem
+from pyscrapy.items import GoodsReviewSheinItem, BaseGoodsItem
 
 
 class ReviewRequest(object):
@@ -19,9 +19,12 @@ class ReviewRequest(object):
     url = 'https://us.shein.com/goods_detail_nsw/getCommentInfoByAbc'
 
     db_session: Session
+    spider = None
+    goods_model: Goods
+    review_item: GoodsReviewSheinItem
 
     data: dict
-
+    headers = None
     # headers = {
     #     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.104 Safari/537.36'
     # }
@@ -52,6 +55,8 @@ class ReviewRequest(object):
     TYPE_SIMPLE = 'simple'
     filter_type = TYPE_ALL
 
+    is_review_exists = False
+
     @property
     def query_params(self):
         params = {
@@ -75,19 +80,21 @@ class ReviewRequest(object):
     def get_schema(self, meta=None):
         self.filter_type = self.TYPE_SCHEMA
         self.limit = 3
-        return Request(self.request_url, callback=self.parse, meta=meta, dont_filter=True)
+        return Request(self.request_url, callback=self.parse, headers=self.headers, meta=meta, dont_filter=True)
 
     def get_simple(self, meta=None):
         self.filter_type = self.TYPE_SIMPLE
         self.limit = 3
-        return Request(self.request_url, callback=self.parse, meta=meta, dont_filter=True)
+        return Request(self.request_url, callback=self.parse, headers=self.headers, meta=meta, dont_filter=True)
 
     @property
     def request_url(self):
         return self.url + "?" + urlencode(self.query_params)
 
-    def __init__(self, spu: str):
+    def __init__(self, spu: str, spider, headers=None):
+        self.spider = spider
         self.spu = spu
+        self.headers = headers
         db = Database(Config().get_database())
         db.ROOT_PATH = Config.ROOT_PATH
         self.db_session = db.get_db_session()
@@ -98,29 +105,36 @@ class ReviewRequest(object):
             goods_model = self.db_session.query(Goods).filter(Goods.asin == self.spu).first()
         if not goods_model:
             raise RuntimeError('spu商品不存在')
+        self.goods_model = goods_model
         self.filter_type = self.TYPE_ALL
-        self.limit = 100
-        review_item = GoodsReviewItem()
-        review_item['goods_id'] = goods_model.id
-        review_item['goods_code'] = goods_model.code
-
-        goods_item = meta['goods_item'] if 'goods_item' in meta else BaseGoodsItem()
-        meta = {'review_item': review_item, 'goods_item': goods_item}
-        return Request(self.request_url, callback=self.parse, meta=meta, dont_filter=True)
-
-    def update(self):
-        self.filter_type = self.TYPE_UPDATE
-        self.limit = 100
+        self.limit = 20
         self.sort = self.SORT_DESC
-        goods_model = self.db_session.query(Goods).filter(Goods.asin == self.spu).first()
-        if not goods_model:
-            raise RuntimeError('spu商品不存在')
-        review_item = GoodsReviewItem()
+        review_item = GoodsReviewSheinItem()
         review_item['goods_id'] = goods_model.id
         review_item['goods_code'] = goods_model.code
-        goods_item = BaseGoodsItem()
-        meta = {'review_item': review_item, 'goods_item': goods_item}
-        return Request(self.request_url, callback=self.parse, meta=meta, dont_filter=True)
+        self.review_item = review_item
+        goods_item = meta['goods_item'] if 'goods_item' in meta else BaseGoodsItem()
+        meta = {'goods_item': goods_item}
+        print('============review_get_all')
+        return Request(self.request_url, callback=self.parse, meta=meta, headers=self.headers, dont_filter=True)
+
+    def get_review_item(self, review: dict, review_base: GoodsReviewSheinItem) -> GoodsReviewSheinItem:
+        review_item = copy.copy(review_base)
+        review_item['code'] = review['code']
+        review_item['rating_value'] = review['rank']
+        review_item['sku_text'] = review['color'] + "|" + review['size']
+        review_item['color'] = review['color']
+        review_item['review_date'] = review['comment_time']
+        review_item['body'] = review['body']
+        db_session = GoodsReview.get_db_session()
+        model = GoodsReview.get_model(db_session, {'code': review['code'], 'site_id': self.spider.site_id})
+        if model:
+            review_item['model'] = model
+            print('========is_review_exists==goods_id={}============'.format(str(self.goods_model.id)))
+            self.is_review_exists = True
+        print('=============get_review_item=====goods_id={}======'.format(str(self.goods_model.id)))
+        print(review)
+        return review_item
 
     @classmethod
     def get_data(cls, rdata: dict) -> dict:
@@ -165,6 +179,7 @@ class ReviewRequest(object):
         return Request(
             url=self.request_url,
             callback=self.parse,
+            headers=self.headers,
             meta=dict(goods_item=item),
             dont_filter=True
         )
@@ -177,6 +192,7 @@ class ReviewRequest(object):
         return False
 
     def parse(self, response: TextResponse):
+        print('reviews_parse=====================')
         meta = response.meta
         item = meta['goods_item']
         if response.text == 'null':
@@ -203,20 +219,12 @@ class ReviewRequest(object):
             yield item
 
         if self.filter_type == self.TYPE_ALL:
-            review_base = meta['review_item']
-
+            print('reviews_parse_TYPE_ALL====================')
             for review in data['items']:
-                review_item = copy.copy(review_base)
-                review_item['rating_value'] = review['rank']
-                review_item['sku_text'] = review['color'] + "|" + review['size']
-                review_item['color'] = review['color']
-                review_item['review_date'] = review['comment_time']
-                review_item['body'] = review['body']
-                yield review_item
+                yield self.get_review_item(review, self.review_item)
 
             item['reviews_num'] = total_reviews
-            if self.is_last_page():
-                #  review_item
+            if self.is_last_page() or self.is_review_exists:
                 yield item
             else:
                 self.page += 1
@@ -269,4 +277,4 @@ class ReviewRequest(object):
 
 
 if __name__ == '__main__':
-    rev = ReviewRequest("W2004101375").get_all()
+    print('====')

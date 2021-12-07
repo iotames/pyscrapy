@@ -128,6 +128,7 @@ class GoodsDetail(BaseResponse):
         item['title'] = ele.title
         item['price_text'] = ele.price_text
         item['price'] = ele.price
+        item['asin'] = ele.spu
 
         # if 'image' not in item:
         #     image = ele.image
@@ -148,7 +149,7 @@ class GoodsDetail(BaseResponse):
         details['relation_colors'] = ele.relation_colors
         item['details'] = details
         if spu:
-            rev = ReviewRequest(spu)
+            rev = ReviewRequest(spu, spider=meta['spider'], headers={'referer': response.url})
             yield rev.get_all(meta={'goods_item': item, 'goods_model': goods_model})
             # yield rev.get_simple(meta={'goods_item': item})
             # yield rev.get_schema(meta={'goods_item': item})
