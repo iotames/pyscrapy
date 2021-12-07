@@ -25,6 +25,7 @@ class ReviewRequest(object):
     spider = None
     goods_model: Goods
     review_item: GoodsReviewSheinItem
+    goods_item: BaseGoodsItem
 
     data: dict
     headers = None
@@ -54,10 +55,10 @@ class ReviewRequest(object):
 
     TYPE_ALL = 'all'
     TYPE_SCHEMA = 'schema'
-    TYPE_UPDATE = 'update'
     TYPE_SIMPLE = 'simple'
     filter_type = TYPE_ALL
 
+    process_end = False
     is_review_exists = False
     is_review_too_old = False
     reviewed_time_before = 3600*24*90  # 只取最近3个月的评论为有效期
@@ -100,15 +101,27 @@ class ReviewRequest(object):
             params['comment_rank'] = self.comment_rank
         return params
 
+    def set_from_meta(self, meta):
+        goods_model = meta['goods_model'] if 'goods_model' in meta else None
+        if not goods_model:
+            goods_model = self.db_session.query(Goods).filter(Goods.asin == self.spu).first()
+        if not goods_model:
+            raise RuntimeError('spu商品不存在')
+        self.goods_model = goods_model
+        goods_item = meta['goods_item'] if 'goods_item' in meta else BaseGoodsItem()
+        self.goods_item = goods_item
+
     def get_schema(self, meta=None):
         self.filter_type = self.TYPE_SCHEMA
+        self.set_from_meta(meta)
         self.limit = 3
-        return Request(self.request_url, callback=self.parse, headers=self.headers, meta=meta, dont_filter=True)
+        return Request(self.request_url, callback=self.parse, headers=self.headers, dont_filter=True)
 
     def get_simple(self, meta=None):
         self.filter_type = self.TYPE_SIMPLE
+        self.set_from_meta(meta)
         self.limit = 3
-        return Request(self.request_url, callback=self.parse, headers=self.headers, meta=meta, dont_filter=True)
+        return Request(self.request_url, callback=self.parse, headers=self.headers, dont_filter=True)
 
     @property
     def request_url(self):
@@ -123,23 +136,15 @@ class ReviewRequest(object):
         self.db_session = db.get_db_session()
 
     def get_all(self, meta=None):
-        goods_model = meta['goods_model'] if 'goods_model' in meta else None
-        if not goods_model:
-            goods_model = self.db_session.query(Goods).filter(Goods.asin == self.spu).first()
-        if not goods_model:
-            raise RuntimeError('spu商品不存在')
-        self.goods_model = goods_model
         self.filter_type = self.TYPE_ALL
+        self.set_from_meta(meta)
         self.limit = 20
         self.sort = self.SORT_DESC
         review_item = GoodsReviewSheinItem()
-        review_item['goods_id'] = goods_model.id
-        review_item['goods_code'] = goods_model.code
+        review_item['goods_id'] = self.goods_model.id
+        review_item['goods_code'] = self.goods_model.code
         self.review_item = review_item
-        goods_item = meta['goods_item'] if 'goods_item' in meta else BaseGoodsItem()
-        meta = {'goods_item': goods_item}
-        print('============review_get_all')
-        return Request(self.request_url, callback=self.parse, meta=meta, headers=self.headers, dont_filter=True)
+        return Request(self.request_url, callback=self.parse, headers=self.headers, dont_filter=True)
 
     def get_review_item(self, review: dict, review_base: GoodsReviewSheinItem) -> GoodsReviewSheinItem:
         review_item = copy.copy(review_base)
@@ -187,22 +192,19 @@ class ReviewRequest(object):
         # print(rinfo['num'])
         return dict(code=0, msg='ok', total=total, items=items)
 
-    def next_process(self, meta, data: dict):
+    def next_process(self, data: dict):
         reviews_list = data['items']
-        item = meta['goods_item']
         if not self.goods_id and not self.comment_rank and not self.size:
-            item['reviews_num'] = data['total']
+            self.goods_item['reviews_num'] = data['total']
             if self.sort == self.SORT_ASC and self.page == 1:
                 first_review_time = reviews_list[0]['comment_time']
-                item['details']['first_review_time'] = first_review_time
-        # query_params = meta['query_params'].copy()
+                self.goods_item['details']['first_review_time'] = first_review_time
         # for i in range(1, 6):
         # 1星评论
         return Request(
             url=self.request_url,
             callback=self.parse,
             headers=self.headers,
-            meta=dict(goods_item=item),
             dont_filter=True
         )
 
@@ -215,10 +217,8 @@ class ReviewRequest(object):
 
     def parse(self, response: TextResponse):
         print('reviews_parse=====================')
-        meta = response.meta
-        item = meta['goods_item']
         if response.text == 'null':
-            yield item
+            yield self.goods_item
             print('=====================goods_reviews=======null==========')
             return False
 
@@ -227,75 +227,78 @@ class ReviewRequest(object):
         data = self.data
 
         if data['code'] == -1:
-            yield item
+            yield self.goods_item
             print('=====================goods_reviews=======code=-1========')
             return False
 
         total_reviews = data['total']
-        item['reviews_num'] = total_reviews
+        self.goods_item['reviews_num'] = total_reviews
 
         if self.filter_type == self.TYPE_SIMPLE:
-            yield item
-
-        if self.filter_type == self.TYPE_UPDATE:
-            yield item
+            yield self.goods_item
 
         if self.filter_type == self.TYPE_ALL:
             print('reviews_parse_TYPE_ALL====================')
             for review in data['items']:
                 yield self.get_review_item(review, self.review_item)
 
-            item['reviews_num'] = total_reviews
+            self.goods_item['reviews_num'] = total_reviews
             if self.is_last_page() or self.is_review_exists or self.is_review_too_old:
-                yield item
+                yield self.goods_item
             else:
                 self.page += 1
-                yield self.next_process(meta, data)
+                yield self.next_process(data)
 
         if self.filter_type == self.TYPE_SCHEMA:
+            # TODO 似乎陷入了死循环
             # 没有过滤颜色和星级
-            if not self.comment_rank and not self.goods_id and not data['items']:
+            if (not self.comment_rank) and (not self.goods_id) and (not data['items']):
                 for irank in range(1, 6):
-                    item['details']['rank_score'][str(irank)] = 0  # {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}
-                if item['details']['relation_colors']:
-                    for icolor in range(len(item['details']['relation_colors'])):
-                        item['details']['relation_colors'][icolor]["reviews_num"] = 0
-                yield item
+                    self.goods_item['details']['rank_score'][str(irank)] = 0  # {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}
+                if self.goods_item['details']['relation_colors']:
+                    for icolor in range(len(self.goods_item['details']['relation_colors'])):
+                        self.goods_item['details']['relation_colors'][icolor]["reviews_num"] = 0
+                print('====================111=========')
+                self.process_end = True
+                yield self.goods_item
             else:
-                self.comment_rank = 1
-                yield self.next_process(meta, data)
+                if not self.comment_rank and not self.process_end:
+                    self.comment_rank = 1
+                    yield self.next_process(data)
 
-            if self.comment_rank:
+            if self.comment_rank and not self.process_end:
                 if self.comment_rank < 5:
-                    if 'rank_score' not in item['details']:
-                        item['details']['rank_score'] = {str(self.comment_rank): data['total']}
+                    if 'rank_score' not in self.goods_item['details']:
+                        self.goods_item['details']['rank_score'] = {str(self.comment_rank): data['total']}
                     else:
-                        item['details']['rank_score'][str(self.comment_rank)] = data['total']
+                        self.goods_item['details']['rank_score'][str(self.comment_rank)] = data['total']
                     self.comment_rank += 1
-                    meta['goods_item'] = item
-                    yield self.next_process(meta, data)
+                    yield self.next_process(data)
                 else:
-                    item['details']['rank_score'][str(self.comment_rank)] = data['total']
+                    self.goods_item['details']['rank_score'][str(self.comment_rank)] = data['total']
                     self.comment_rank = ""
-                    if item['details']['relation_colors']:
+                    if self.goods_item['details']['relation_colors']:
                         self.goods_color_index = 0
-                        self.goods_id = item['details']['relation_colors'][self.goods_color_index]['goods_id']
-                        meta['goods_item'] = item
-                        yield self.next_process(meta, data)
+                        self.goods_id = self.goods_item['details']['relation_colors'][self.goods_color_index]['goods_id']
+                        yield self.next_process(data)
                     else:
-                        yield item
+                        print('==========222==============')
+                        self.process_end = True
+                        yield self.goods_item
 
-            if self.goods_id:
-                query_params = meta['query_params'].copy()
+            if self.goods_id and not self.process_end:
                 colorii = self.goods_color_index
-                item['details']['relation_colors'][colorii]["reviews_num"] = data['total']
-                if (len(item['details']['relation_colors']) - colorii) > 1:
-                    goods_id = item['details']['relation_colors'][colorii]['goods_id']
-                    query_params['goods_id'] = goods_id
+                self.goods_item['details']['relation_colors'][colorii]["reviews_num"] = data['total']
+                if (len(self.goods_item['details']['relation_colors']) - colorii) > 1:
+                    goods_id = self.goods_item['details']['relation_colors'][colorii]['goods_id']
+                    self.goods_id = goods_id
                     self.goods_color_index += 1
-                    yield self.next_process(meta, data)
+                    yield self.next_process(data)
                 else:
-                    yield item
+                    self.goods_id = ''
+                    self.process_end = True
+                    print('==========333==============' + str(self.goods_model.id))
+                    yield self.goods_item
 
 
 if __name__ == '__main__':

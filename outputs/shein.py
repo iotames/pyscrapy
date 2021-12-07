@@ -1,6 +1,10 @@
-from pyscrapy.models import Goods, RankingGoods
+import time
+
+from pyscrapy.models import Goods, RankingGoods, RankingLog, GoodsReview
 from outputs.baseoutput import BaseOutput
 import json
+from sqlalchemy import and_
+from pyscrapy.enum.shein import EnumGoodsRanking
 
 
 class SheinOutput(BaseOutput):
@@ -8,6 +12,67 @@ class SheinOutput(BaseOutput):
 
     def __init__(self):
         super(SheinOutput, self).__init__('商品明细', self.site_name)
+
+    def get_ranking_log(self):
+        db_session = RankingLog.get_db_session()
+        ranking_log = db_session.query(RankingLog).filter(and_(
+            RankingLog.site_id == self.site_id,
+            RankingLog.rank_type == EnumGoodsRanking.TYPE_TOP_REVIEWS
+        )).order_by(RankingLog.created_at.desc()).first()
+        return ranking_log
+
+    def output_top_100(self):
+        sheet = self.work_sheet
+        log = self.get_ranking_log()
+        db_session = self.db_session
+        ranking_goods_list = RankingGoods.get_all_model(db_session, {'ranking_log_id': log.id})
+        current_time = int(time.time())
+        month_in_3 = current_time - 3600*24*90
+        month_in_2 = current_time - 3600*24*60
+        month_in_1 = current_time - 3600 * 24 * 30
+        week_in_1 = current_time - 3600 * 24 * 7
+
+        title_row = ('ID', '图片', '排名', '上架时间（首个评论）', 'goods_id', 'SPU', '颜色', '品类', '商品标题', '商品链接', '更新时间',
+                     '价格/US$', '3个月内评论数', '2个月内评论', '1个月内评论', '1周内评论', '所属品牌', 'SKU数')
+        title_col = 1
+        for title in title_row:
+            sheet.cell(1, title_col, title)
+            title_col += 1
+        goods_row_index = 2
+
+        for rgoods in ranking_goods_list:
+            goods = Goods.get_model(db_session, {'id': rgoods.goods_id})
+            details = json.loads(goods.details)
+            first_at = details['first_review_time'] if 'first_review_time' in details else ''
+            image = self.get_image_info(goods.local_image) if goods.local_image else ''
+            color = details['color'] if 'color' in details else ''
+            updated_at = self.timestamp_to_str(goods.updated_at)
+            brand = details['brand'] if 'brand' in details else ''
+            sku_num = 1
+            if 'relation_colors' in details:
+                relation_colors = details['relation_colors']
+                if relation_colors:
+                    sku_num += len(relation_colors)
+
+            reviews_month_3 = db_session.query(GoodsReview).filter(
+                GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_3).all()
+            reviews_month_2 = db_session.query(GoodsReview).filter(
+                GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_2).all()
+            reviews_month_1 = db_session.query(GoodsReview).filter(
+                GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_1).all()
+            reviews_week_1 = db_session.query(GoodsReview).filter(
+                GoodsReview.goods_id == goods.id, GoodsReview.review_time > week_in_1).all()
+
+            goods_col_index = 1
+            goods_info_list = [
+                goods.id, image, rgoods.rank_num, first_at, goods.code, goods.asin, color, goods.category_name, goods.title, goods.url,
+                updated_at,
+                goods.price, len(reviews_month_3), len(reviews_month_2), len(reviews_month_1), len(reviews_week_1), brand, sku_num
+            ]
+            # 返回商品信息递增列 next col index
+            self.set_values_to_row(sheet, goods_info_list, goods_row_index, goods_col_index)
+            goods_row_index += 1
+        self.wb.save(self.output_file)
 
     def output(self):
         sheet = self.work_sheet
@@ -19,7 +84,7 @@ class SheinOutput(BaseOutput):
         for title in title_row:
             sheet.cell(1, title_col, title)
             title_col += 1
-        goods_list = self.db_session.query(Goods).filter(Goods.site_id == self.site_id).all()
+        goods_list = self.db_session.query(Goods).filter(Goods.site_id == self.site_id, Goods.reviews_num > 0).all()
         goods_row_index = 2
 
         for goods in goods_list:
@@ -63,7 +128,7 @@ class SheinOutput(BaseOutput):
 
 if __name__ == '__main__':
     ot = SheinOutput()
-    ot.output()
+    ot.output_top_100()
     # db_session = RankingGoods.get_db_session()
     # rank_goods_list = RankingGoods.get_all_model(db_session, {'site_id': 1})
     # total_reviews_num = 0

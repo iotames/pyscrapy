@@ -152,7 +152,8 @@ class GoodsDetail(BaseResponse):
             rev = ReviewRequest(spu, spider=meta['spider'], headers={'referer': response.url})
             spider = meta['spider']
             if spider.spider_child == 'goods_detail_top_reviews':
-                yield rev.get_all(meta={'goods_item': item, 'goods_model': goods_model})
+                yield rev.get_schema(meta={'goods_item': item, 'goods_model': goods_model})
+                # yield rev.get_all(meta={'goods_item': item, 'goods_model': goods_model})
             if spider.spider_child == 'goods_detail':
                 yield rev.get_simple(meta={'goods_item': item, 'goods_model': goods_model})
         else:
