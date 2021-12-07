@@ -11,6 +11,7 @@ class RankingGoods(BaseModel):
     spider_run_log_id = Column(Integer, default=0)
     rank_num = Column(Integer, comment='当前排名')
     goods_id = Column(Integer, default=0)
+    reviews_num = Column(Integer, default=0, comment='评论数')
     goods_code = Column(String(64))
     goods_spu = Column(String(64))
     goods_title = Column(String(255))

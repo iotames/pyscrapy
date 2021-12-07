@@ -127,6 +127,8 @@ class GoodsReviewItem(Item):
     url = Field()
     color = Field()
     review_date = Field()
+    review_time = Field()
+    time_str = Field()
     body = Field()
 
 

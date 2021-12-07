@@ -1,3 +1,6 @@
+import datetime
+import time
+
 from scrapy.http import TextResponse
 from scrapy import Request
 from urllib.parse import urlencode
@@ -56,6 +59,26 @@ class ReviewRequest(object):
     filter_type = TYPE_ALL
 
     is_review_exists = False
+    is_review_too_old = False
+    reviewed_time_before = 3600*24*90  # 只取最近3个月的评论为有效期
+
+    def check_time_old(self, comment_timestamp: int):
+        # 判断评论时间是否在有效期之外
+        old_time = int(time.time()) - self.reviewed_time_before
+        if comment_timestamp < old_time:
+            self.is_review_too_old = True
+            return True
+        return False
+
+    def check_review_exists(self, review_item: GoodsReviewSheinItem):
+        db_session = self.db_session
+        model = GoodsReview.get_model(db_session, {'code': review_item['code'], 'site_id': self.spider.site_id})
+        if model:
+            review_item['model'] = model
+            print('========is_review_exists==goods_id={}============'.format(str(self.goods_model.id)))
+            self.is_review_exists = True
+            return True
+        return False
 
     @property
     def query_params(self):
@@ -124,14 +147,13 @@ class ReviewRequest(object):
         review_item['rating_value'] = review['rank']
         review_item['sku_text'] = review['color'] + "|" + review['size']
         review_item['color'] = review['color']
-        review_item['review_date'] = review['comment_time']
+        timestamp = int(review['comment_timestamp'])
+        review_item['review_time'] = timestamp
+        review_item['review_date'] = datetime.datetime.fromtimestamp(timestamp)
+        review_item['time_str'] = review['comment_time']
         review_item['body'] = review['body']
-        db_session = GoodsReview.get_db_session()
-        model = GoodsReview.get_model(db_session, {'code': review['code'], 'site_id': self.spider.site_id})
-        if model:
-            review_item['model'] = model
-            print('========is_review_exists==goods_id={}============'.format(str(self.goods_model.id)))
-            self.is_review_exists = True
+        self.check_time_old(timestamp)
+        self.check_review_exists(review_item)
         print('=============get_review_item=====goods_id={}======'.format(str(self.goods_model.id)))
         print(review)
         return review_item
@@ -224,7 +246,7 @@ class ReviewRequest(object):
                 yield self.get_review_item(review, self.review_item)
 
             item['reviews_num'] = total_reviews
-            if self.is_last_page() or self.is_review_exists:
+            if self.is_last_page() or self.is_review_exists or self.is_review_too_old:
                 yield item
             else:
                 self.page += 1

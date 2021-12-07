@@ -76,6 +76,9 @@ class SheinSpider(BaseSpider):
             meta=meta
         )
 
+    def get_request_goods_detail(self, model: Goods):
+        return Request(model.url, callback=GoodsDetail.parse, headers=dict(referer=self.base_url), meta=dict(spider=self, categories_map=self.categories_map, goods_model=model))
+
     def start_requests(self):
         if self.spider_child == self.CHILD_GOODS_LIST:
             meta = dict(spider=self, categories_map=self.categories_map)
@@ -100,12 +103,7 @@ class SheinSpider(BaseSpider):
             self.goods_model_list = Goods.get_all_model(db_session, {'site_id': self.site_id})
             print('===============total : = ' + str(len(self.goods_model_list)))
             for model in self.goods_model_list:
-                yield Request(
-                    model.url,
-                    callback=GoodsDetail.parse,
-                    headers=dict(referer=self.base_url),
-                    meta=dict(spider=self, categories_map=self.categories_map, goods_model=model)
-                )
+                yield self.get_request_goods_detail(model)
 
         if self.spider_child == self.CHILD_GOODS_LIST_TOP_REVIEWS:
             db_session = RankingLog.get_db_session()
@@ -121,6 +119,7 @@ class SheinSpider(BaseSpider):
                 ranking_log = RankingLog(**attrs)
                 db_session.add(ranking_log)
                 db_session.commit()
+                ranking_log = self.get_ranking_log()
 
             url = "{}{}?{}".format(self.base_url, '/category/Active-sc-00856973.html', urlencode({'page': 1, 'sort': 7}))
             meta = dict(spider=self, categories_map=self.categories_map)
@@ -136,12 +135,7 @@ class SheinSpider(BaseSpider):
             print('==================goods_list_len = ' + str(len(ranking_goods_list)))
             for xgd in ranking_goods_list:
                 model = Goods.get_model(db_session, {'id': xgd.goods_id})
-                yield Request(
-                    xgd.goods_url,
-                    callback=GoodsDetail.parse,
-                    headers=dict(referer=self.base_url),
-                    meta=dict(spider=self, categories_map=self.categories_map, goods_model=model)
-                )
+                yield self.get_request_goods_detail(model)
 
     def get_ranking_log(self):
         db_session = RankingLog.get_db_session()

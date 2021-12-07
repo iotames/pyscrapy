@@ -194,11 +194,8 @@ class GoodsBase(Base):
         db_session = self.db_session
         not_update = ['image_urls', 'image_paths', 'model', 'spider_name']
         attrs = {'site_id': spider.site_id}
-        rank_num = 0
+
         for key, value in item.items():
-            if key == 'details':
-                if 'rank_num' in value:
-                    rank_num = value['rank_num']
             if key in not_update:
                 if key == 'image_paths' and value:
                     attrs['local_image'] = value[0]
@@ -224,15 +221,20 @@ class GoodsBase(Base):
             db_session.add(model)
         db_session.commit()
         if spider.ranking_log:
+            details = json.loads(model.details)
+            rank_num = details['rank_num'] if 'rank_num' in details else 0
+            spu = details['spu'] if 'spu' in details else ''
             xlog = spider.ranking_log
             xd_find = {'site_id': spider.site_id, 'ranking_log_id': xlog.id, 'goods_id': model.id}
+            print(xd_find)
             db_session = RankingGoods.get_db_session()
             xgoods = RankingGoods.get_model(db_session, xd_find)
             update_data = {
                 'spider_run_log_id': spider.log_id,
                 'goods_code': model.code,
                 'rank_num': rank_num,
-                'goods_spu': model.asin,
+                'goods_spu': spu,
+                'reviews_num': model.reviews_num,
                 'goods_title': model.title,
                 'goods_url': model.url
             }

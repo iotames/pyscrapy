@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Float, Text
+from sqlalchemy import Column, String, Integer, Float, Text, DateTime
 from . import BaseModel
 
 
@@ -15,5 +15,7 @@ class GoodsReview(BaseModel):
     sku_text = Column(String(128), comment='颜色规格')
     url = Column(String(255), comment='链接地址')
     color = Column(String(64), comment='颜色')
-    review_date = Column(String(32), comment='评论时间')
+    review_date = Column(DateTime, comment='评论时间')
+    review_time = Column(Integer, comment='评论时间戳')
+    time_str = Column(String(64), comment='评论时间')
     body = Column(Text, comment='评论内容')

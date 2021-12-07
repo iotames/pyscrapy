@@ -1,4 +1,4 @@
-from pyscrapy.models import Goods
+from pyscrapy.models import Goods, RankingGoods
 from outputs.baseoutput import BaseOutput
 import json
 
@@ -34,10 +34,10 @@ class SheinOutput(BaseOutput):
             if goods.local_image:
                 image = self.get_image_info(goods.local_image)
 
-            brand = details['brand']
-            spu = details['spu']
-            goods_id = details['goods_id']
-            color = details['color']
+            brand = details['brand'] if 'brand' in details else ''
+            spu = details['spu'] if 'spu' in details else ''
+            goods_id = details['goods_id'] if 'goods_id' in details else ''
+            color = details['color'] if 'color' in details else ''
             rank_score = details['rank_score']
             relation_colors = details['relation_colors']
             sku_num = 1
@@ -46,9 +46,12 @@ class SheinOutput(BaseOutput):
             category_name = goods.category_name
             goods_url = goods.url
             reviews_num = goods.reviews_num
+            rank_num = details['rank_num'] if 'rank_num' in details else 0
+            if not rank_num:
+                rank_num = details['rank_in'] if 'rank_in' in details else 0
 
             goods_info_list = [
-                goods.id, image, details['rank_num'], first_at, goods_id, spu, color, category_name, goods.title, goods_url, updated_at,
+                goods.id, image, rank_num, first_at, goods_id, spu, color, category_name, goods.title, goods_url, updated_at,
                 goods.price, reviews_num, reviews_num*20, reviews_num*20*goods.price, brand, sku_num, rank_score["1"],
                 rank_score["2"], rank_score["3"], rank_score["4"], rank_score["5"]
             ]
@@ -61,3 +64,13 @@ class SheinOutput(BaseOutput):
 if __name__ == '__main__':
     ot = SheinOutput()
     ot.output()
+    # db_session = RankingGoods.get_db_session()
+    # rank_goods_list = RankingGoods.get_all_model(db_session, {'site_id': 1})
+    # total_reviews_num = 0
+    # for rgoods in rank_goods_list:
+    #     goods = Goods.get_model(db_session, {'id': rgoods.goods_id})
+    #     rgoods.reviews_num = goods.reviews_num
+    #     total_reviews_num += goods.reviews_num
+    # db_session.commit()
+    # print(total_reviews_num)
+

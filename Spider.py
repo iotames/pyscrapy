@@ -33,7 +33,7 @@ if __name__ == '__main__':
     dirpath = Config.get_logs_dir()
     args = {
         'logs_dir': dirpath,
-        'spider_child': SheinSpider.CHILD_GOODS_DETAIL_TOP_REVIEWS,
+        'spider_child': SheinSpider.CHILD_GOODS_DETAIL,
         'log_id': "",  # "39"
     }
     Spider.crawl('shein', spider_args=args)

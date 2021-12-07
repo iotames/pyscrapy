@@ -31,7 +31,8 @@ class BaseReview(Base):
             model = GoodsReview(**attrs)
             db_session.add(model)
         db_session.commit()
-        print(opt_str + ' GOODS REVIEW : ' + json.dumps(attrs))
+        print(opt_str + ' GOODS REVIEW : ')
+        print(attrs)
 
 
 class ReviewAmazon(BaseReview):
