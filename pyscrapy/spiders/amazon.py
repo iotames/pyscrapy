@@ -41,7 +41,23 @@ class AmazonSpider(BaseSpider):
     ]
 
     stores_urls = [
-        {'store_name': 'Baleaf', 'urls': ['/stores/page/105CBE98-4967-4033-8601-F8B84867E767']},
+        {
+            'store_name': 'Smallshow',
+            'urls': [
+                # '/stores/page/7420E66C-9249-44EB-801D-F05D099D35BF',  # Maternity clothes 18
+                # '/stores/page/7B493245-46E9-445A-AB79-19909EE30490',  # Maternity shirts 13 OK
+                # '/stores/page/C9FAB35C-A576-421D-9198-799B642FBD43',  # Maternity Tank Tops 2
+                # '/stores/page/15BD121B-D100-442B-AD3D-9D23ADD406DE',  # Maternity dress 2
+                # '/stores/page/38DD04F9-2634-4EFB-81FF-D12931D4E19A',  # Maternity Shorts 1
+
+                '/stores/page/757B7B48-49DA-492B-98B2-832A0F875B0B',  # Nursing Clothes 52 OK
+                '/stores/page/ADE24067-5927-45F4-B988-80552C16CF90',  # Nursing Shirts 28 OK
+                '/stores/page/8E67FA87-D57F-475D-9B67-E7A80776EC28',  # Nursing Sweatshirt/hoodie 8 OK
+                '/stores/page/FA287B95-D080-4F8B-ADEA-63AD26C6CE06',  # Nursing Dress 14 OK
+                '/stores/page/63EEAE9F-71D4-4944-8867-DC186B1EDA0E'  # Nursing Tank Tops 7 OK
+            ]
+        }
+        # {'store_name': 'Baleaf', 'urls': ['/stores/page/105CBE98-4967-4033-8601-F8B84867E767']},
         # {'store_name': 'sponeed', 'urls': [
         # 7个网页中6个有反爬。 需要从XHR网络请求中抓取ASINList
         #     '/stores/page/FB3810D0-2453-447E-86C3-45C094E7F3A0',

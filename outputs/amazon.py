@@ -51,7 +51,10 @@ class AmazonOutput(BaseOutput):
         for title in title_row:
             sheet.cell(1, title_col, title)
             title_col += 1
-        goods_list = self.db_session.query(Goods).filter(Goods.site_id == self.site_id).all()
+        goods_list = self.db_session.query(Goods).filter(
+            Goods.site_id == self.site_id,
+            # Goods.merchant_id == 1
+        ).all()
         goods_row_index = 2
 
         for goods in goods_list:
