@@ -45,16 +45,16 @@ class AmazonSpider(BaseSpider):
             'store_name': 'Smallshow',
             'urls': [
                 # '/stores/page/7420E66C-9249-44EB-801D-F05D099D35BF',  # Maternity clothes 18
-                # '/stores/page/7B493245-46E9-445A-AB79-19909EE30490',  # Maternity shirts 13 OK
+                '/stores/page/7B493245-46E9-445A-AB79-19909EE30490',  # Maternity shirts 13 OK
                 # '/stores/page/C9FAB35C-A576-421D-9198-799B642FBD43',  # Maternity Tank Tops 2
                 # '/stores/page/15BD121B-D100-442B-AD3D-9D23ADD406DE',  # Maternity dress 2
                 # '/stores/page/38DD04F9-2634-4EFB-81FF-D12931D4E19A',  # Maternity Shorts 1
 
-                '/stores/page/757B7B48-49DA-492B-98B2-832A0F875B0B',  # Nursing Clothes 52 OK
-                '/stores/page/ADE24067-5927-45F4-B988-80552C16CF90',  # Nursing Shirts 28 OK
-                '/stores/page/8E67FA87-D57F-475D-9B67-E7A80776EC28',  # Nursing Sweatshirt/hoodie 8 OK
-                '/stores/page/FA287B95-D080-4F8B-ADEA-63AD26C6CE06',  # Nursing Dress 14 OK
-                '/stores/page/63EEAE9F-71D4-4944-8867-DC186B1EDA0E'  # Nursing Tank Tops 7 OK
+                # '/stores/page/757B7B48-49DA-492B-98B2-832A0F875B0B',  # Nursing Clothes 52 OK
+                # '/stores/page/ADE24067-5927-45F4-B988-80552C16CF90',  # Nursing Shirts 28 OK
+                # '/stores/page/8E67FA87-D57F-475D-9B67-E7A80776EC28',  # Nursing Sweatshirt/hoodie 8 OK
+                # '/stores/page/FA287B95-D080-4F8B-ADEA-63AD26C6CE06',  # Nursing Dress 14 OK
+                # '/stores/page/63EEAE9F-71D4-4944-8867-DC186B1EDA0E'  # Nursing Tank Tops 7 OK
             ]
         }
         # {'store_name': 'Baleaf', 'urls': ['/stores/page/105CBE98-4967-4033-8601-F8B84867E767']},
@@ -89,6 +89,7 @@ class AmazonSpider(BaseSpider):
 
     def start_requests(self):
         if self.spider_child == self.CHILD_GOODS_LIST_STORE_PAGE:
+            category_name = 'Maternity'  # Nursing
             for store in self.stores_urls:
                 store_name = store['store_name']
                 store_find = {'name': store_name, 'site_id': self.site_id}
@@ -102,7 +103,7 @@ class AmazonSpider(BaseSpider):
                     yield Request(
                         self.get_site_url(url),
                         callback=GoodsListInStore.parse,
-                        meta=dict(merchant_id=store_model.id)
+                        meta=dict(merchant_id=store_model.id, category_name=category_name)
                     )
         if self.spider_child == self.CHILD_GOODS_LIST_RANKING:
             for url in self.top_goods_urls:
@@ -131,35 +132,15 @@ class AmazonSpider(BaseSpider):
                 meta=dict(next_request=next_request)
             )
         if self.spider_child == self.CHILD_GOODS_LIST_ASIN:
-            store_name = 'sponeed'
+            store_name = 'Smallshow'
             store_find = {'name': store_name, 'site_id': self.site_id}
             store_model = self.db_session.query(SiteMerchant).filter_by(**store_find).first()
             merchant_id = store_model.id
             # 手动填写 asin_list [ASIN列表通过mitmproxy中间代理人抓取, 注意缓存后可能会不再走网络请求而是直接读取缓存]
             self.asin_list = [
                 {
-                    'tag': 'SPECIAL',
-                    'items': ["B0716H4QZ1", "B010D2OP2S", "B086HJFHYL", "B00YGVE0D2", "B074THHVVQ", "B07FL3XHSV", "B01CUFV66Y", "B014NTMLEQ", "B073Y87NYX", "B01N5GG0TX", "B0746GTZBR", "B07DZ8JV77", "B01M73S4C2", "B0761Q1TC1", "B00VLM2S10", "B075ZVSRFM", "B016XJ4BEC", "B01914PO0Q", "B013FG08PM", "B013FFYXOK", "B07B2PTZL7", "B01DOUVF38", "B07L2NLQDG", "B016DHQYQM", "B08KZBN54R", "B0166QTA5C", "B00VSYV772", "B07GPD6TCT"],
-                },
-                {
-                    'tag': 'NEW ARRIVAL',
-                    'items': ["B08LV4C4FM", "B08XJY5JTX", "B08LV3NJCF", "B08ZDDHFGP", "B0932ZZKZS", "B094ZSF3FJ", "B086H1ZCR7", "B086HJLQ3K", "B08KZBN54R", "B014L0N82Q"],
-                },
-                {
-                    'tag': 'CYCLING BOTTOM',
-                    'items': ["B0716H4QZ1", "B079FM844N", "B00VSYV90W", "B08LV4C4FM", "B07B8DY3QL", "B072P5P8XW", "B06XRCQ3N8", "B083FG5PNZ", "B074JC8VFW", "B00YGVDFAQ", "B073Y87NYX", "B07DZ8JV77", "B07DZB7C91", "B085C6FNJ6", "B08XJY5JTX", "B085C6NLGC", "B00YGVD9I4", "B00YGVDM72", "B00VSYV772", "B00YGVE0D2", "B01AVTZV6C", "B016XJ4FW0", "B06XK457Z6", "B00YGVD2EA"],
-                },
-                {
-                    'tag': 'SHORT SLEEVE',
-                    'items': ["B08C9XVK96", "B08CGHP5HL", "B086H1ZCR7", "B07PPYWBNL", "B08ZDFH8CF", "B08CH1B8WD", "B01N6HWJ9X", "B00VLM36Q6", "B016XJ4BEC", "B074THHVVQ", "B074TFXW8L", "B00WI0B2BQ", "B00WI0BEUU", "B00VLM2QVC", "B00VLM3ASU", "B074DT2BVQ", "B01CUFV78G", "B01DOUVF38", "B0140XU7XM", "B00SD1S3ZC", "B00VK9AU2S", "B013FFZ8SK", "B014NZMUDW", "B013FPOIO0", "B013FPOHDW", "B0140XU778", "B011FRBIZM", "B015MHG8XI", "B0746H9652", "B01LZ0GJ7B", "B07C97LHSS", "B010D2OP2S", "B07FL56P53", "B07V8S8845", "B086HJLQ3K", "B07B2PB8SH", "B07B2PTZL7", "B016XJ48PO", "B07GPGGR68", "B07GPD25XQ"],
-                },
-                {
-                    'tag': 'LONG SLEEVE',
-                    'items': ["B074JCKM8F", "B01M7QD5RF", "B0154I4VSY", "B01914POVA", "B01N5DL5TY", "B014L0N82Q", "B01M2C4VJF", "B01M2BIPKE", "B0166QTA8O", "B014L0MYTY", "B075ZT3R3R", "B07ZCM6521", "B07HD4ZG47", "B07YV8JKM8", "B075ZVNRCZ", "B00VLM2S10", "B07HD4ZS6H", "B07YV955QV", "B07L2NXKPF", "B077G7NLWY", "B07YV2JBD8", "B01LC1BXME", "B0761Q1TC1", "B013FG08PM", "B0166QTA5C", "B08KZNPTBR", "B08KZBN54R", "B07YV99WGX", "B07YV9DPQY", "B075ZV7HX9", "B075T7YC88", "B01MS3KBIA", "B016DHQYQM", "B018R1M96G", "B013FFYXOK", "B013FFZ4A2", "B01A8UEKHU", "B013FFZJ84", "B019AS5HZ0"],
-                },
-                {
-                    'tag': 'WOMEN\'S CYCLING',
-                    'items': ["B013FFYXOK", "B013FG08PM", "B013FFZ4A2", "B01A8UEKHU", "B00VK9AU2S", "B013FFZ8SK", "B013FFZJ84", "B013FG0456"],
+                    'tag': 'Maternity',
+                    'items': ["B0943RM3NC", "B08GSHMFST", "B088LLD2T7", "B07Y7TFNXL", "B08FXFCSSD", "B085NV7HCR", "B08GQZRK3D", "B07ZK3BV19", "B08CBW2KWT", "B088LJ29SK", "B07Y2W3LL7", "B089GGQ3XR", "B085DDG54H", "B087N8FP2F", "B08J2KHHQG", "B089Y5ZXRS", "B08B54GCG2", "B08DHC9WDM"],
                 }
             ]
             # self.asin_list = [self.asin_list[-1]]

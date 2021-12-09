@@ -86,6 +86,7 @@ class GoodsListInStore(BasePage):
             raise RuntimeError('check_robot_happened')
         meta = response.meta
         merchant_id = meta['merchant_id']
+        category_name = meta['category_name'] if 'category_name' in meta else ''
         asin_list = XStoreGoods.get_asin_list(response.text)
         if not asin_list:
             print('===================empty asin_list========' + response.url)
@@ -94,6 +95,8 @@ class GoodsListInStore(BasePage):
             item['merchant_id'] = merchant_id
             item['asin'] = asin
             item['code'] = asin
+            if category_name:
+                item['category_name'] = category_name
             yield Request(
                 XAmazon.get_url_by_code(asin, {"language": 'zh_CN'}),
                 callback=AmazonGoodsDetail.parse,
