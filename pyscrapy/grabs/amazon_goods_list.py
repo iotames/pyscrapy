@@ -88,6 +88,8 @@ class GoodsListInStore(BasePage):
         merchant_id = meta['merchant_id']
         category_name = meta['category_name'] if 'category_name' in meta else ''
         asin_list = XStoreGoods.get_asin_list(response.text)
+        print(asin_list)
+        print(len(asin_list))
         if not asin_list:
             print('===================empty asin_list========' + response.url)
         for asin in asin_list:
@@ -99,6 +101,7 @@ class GoodsListInStore(BasePage):
                 item['category_name'] = category_name
             yield Request(
                 XAmazon.get_url_by_code(asin, {"language": 'zh_CN'}),
+                # dont_filter=True, 不去掉重复的ASIN
                 callback=AmazonGoodsDetail.parse,
                 meta=dict(item=item)
             )

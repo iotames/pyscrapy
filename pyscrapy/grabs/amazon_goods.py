@@ -1,7 +1,8 @@
 from scrapy.http import TextResponse
-from pyscrapy.extracts.amazon import GoodsDetail as XDetail
+from pyscrapy.extracts.amazon import GoodsDetail as XDetail, Common as XAmazon
 from pyscrapy.grabs.amazon import BasePage
 from pyscrapy.items import AmazonGoodsItem
+from scrapy import Request
 
 
 class AmazonGoodsDetail(BasePage):
@@ -11,6 +12,10 @@ class AmazonGoodsDetail(BasePage):
     @property
     def image(self):
         return self.get_text(XDetail.xpath_goods_image)
+
+    @property
+    def asin_list(self):
+        return self.response.xpath('//div[@id="variation_color_name"]/ul/li/@data-defaultasin').extract()
 
     @property
     def reviews_num(self) -> int:
@@ -93,6 +98,7 @@ class AmazonGoodsDetail(BasePage):
         if cls.check_robot_happened(response):
             return False
         meta = response.meta
+        spider = meta['spider'] if 'spider' in meta else None
 
         if 'item' in meta:
             item = response.meta['item']
@@ -100,6 +106,7 @@ class AmazonGoodsDetail(BasePage):
             item = AmazonGoodsItem()
 
         ele = cls(response)
+        item['code'] = XAmazon.get_code_by_goods_url(response.url)
         item['url'] = response.url
         item['title'] = ele.title
         item['reviews_num'] = ele.reviews_num
@@ -130,6 +137,18 @@ class AmazonGoodsDetail(BasePage):
         print('=============parse_goods_detail=============end===========')
         print(item)
         yield item
+
+        if spider:
+            if spider.spider_child == 'goods_list_all_colors':
+                code_list = ele.asin_list
+                if 'goods_model' in meta:
+                    gid = meta['goods_model'].id
+                    print('==========code_list====goods_id={}=====asin_list={}'.format(str(gid), str(len(code_list))))
+                    for code in code_list:
+                        print('==========code_list====goods_id={}=====asin={}'.format(str(gid), code))
+                        url = XAmazon.get_url_by_code(code)
+                        print('==================goods_url = ' + url)
+                        yield Request(url, callback=AmazonGoodsDetail.parse, meta=dict(spider=spider))
         if 'next_request' in meta:
             yield meta['next_request']
 

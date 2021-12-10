@@ -7,7 +7,7 @@ from pyscrapy.grabs.amazon_goods_list import GoodsRankingList, GoodsListInStore
 from pyscrapy.grabs.amazon_goods import AmazonGoodsDetail
 from pyscrapy.grabs.amazon_goods_reviews import AmazonGoodsReviews
 from pyscrapy.extracts.amazon import Common as XAmazon, GoodsReviews as XGoodsReviews
-from pyscrapy.models import SiteMerchant
+from pyscrapy.models import SiteMerchant, Goods
 from pyscrapy.items import AmazonGoodsItem
 
 
@@ -45,7 +45,7 @@ class AmazonSpider(BaseSpider):
             'store_name': 'Smallshow',
             'urls': [
                 # '/stores/page/7420E66C-9249-44EB-801D-F05D099D35BF',  # Maternity clothes 18
-                '/stores/page/7B493245-46E9-445A-AB79-19909EE30490',  # Maternity shirts 13 OK
+                # '/stores/page/7B493245-46E9-445A-AB79-19909EE30490',  # Maternity shirts 13 OK
                 # '/stores/page/C9FAB35C-A576-421D-9198-799B642FBD43',  # Maternity Tank Tops 2
                 # '/stores/page/15BD121B-D100-442B-AD3D-9D23ADD406DE',  # Maternity dress 2
                 # '/stores/page/38DD04F9-2634-4EFB-81FF-D12931D4E19A',  # Maternity Shorts 1
@@ -77,6 +77,7 @@ class AmazonSpider(BaseSpider):
     CHILD_GOODS_LIST_RANKING = 'goods_list_ranking'
     CHILD_GOODS_REVIEWS = 'goods_reviews'
     CHILD_GOODS_LIST_ASIN = 'goods_list_asin'
+    CHILD_goods_LIST_ALL_COLORS = 'goods_list_all_colors'
 
     goods_model_list: list
 
@@ -89,7 +90,7 @@ class AmazonSpider(BaseSpider):
 
     def start_requests(self):
         if self.spider_child == self.CHILD_GOODS_LIST_STORE_PAGE:
-            category_name = 'Maternity'  # Nursing
+            category_name = 'Nursing'  # Nursing Maternity
             for store in self.stores_urls:
                 store_name = store['store_name']
                 store_find = {'name': store_name, 'site_id': self.site_id}
@@ -158,6 +159,13 @@ class AmazonSpider(BaseSpider):
                         # dont_filter=True,
                         meta=dict(item=item)
                     )
-
-
-
+        if self.spider_child == self.CHILD_goods_LIST_ALL_COLORS:
+            self.goods_model_list = Goods.get_all_model(self.db_session, {'site_id': self.site_id})
+            asin_list = []
+            for goods_model in self.goods_model_list:
+                asin = goods_model.asin
+                if asin not in asin_list:
+                    asin_list.append(asin)
+                    url = XAmazon.get_url_by_code(asin, self.url_params)
+                    yield Request(url, callback=AmazonGoodsDetail.parse, headers=dict(referer=self.base_url),
+                                  meta=dict(spider=self, goods_model=goods_model))

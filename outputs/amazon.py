@@ -55,6 +55,26 @@ class AmazonOutput(BaseOutput):
             Goods.site_id == self.site_id,
             # Goods.merchant_id == 1
         ).all()
+        print(len(goods_list))
+
+        # 排序 ASIN START
+        asin_list = []
+        asin_goods_map = {}
+        for goods in goods_list:
+            asin = goods.asin
+            if asin not in asin_list:
+                asin_list.append(asin)
+                asin_goods_map[asin] = [goods]
+            else:
+                asin_goods_map[asin].append(goods)
+
+        goods_list = []
+        for asin, gd_list in asin_goods_map.items():
+            for model in gd_list:
+                goods_list.append(model)
+        # 排序 ASIN END
+
+
         goods_row_index = 2
 
         for goods in goods_list:
