@@ -25,6 +25,7 @@ class BaseGoodsItem(Item):
     image = Field()
     details = Field()
     reviews_num = Field()
+    quantity = Field()
 
 
 class GympluscoffeeCategoryItem(Item):
