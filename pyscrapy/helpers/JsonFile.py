@@ -27,9 +27,11 @@ class JsonFile:
             return []
 
     @staticmethod
-    def cookie_to_dic(cookie):
+    def cookie_to_dic(cookie_text: str) -> dict:
         cookie_dic = {}
-        for i in cookie.split('; '):
+        cookie_text = cookie_text.replace(' ', '')
+        # for i in cookie.split('; '):
+        for i in cookie_text.split(';'):
             cookie_dic[i.split('=')[0]] = i.split('=')[1]
         return cookie_dic
 

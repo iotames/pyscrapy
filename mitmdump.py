@@ -45,6 +45,11 @@ def response(flow: HTTPFlow):
             asin_list = GoodsListInStore.get_asin_list(response.text)
             logger.debug(urlmsg + os.linesep + json.dumps(asin_list))
 
+    if response.text.find('Renown Sweatpant - Athletic Heather Grey') > -1:
+        urlmsg = "SUCCESS =============================" + request.url
+        logger.debug(urlmsg + os.linesep + request.text)
+        logger.debug(response.text)
+
     # response.text = response.text.replace('百度', '摆渡')
     # # 实例化输出类
     # info = ctx.log.info
@@ -54,4 +59,5 @@ def response(flow: HTTPFlow):
 if __name__ == '__main__':
     # os.system()程序在前台运行，可能有阻塞。 os.popen() 程序在后台运行
     os.system("mitmdump --mode upstream:http://127.0.0.1:1080 -s mitmdump.py -p 8889")
+    # os.system("mitmweb --mode upstream:http://127.0.0.1:1080 -s mitmdump.py -p 8889")
 

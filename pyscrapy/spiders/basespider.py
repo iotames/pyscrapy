@@ -7,9 +7,14 @@ from ..models import Site, SpiderRunLog
 from scrapy.exceptions import UsageError
 import datetime
 from config.spider import Spider as SpiderConfig
+from pyscrapy.helpers import JsonFile
 
 
 class BaseSpider(Spider):
+
+    @staticmethod
+    def cookie_to_dic(cookies) -> dict:
+        return JsonFile.cookie_to_dic(cookies)
 
     def parse(self, response, **kwargs):
         pass
