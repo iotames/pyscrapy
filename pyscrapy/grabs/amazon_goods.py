@@ -146,7 +146,7 @@ class AmazonGoodsDetail(BasePage):
                     print('==========code_list====goods_id={}=====asin_list={}'.format(str(gid), str(len(code_list))))
                     for code in code_list:
                         print('==========code_list====goods_id={}=====asin={}'.format(str(gid), code))
-                        url = XAmazon.get_url_by_code(code)
+                        url = XAmazon.get_url_by_code(code, {"language": 'zh_CN'})
                         print('==================goods_url = ' + url)
                         yield Request(url, callback=AmazonGoodsDetail.parse, meta=dict(spider=spider))
         if 'next_request' in meta:

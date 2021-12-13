@@ -59,23 +59,27 @@ class AmazonOutput(BaseOutput):
         ).all()
         print(len(goods_list))
 
-        # 排序 ASIN START
+        # ASIN 分组整理 , 并剔除重复的SPU。 START
         asin_list = []
         asin_goods_map = {}
+        code_list = []
         for goods in goods_list:
             asin = goods.asin
+            code = XAmazon.get_code_by_goods_url(goods.url)
+            goods.code = code  # 重写 code
             if asin not in asin_list:
-                asin_list.append(asin)
-                asin_goods_map[asin] = [goods]
+                if code not in code_list:  # 剔除重复的SPU
+                    asin_list.append(asin)
+                    code_list.append(code)
+                    asin_goods_map[asin] = [goods]
             else:
-                asin_goods_map[asin].append(goods)
-
+                if code not in code_list:  # 剔除重复的SPU
+                    asin_goods_map[asin].append(goods)
         goods_list = []
         for asin, gd_list in asin_goods_map.items():
             for model in gd_list:
                 goods_list.append(model)
-        # 排序 ASIN END
-
+        # ASIN 分组整理, 并剔除重复的SPU。 END
 
         goods_row_index = 2
 
