@@ -1,9 +1,11 @@
 from pyscrapy.models import Goods, GoodsReview
 from outputs.baseoutput import BaseOutput
+from pyscrapy.extracts.amazon import Common as XAmazon
 from pyscrapy.spiders.amazon import AmazonSpider
 import json
 from sqlalchemy import and_
 from openpyxl.styles import PatternFill
+from openpyxl import load_workbook
 
 
 class AmazonOutput(BaseOutput):
@@ -144,7 +146,26 @@ class AmazonOutput(BaseOutput):
 
         self.wb.save(self.output_file)
 
+    def update_excel(self, filepath):
+        self.wb = load_workbook(filepath)
+        self.work_sheet = self.wb.worksheets[0]
+        row_index = 0
+        for row in self.work_sheet.rows:
+            print(row_index)
+            if row_index == 0:
+                row_index += 1
+                continue
+            url = row[6].value
+            print(url)
+            code = XAmazon.get_code_by_goods_url(url)
+            print(code)
+            row[1].value = code
+            row_index += 1
+
+        self.wb.save(filepath)
+
 
 if __name__ == '__main__':
     ot = AmazonOutput()
+    # ot.update_excel(ot.output_dir + "/amazon_2021-12-13_08_28.xlsx")
     ot.output()

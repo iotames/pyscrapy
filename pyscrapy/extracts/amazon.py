@@ -120,7 +120,10 @@ class Common(object):
     def get_code_by_goods_url(url: str) -> str:
         urls = url.split('/')
         index = urls.index('dp')
-        return urls[index + 1]
+        code = urls[index + 1]
+        if code.find('?') > -1:
+            code = code.split('?')[0]
+        return code
 
 
 class GoodsReviews(object):
