@@ -36,4 +36,4 @@ if __name__ == '__main__':
         'spider_child': StrongerlabelSpider.CHILD_GOODS_DETAIL,
         'log_id': "",  # "39"
     }
-    Spider.crawl('shefit', spider_args=args)
+    Spider.crawl('aloyoga', spider_args=args)

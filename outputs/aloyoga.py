@@ -14,14 +14,12 @@ class AloyogaOutput(BaseOutput):
         sheet = self.work_sheet
         # sheet.sheet_format.defaultRowHeight = 30
         title_row = ('商品ID', 'SPU', '图片', '分类', '商品标题', '商品链接', '更新时间', '价格/$', '状态',
-                     '供应商', '库存', '颜色款数')
+                     '供应商', '库存', '颜色款数', '评论数', '面料', '商品描述')
         title_col = 1
         for title in title_row:
             sheet.cell(1, title_col, title)
             title_col += 1
         goods_list = self.db_session.query(Goods).filter(Goods.site_id == self.site_id).all()
-        print(len(goods_list))
-        exit()
         goods_row_index = 2
 
         for goods in goods_list:
@@ -35,12 +33,14 @@ class AloyogaOutput(BaseOutput):
             details = json.loads(goods.details)
             vendor = details['vendor']
             colors = details['colors'] if 'colors' in details else []
+            fabri = details['fabrication'] if 'fabrication' in details else ''
+            desc = details['desc'] if 'desc' in details else ''
             colors_len = len(colors)
             goods_url = goods.url
 
             goods_info_list = [
                 goods.id, goods.asin, image, goods.category_name, goods.title, goods_url, time_str, goods.price,
-                Goods.statuses_map[goods.status], vendor, goods.quantity, colors_len
+                Goods.statuses_map[goods.status], vendor, goods.quantity, colors_len, goods.reviews_num, fabri, desc
             ]
             print(goods_info_list)
             # 返回商品信息递增列 next col index

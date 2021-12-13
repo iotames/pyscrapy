@@ -7,6 +7,7 @@ from sqlalchemy import and_, or_
 import time
 from pyscrapy.spiders.basespider import BaseSpider
 from Config import Config
+import re
 
 
 class AloyogaSpider(BaseSpider):
@@ -89,6 +90,7 @@ class AloyogaSpider(BaseSpider):
 
     def __init__(self, name=None, **kwargs):
         super(AloyogaSpider, self).__init__(name=name, **kwargs)
+        self.allowed_domains.append('api.yotpo.com')
 
     def get_request_body(self, keyword):
         variables = json.dumps(self.get_request_variables(keyword))
@@ -123,7 +125,7 @@ class AloyogaSpider(BaseSpider):
             if goods_list_len > 0:
                 for model in self.goods_model_list:
                     yield Request(self.get_site_url(model.url), headers={'referer': self.base_url},
-                                  callback=self.parse_goods_detail, meta=dict(model=model))
+                                  callback=self.parse_goods_detail, meta=dict(goods_model=model))
             else:
                 raise RuntimeError('待更新的商品数量为0, 退出运行')
 
@@ -234,6 +236,32 @@ class AloyogaSpider(BaseSpider):
     def parse_goods_detail(self, response: TextResponse):
         meta = response.meta
         goods_model = meta['goods_model']
+        re_rule0 = r"\"Viewed Product\",(.+?)\);"
+        re_info0 = re.findall(re_rule0, response.text)
+        info0 = json.loads(re_info0[0])
+
+        fabri_info = re.findall(r'attribs: {\"fabrication\":\"(.+?)\"', response.text)
+        fabri = fabri_info[0] if fabri_info else ''
+        select_desc = response.xpath('//meta[@name="description"]/@content')
+        desc = select_desc.extract()[0] if select_desc else ''
+
+        details = json.loads(goods_model.details)
+        details['desc'] = desc
+        details['fabrication'] = fabri
+        product_id = info0['productId']
+        price = info0['price']
+        currency = info0['currency']
+        price_text = price + currency
+        category_name = info0['category']
+        goods_item = BaseGoodsItem()
+        goods_item['model'] = goods_model
+        goods_item['spider_name'] = self.name
+        goods_item['category_name'] = category_name
+        goods_item['price_text'] = price_text
+        goods_item['details'] = details
+        reviews_url = 'https://api.yotpo.com/v1/widget/ohYKQnKU978xXhdov6tKkYMA1R62IqCn2kKD0aDv/products/{}/reviews.json'.format(str(product_id))
+        yield Request(reviews_url, callback=self.parse_goods_reviews, meta=dict(goods_item=goods_item))
+
         # json_response = json.loads(response.text)
         # data = json_response['data']
         # if 'products' not in data:
@@ -247,6 +275,17 @@ class AloyogaSpider(BaseSpider):
         #         if attr['key'] == 'fabrication':
         #             fabrication = attr['value']
 
-        pass
-
+    def parse_goods_reviews(self, response: TextResponse):
+        meta = response.meta
+        goods_item = meta['goods_item']
+        json_info = json.loads(response.text)
+        status = json_info['status']
+        reviews_num = 0
+        average_score = 0
+        if status['code'] == 200:
+            bottomline = json_info['response']['bottomline']
+            average_score = bottomline['average_score']
+            reviews_num = bottomline['total_review']
+        goods_item['reviews_num'] = reviews_num
+        yield goods_item
 

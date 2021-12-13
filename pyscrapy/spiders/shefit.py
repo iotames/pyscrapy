@@ -88,7 +88,7 @@ class ShefitSpider(BaseSpider):
         re_rule0 = r"\"Viewed Product\",(.+?)\);"
         re_info0 = re.findall(re_rule0, response.text)
         info0 = json.loads(re_info0[0])
-        spu = info0['productId']
+        code = info0['productId']
         price = info0['price']
         currency = info0['currency']
         price_text = price + currency
@@ -148,7 +148,7 @@ class ShefitSpider(BaseSpider):
         goods_item['spider_name'] = self.name
         goods_item['category_name'] = category_name
         goods_item['image'] = image
-        goods_item['code'] = spu
+        goods_item['code'] = code
         goods_item['title'] = title
         goods_item['image_urls'] = [image]
         goods_item['url'] = response.url
