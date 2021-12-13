@@ -45,7 +45,7 @@ def response(flow: HTTPFlow):
             asin_list = GoodsListInStore.get_asin_list(response.text)
             logger.debug(urlmsg + os.linesep + json.dumps(asin_list))
 
-    if response.text.find('Renown Sweatpant - Athletic Heather Grey') > -1:
+    if response.text.find('2034') > -1:
         urlmsg = "SUCCESS =============================" + request.url
         logger.debug(urlmsg + os.linesep + request.text)
         logger.debug(response.text)

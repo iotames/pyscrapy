@@ -33,7 +33,7 @@ if __name__ == '__main__':
     dirpath = Config.get_logs_dir()
     args = {
         'logs_dir': dirpath,
-        'spider_child': AmazonSpider.CHILD_goods_LIST_ALL_COLORS,
+        'spider_child': StrongerlabelSpider.CHILD_GOODS_DETAIL,
         'log_id': "",  # "39"
     }
-    Spider.crawl('amazon', spider_args=args)
+    Spider.crawl('shefit', spider_args=args)
