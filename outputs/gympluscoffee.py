@@ -13,6 +13,8 @@ class GympluscoffeeOutput(BaseOutput):
     translator: Translator
     categories: list
     goods_model_list: list
+    origin_file = ''
+    inventory_cols_len = 1
 
     def __init__(self):
         super(GympluscoffeeOutput, self).__init__('SKU库存详情', self.site_name)
@@ -38,28 +40,62 @@ class GympluscoffeeOutput(BaseOutput):
         sheet = self.work_sheet
         sheet.sheet_format.defaultRowHeight = 100
         # sheet.sheet_format.defaultColWidth = 100
-        title_row = ('商品ID', '图片', '上级分类', '分类名', '商品标题', '商品链接', '商品状态', '更新时间',
+
+        origin_wb = load_workbook(self.origin_file)
+        origin_sheet = origin_wb.worksheets[0]
+        title_ext = []
+        row_index = 1
+        inventory_map = {}
+        for row_data in origin_sheet:
+            if row_index == 1:
+                for i in range(22, 21 + self.inventory_cols_len):
+                    print(row_data[i].value)
+                    title_ext.append(row_data[i].value)
+                row_index += 1
+                continue
+            # row_data[0] 索引从0开始 | 20 sku名 | 22 库存
+            if row_data[22].value == "---":
+                row_index += 1
+                continue
+            url = row_data[5].value
+            if not url:
+                row_index += 1
+                continue
+            sku_text = row_data[20].value if row_data[20].value else ''
+            inv_key = url + sku_text
+            if inv_key not in inventory_map:
+                inventory_values = []
+                for i in range(22, 21 + self.inventory_cols_len):
+                    inventory_values.append(row_data[i].value)
+                inventory_map[inv_key] = inventory_values
+            row_index += 1
+
+        title_row = ['商品ID', '图片', '上级分类', '分类名', '商品标题', '商品链接', '商品状态', '更新时间',
                      '评论数', '价格/EUR', '商品简介', '商品详情', '织物布料',
                      '5星评论', '4星评论', '3星评论', '2星评论', '1星评论',
-                     '规格1', '规格2', 'SKU名', '价格', '库存')
+                     '规格1', '规格2', 'SKU名', '价格']
+        title_row.extend(title_ext)
+        title_row.append('库存{}'.format(time.strftime("%m_%d", time.localtime())))
+
         title_col = 1
         for title in title_row:
             sheet.cell(1, title_col, title)
             title_col += 1
         self.goods_model_list = self.db_session.query(Goods).filter(Goods.site_id == self.site_id).all()
 
+        print('total goods model = ' + str(len(self.goods_model_list)))
         # TODO 新版本使用，不兼容就版本。需要导入旧数据
-        # goods_urls = []
-        # for model in self.goods_model_list:
-        #     if model.url in goods_urls:
-        #         # 剔除可能重复的商品项
-        #         self.goods_model_list.remove(model)
-        #     else:
-        #         goods_urls.append(model.url)
-
+        goods_urls = []
+        unique_goods_list = []
+        for model in self.goods_model_list:
+            if model.url not in goods_urls:
+                goods_urls.append(model.url)
+                unique_goods_list.append(model)
+        print('total goods model = ' + str(len(unique_goods_list)))
         sku_row_index = 2
 
-        for goods in self.goods_model_list:
+        # for goods in self.goods_model_list:
+        for goods in unique_goods_list:
             goods_col_index = 1
             start_row_index = sku_row_index
             time_tuple = time.localtime(goods.updated_at)
@@ -116,7 +152,19 @@ class GympluscoffeeOutput(BaseOutput):
                     # 从第2个SKU开始，都要拷贝goods基本信息写入EXCEL
                     goods_col_index = self.set_values_to_row(sheet, sku_row_info, sku_row_index, goods_col_index)
                 price = format(sku.price/100, '.2f')
-                sku_info_list = (sku.option1, sku.option2, sku.title, price, sku.inventory_quantity)
+
+                sku_text = sku.title if sku.title else ''
+                inventory_key = goods.url + sku_text
+                if inventory_key in inventory_map:
+                    inventory_values = inventory_map[inventory_key]
+                else:
+                    inventory_values = []
+                    for i in range(1, self.inventory_cols_len):
+                        inventory_values.append('')
+                inventory_values.append(sku.inventory_quantity)
+                sku_info_list = [sku.option1, sku.option2, sku_text, price]
+                sku_info_list.extend(inventory_values)
+
                 # SKU信息列紧接商品信息列之后
                 sku_col_index = goods_col_index
                 for sku_info in sku_info_list:
@@ -125,70 +173,16 @@ class GympluscoffeeOutput(BaseOutput):
                     sku_col_index += 1
                 sku_row_index += 1
 
-            # if sku_len > 1:
-            #     # 合并单元格
-            #     start_row = start_row_index
-            #     end_row = sku_row_index-1
-            #     sheet.merge_cells('A{}:A{}'.format(start_row, end_row))
-            #     sheet.merge_cells('B{}:B{}'.format(start_row, end_row))
-            #     sheet.merge_cells('C{}:C{}'.format(start_row, end_row))
-            #     sheet.merge_cells('D{}:D{}'.format(start_row, end_row))
-            #     sheet.merge_cells('E{}:E{}'.format(start_row, end_row))
-            #     sheet.merge_cells('F{}:F{}'.format(start_row, end_row))
             if sku_len == 0:
                 sku_row_index += 1
+
         self.wb.save(self.output_file)
-
-    # 重置EXCEL表格中URL和SKU重复的条目库存
-    def update_excel(self, filepath):
-        self.wb = load_workbook(filepath)
-        self.work_sheet = self.wb.worksheets[0]
-        print(self.work_sheet.rows)
-        print(self.work_sheet[3][5].value)
-
-        row_index = 1
-        url_sku_list = []
-        del_rows_index_list = []
-        del_rows_list = []
-        for row_data in self.work_sheet:
-            url = row_data[5].value
-            if not url:
-                continue
-            sku_text = row_data[20].value
-            if not sku_text:
-                continue
-
-            url_sku = url + sku_text
-            if url_sku in url_sku_list:
-                row_data[22].value = "---"
-                row_data[23].value = "---"
-                row_data[24].value = "---"
-                row_data[25].value = "---"
-                row_data[26].value = "---"
-                row_data[27].value = "---"
-                row_data[28].value = "---"
-                del_rows_index_list.append(row_index)
-                del_rows_list.append(url_sku)
-            else:
-                url_sku_list.append(url_sku)
-            row_index += 1
-        print(del_rows_index_list)
-        print(del_rows_list)
-        # for rowi in del_rows_index_list:
-        #     url = self.work_sheet[rowi][5].value
-        #     sku_text = self.work_sheet[rowi][20].value
-        #     print('================begin==============')
-        #     if not sku_text:
-        #         continue
-        #     print(rowi)
-        #     print(str(rowi) + "--" + url + "  " + sku_text)
-        #     # self.work_sheet.cell(rowi, 2, '')
-        #     # self.work_sheet.
-        #     self.work_sheet.delete_rows(rowi)  # delete_rows(1) 表示删除表格的第一行
-        self.wb.save(self.output_file)
+        # new_wb = load_workbook(self.output_file)
+        # new_sheet = new_wb.worksheets[0]
 
 
 if __name__ == '__main__':
     gc = GympluscoffeeOutput()
-    gc.update_excel(gc.output_dir + "/gympluscoffee_2021-12-03_09_48.xlsx")
-    # gc.output_to_excel()
+    gc.inventory_cols_len = 8
+    gc.origin_file = gc.output_dir + '/gympluscoffee_2021-12-03_09_58.xlsx'
+    gc.output_to_excel()

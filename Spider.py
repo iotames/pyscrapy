@@ -1,4 +1,3 @@
-# from scrapy import cmdline
 from scrapy.crawler import CrawlerProcess
 
 from scrapy.utils.project import get_project_settings
@@ -39,7 +38,7 @@ if __name__ == '__main__':
     dirpath = Config.get_logs_dir()
     args = {
         'logs_dir': dirpath,
-        'spider_child': StrongerlabelSpider.CHILD_GOODS_LIST,
+        'spider_child': StrongerlabelSpider.CHILD_GOODS_DETAIL,
         'log_id': "",  # "39"
     }
-    Spider.crawl('shefit', spider_args=args)
+    Spider.crawl(GympluscoffeeSpider.name, spider_args=args)

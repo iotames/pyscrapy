@@ -20,7 +20,7 @@ class MyproteinSpider(BaseSpider):
         # 'DOWNLOAD_DELAY': 3,
         # 'RANDOMIZE_DOWNLOAD_DELAY': True,
         # 'CONCURRENT_REQUESTS_PER_DOMAIN': 1, default 8
-        'CONCURRENT_REQUESTS': 22,  # default 16 recommend 5
+        # 'CONCURRENT_REQUESTS': 22,  # default 16 recommend 5
         'IMAGES_STORE': Config.ROOT_PATH + "/runtime/images",
         'COMPONENTS_NAME_LIST_DENY': [],
         'SELENIUM_ENABLED': False
