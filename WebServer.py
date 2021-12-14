@@ -38,7 +38,6 @@ class myThread (threading.Thread):
     def run(self):
         print("开始线程：" + self.name)
         self.func()
-        print("退出线程：" + self.name)
 
 # async def main():
 #     await asyncio.gather(

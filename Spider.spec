@@ -2,6 +2,7 @@
 
 # https://blog.csdn.net/zm147451753/article/details/85850526
 # https://blog.csdn.net/tangfreeze/article/details/112240342
+# pyinstaller -D Spider.spec
 
 block_cipher = None
 

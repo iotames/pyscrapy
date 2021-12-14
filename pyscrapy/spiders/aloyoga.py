@@ -102,6 +102,10 @@ class AloyogaSpider(BaseSpider):
             request_body = r'{"operationName":"plpProducts","variables":' + variables + r',"query":"query plpProducts($first: Int!, $handle: String!, $after: String, $reverse: Boolean, $sortKey: ProductCollectionSortKeys, $firstForImages: Int!) {\n  collection: collectionByHandle(handle: $handle) {\n    id\n    products(first: $first, after: $after, sortKey: $sortKey, reverse: $reverse) {\n      pageInfo {\n        hasNextPage\n        hasPreviousPage\n        __typename\n      }\n      edges {\n        cursor\n        node {\n          ...PlpProductDetails\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n\nfragment PlpProductDetails on Product {\n  id\n  images(first: $firstForImages, maxWidth: 1) {\n    edges {\n      node {\n        originalSrc\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n  tags\n  title\n  priceRange {\n    maxVariantPrice {\n      amount\n      __typename\n    }\n    minVariantPrice {\n      amount\n      __typename\n    }\n    __typename\n  }\n  compareAtPriceRange {\n    maxVariantPrice {\n      amount\n      __typename\n    }\n    minVariantPrice {\n      amount\n      __typename\n    }\n    __typename\n  }\n  availableForSale\n  handle\n  availableColors: metafield(namespace: \"alo-swatch\", key: \"available-colors\") {\n    value\n    __typename\n  }\n  productType\n  vendor\n  onlineStoreUrl\n  totalInventory\n  options {\n    name\n    values\n    __typename\n  }\n  __typename\n}\n"}'
         return request_body
 
+    @classmethod
+    def get_children_list(cls):
+        return [cls.CHILD_GOODS_DETAIL, cls.CHILD_GOODS_LIST]
+
     def start_requests(self):
         if self.spider_child == self.CHILD_GOODS_LIST:
             for handle in self.handle_list:

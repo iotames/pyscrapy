@@ -77,7 +77,7 @@ class AmazonSpider(BaseSpider):
     CHILD_GOODS_LIST_RANKING = 'goods_list_ranking'
     CHILD_GOODS_REVIEWS = 'goods_reviews'
     CHILD_GOODS_LIST_ASIN = 'goods_list_asin'
-    CHILD_goods_LIST_ALL_COLORS = 'goods_list_all_colors'
+    CHILD_GOODS_LIST_ALL_COLORS = 'goods_list_all_colors'
 
     goods_model_list: list
 
@@ -87,6 +87,16 @@ class AmazonSpider(BaseSpider):
             msg = 'lost param spider_child'
             raise UsageError(msg)
         self.spider_child = kwargs['spider_child']
+
+    @classmethod
+    def get_children_list(cls):
+        return [
+            cls.CHILD_GOODS_LIST_RANKING,
+            cls.CHILD_GOODS_LIST_ASIN,
+            cls.CHILD_GOODS_LIST_ALL_COLORS,
+            cls.CHILD_GOODS_REVIEWS,
+            cls.CHILD_GOODS_LIST_STORE_PAGE
+        ]
 
     def start_requests(self):
         if self.spider_child == self.CHILD_GOODS_LIST_STORE_PAGE:
@@ -159,7 +169,7 @@ class AmazonSpider(BaseSpider):
                         # dont_filter=True,
                         meta=dict(item=item)
                     )
-        if self.spider_child == self.CHILD_goods_LIST_ALL_COLORS:
+        if self.spider_child == self.CHILD_GOODS_LIST_ALL_COLORS:
             self.goods_model_list = Goods.get_all_model(self.db_session, {'site_id': self.site_id})
             asin_list = []
             for goods_model in self.goods_model_list:

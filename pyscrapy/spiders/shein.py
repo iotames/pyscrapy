@@ -79,6 +79,11 @@ class SheinSpider(BaseSpider):
     def get_request_goods_detail(self, model: Goods):
         return Request(model.url, callback=GoodsDetail.parse, headers=dict(referer=self.base_url), meta=dict(spider=self, categories_map=self.categories_map, goods_model=model))
 
+    @classmethod
+    def get_children_list(cls):
+        return [cls.CHILD_GOODS_DETAIL_TOP_REVIEWS, cls.CHILD_GOODS_LIST_TOP_REVIEWS,
+                cls.CHILD_GOODS_DETAIL, cls.CHILD_GOODS_LIST, cls.CHILD_GOODS_CATEGORIES]
+
     def start_requests(self):
         if self.spider_child == self.CHILD_GOODS_LIST:
             meta = dict(spider=self, categories_map=self.categories_map)
