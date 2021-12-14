@@ -1,5 +1,8 @@
-from scrapy import cmdline
-from pyscrapy.spiders import GympluscoffeeSpider, StrongerlabelSpider, AmazonSpider, SheinSpider
+# from scrapy import cmdline
+from scrapy.crawler import CrawlerProcess
+
+from scrapy.utils.project import get_project_settings
+from pyscrapy.spiders import GympluscoffeeSpider, StrongerlabelSpider, AmazonSpider, SheinSpider, ShefitSpider
 from Config import Config
 from service import DB
 from pyscrapy.models import Table
@@ -8,16 +11,19 @@ from pyscrapy.models import Table
 class Spider:
 
     @staticmethod
-    def crawl(name: str = GympluscoffeeSpider.name, output=None, spider_args=None):
+    def crawl(name: str, spider_args=None, output=None):
+        process = CrawlerProcess(get_project_settings())
+        process.crawl(name, **spider_args)
+        process.start()
 
-        cmd_list = ['scrapy', 'crawl', name]
-        if output:
-            # 输出爬虫结果到文件
-            cmd_list.extend(['-o', output])
-        if spider_args:
-            for key, value in spider_args.items():
-                cmd_list.extend(['-a', key + "=" + value])
-        cmdline.execute(cmd_list)
+        # cmd_list = ['scrapy', 'crawl', name]
+        # if output:
+        #     # 输出爬虫结果到文件
+        #     cmd_list.extend(['-o', output])
+        # if spider_args:
+        #     for key, value in spider_args.items():
+        #         cmd_list.extend(['-a', key + "=" + value])
+        # cmdline.execute(cmd_list)
 
     @staticmethod
     def create_all_tables():
@@ -33,7 +39,7 @@ if __name__ == '__main__':
     dirpath = Config.get_logs_dir()
     args = {
         'logs_dir': dirpath,
-        'spider_child': StrongerlabelSpider.CHILD_GOODS_DETAIL,
+        'spider_child': StrongerlabelSpider.CHILD_GOODS_LIST,
         'log_id': "",  # "39"
     }
-    Spider.crawl('aloyoga', spider_args=args)
+    Spider.crawl('shefit', spider_args=args)

@@ -10,7 +10,7 @@ class Database(BaseConfig):
         "username": "root",
         "password": "123456",
         "db_name": "pywebspider",
-        "db_type": "mysql",  # sqlite
+        "db_type": "sqlite",  # sqlite mysql
         "db_driver": "pymysql"
     }
 
