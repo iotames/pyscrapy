@@ -4,6 +4,17 @@ from pyscrapy.spiders import GympluscoffeeSpider, StrongerlabelSpider, AmazonSpi
 from Config import Config
 from service import DB
 from pyscrapy.models import Table
+# https://github.com/pyinstaller/pyinstaller/issues/4815
+import scrapy.utils.misc
+import scrapy.core.scraper
+
+
+def warn_on_generator_with_return_value_stub(spider, callable):
+    pass
+
+
+scrapy.utils.misc.warn_on_generator_with_return_value = warn_on_generator_with_return_value_stub
+scrapy.core.scraper.warn_on_generator_with_return_value = warn_on_generator_with_return_value_stub
 
 
 class Spider:
@@ -40,4 +51,4 @@ if __name__ == '__main__':
         'spider_child': StrongerlabelSpider.CHILD_GOODS_DETAIL,
         'log_id': "",  # "39"
     }
-    Spider.crawl(GympluscoffeeSpider.name, spider_args=args)
+    Spider.crawl(StrongerlabelSpider.name, spider_args=args)
