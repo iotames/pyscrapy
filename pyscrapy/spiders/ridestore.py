@@ -46,10 +46,6 @@ class RidestoreSpider(BaseSpider):
     def __init__(self, name=None, **kwargs):
         super(RidestoreSpider, self).__init__(name=name, **kwargs)
 
-    @classmethod
-    def get_children_list(cls):
-        return [cls.CHILD_GOODS_DETAIL, cls.CHILD_GOODS_LIST]
-
     def start_requests(self):
         if self.spider_child == self.CHILD_GOODS_LIST:
             for category in self.goods_list_urls:

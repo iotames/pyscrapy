@@ -1,6 +1,7 @@
 from pyscrapy.models import Site, SpiderRunLog
 from api.BaseController import BaseController
 from api.tables import Spiders as SpidersTable, SpiderRunLogs as SpiderRunLogsTable
+from pyscrapy.enum.spider import get_children_list
 
 
 class SpiderController(BaseController):
@@ -14,6 +15,7 @@ class SpiderController(BaseController):
                 "created_at": self.f_time(site.created_at),
                 "name": site.name,
                 "home_url": site.home_url,
+                "children_list": get_children_list(site.name),
             })
         return data
 

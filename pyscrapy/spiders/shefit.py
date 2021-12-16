@@ -30,10 +30,6 @@ class ShefitSpider(BaseSpider):
         super(ShefitSpider, self).__init__(name=name, **kwargs)
         self.base_url = "https://" + self.domain
 
-    @classmethod
-    def get_children_list(cls):
-        return [cls.CHILD_GOODS_DETAIL, cls.CHILD_GOODS_LIST]
-
     def start_requests(self):
         if self.spider_child == self.CHILD_GOODS_LIST:
             url = self.get_site_url('/collections/shefit')

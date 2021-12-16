@@ -88,16 +88,6 @@ class AmazonSpider(BaseSpider):
             raise UsageError(msg)
         self.spider_child = kwargs['spider_child']
 
-    @classmethod
-    def get_children_list(cls):
-        return [
-            cls.CHILD_GOODS_LIST_RANKING,
-            cls.CHILD_GOODS_LIST_ASIN,
-            cls.CHILD_GOODS_LIST_ALL_COLORS,
-            cls.CHILD_GOODS_REVIEWS,
-            cls.CHILD_GOODS_LIST_STORE_PAGE
-        ]
-
     def start_requests(self):
         if self.spider_child == self.CHILD_GOODS_LIST_STORE_PAGE:
             category_name = 'Nursing'  # Nursing Maternity

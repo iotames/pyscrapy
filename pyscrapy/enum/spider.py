@@ -1,0 +1,62 @@
+CHILD_GOODS_DETAIL = "goods_detail"
+CHILD_GOODS_LIST = "goods_list"
+CHILD_GOODS_CATEGORIES = "goods_categories"
+CHILD_GOODS_LIST_RANKING = "goods_list_ranking"
+CHILD_GOODS_LIST_ASIN = "goods_list_asin"
+CHILD_GOODS_REVIEWS = "goods_reviews"
+CHILD_GOODS_LIST_TOP_REVIEWS = "goods_list_top_reviews"
+CHILD_GOODS_DETAIL_TOP_REVIEWS = "goods_detail_top_reviews"
+
+CHILD_TITLE_MAP = {
+    CHILD_GOODS_LIST: "商品列表",
+    CHILD_GOODS_DETAIL: "商品详情",
+    CHILD_GOODS_CATEGORIES: "商品分类",
+    CHILD_GOODS_LIST_RANKING: "商品排行榜列表",
+    CHILD_GOODS_LIST_ASIN: "商品ASIN列表",
+    CHILD_GOODS_REVIEWS: "商品评论",
+    CHILD_GOODS_LIST_TOP_REVIEWS: "热评榜商品列表",
+    CHILD_GOODS_DETAIL_TOP_REVIEWS: "热评榜商品详情"
+}
+
+NAME_ALOYOGA = "aloyoga"
+NAME_AMAZON = "amazon"
+NAME_GYMPLUSCOFFEE = "gympluscoffee"
+NAME_MYPROTEIN = "myprotein"
+NAME_RIDESTORE = "ridestore"
+NAME_SHEFIT = "shefit"
+NAME_SHEIN = "shein"
+NAME_STRONGERLABEL = "strongerlabel"
+NAME_SWEATYBETTY = "sweatybetty"
+
+SPIDER_CHILDREN_MAP = {
+    NAME_ALOYOGA: [CHILD_GOODS_DETAIL, CHILD_GOODS_LIST],
+    NAME_AMAZON: [
+        CHILD_GOODS_LIST_RANKING,
+        CHILD_GOODS_LIST_ASIN,
+        # CHILD_GOODS_LIST_ALL_COLORS,
+        # CHILD_GOODS_LIST_STORE_PAGE,
+        CHILD_GOODS_REVIEWS
+        ],
+    NAME_GYMPLUSCOFFEE: [CHILD_GOODS_DETAIL, CHILD_GOODS_LIST, CHILD_GOODS_CATEGORIES],
+    NAME_MYPROTEIN: [CHILD_GOODS_DETAIL, CHILD_GOODS_LIST],
+    NAME_RIDESTORE: [CHILD_GOODS_DETAIL, CHILD_GOODS_LIST],
+    NAME_SHEFIT: [CHILD_GOODS_DETAIL, CHILD_GOODS_LIST],
+    NAME_SHEIN: [
+        CHILD_GOODS_DETAIL_TOP_REVIEWS,
+        CHILD_GOODS_LIST_TOP_REVIEWS,
+        CHILD_GOODS_DETAIL,
+        CHILD_GOODS_LIST,
+        CHILD_GOODS_CATEGORIES
+    ],
+    NAME_STRONGERLABEL: [CHILD_GOODS_LIST],
+    NAME_SWEATYBETTY: [CHILD_GOODS_DETAIL, CHILD_GOODS_LIST],
+}
+
+
+def get_children_list(name: str) -> list:
+    data = []
+    children = SPIDER_CHILDREN_MAP[name]
+    for child_name in children:
+        data.append({"name": child_name, "title": CHILD_TITLE_MAP[child_name]})
+    return data
+

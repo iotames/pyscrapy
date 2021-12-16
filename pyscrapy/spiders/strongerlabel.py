@@ -40,10 +40,6 @@ class StrongerlabelSpider(BaseSpider):
         self.sl_sid = 'b35f55f7-6ba2-482a-b0f1-bf5f5864e78d'
         self.sl_key = '16d7a766-26a5-4394-9fac-846d0404f434'
 
-    @classmethod
-    def get_children_list(cls):
-        return [cls.CHILD_GOODS_LIST]
-
     def start_requests(self):
         print('start_requests----------------------')
         start_url = "https://www.baidu.com"

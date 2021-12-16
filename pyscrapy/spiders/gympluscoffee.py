@@ -50,10 +50,6 @@ class GympluscoffeeSpider(BaseSpider):
     # def to_chinese(self, content: str):
     #     return self.translator.translate(content)
 
-    @classmethod
-    def get_children_list(cls):
-        return [cls.CHILD_GOODS_DETAIL, cls.CHILD_GOODS_LIST, cls.CHILD_GOODS_CATEGORIES]
-
     def start_requests(self):
         if self.spider_child == self.CHILD_GOODS_DETAIL:
             # goods = self.db_session.query(Goods).filter(Goods.id == 1).first()

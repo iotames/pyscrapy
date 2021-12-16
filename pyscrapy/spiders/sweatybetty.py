@@ -54,10 +54,6 @@ class SweatybettySpider(BaseSpider):
         'contentlocale': 'en_GB,en_US,en_AU,en_EU'
     }
 
-    @classmethod
-    def get_children_list(cls):
-        return [cls.CHILD_GOODS_DETAIL, cls.CHILD_GOODS_LIST]
-
     def start_requests(self):
         if self.spider_child == self.CHILD_GOODS_LIST:
             yield Request(

@@ -67,10 +67,6 @@ class MyproteinSpider(BaseSpider):
         self.domain = self.name + '.com'
         self.base_url = "https://www." + self.domain
 
-    @classmethod
-    def get_children_list(cls):
-        return [cls.CHILD_GOODS_DETAIL, cls.CHILD_GOODS_LIST]
-
     def start_requests(self):
         if self.spider_child == self.CHILD_GOODS_LIST:
             for category_name, url in self.goods_list_urls.items():
