@@ -2,12 +2,12 @@
 
 # https://blog.csdn.net/zm147451753/article/details/85850526
 # https://blog.csdn.net/tangfreeze/article/details/112240342
-# pyinstaller -D Spider.spec
+# pyinstaller -D WebServer.spec
 
 block_cipher = None
 
 
-a = Analysis(['Spider.py'],
+a = Analysis(['WebServer.py'],
              pathex=[],
              binaries=[],
              datas=[
@@ -81,7 +81,7 @@ exe = EXE(pyz,
           a.scripts, 
           [],
           exclude_binaries=True,
-          name='Spider',
+          name='WebServer',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
@@ -98,4 +98,4 @@ coll = COLLECT(exe,
                strip=False,
                upx=True,
                upx_exclude=[],
-               name='Spider')
+               name='WebServer')

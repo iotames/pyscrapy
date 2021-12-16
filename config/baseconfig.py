@@ -46,6 +46,7 @@ class BaseConfig:
             raise RuntimeError('config file: ' + self.filepath + ' already exists!')
         file_stream = open(self.filepath, 'w', encoding='utf-8')
         json.dump(self.DEFAULT_CONFIG, file_stream, ensure_ascii=False)
+        file_stream.close()
 
     def get_component(self, name):
         if name in self.enabled_components_name_list:

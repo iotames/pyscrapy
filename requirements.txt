@@ -9,3 +9,4 @@ scrapy-splash
 flask
 flask-cors
 mitmproxy
+crochet

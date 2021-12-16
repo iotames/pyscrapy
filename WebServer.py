@@ -1,19 +1,29 @@
-import getopt
-import sys
-import threading
+# import getopt
+# import sys
 import time
 import webbrowser
 from config.api_server import ApiServer
 from config.client import Client
 from api import app
 from pyscrapy.helpers.Socket import Socket
+# from service import SThread
 # import asyncio
+# https://github.com/pyinstaller/pyinstaller/issues/4815
+import scrapy.utils.misc
+import scrapy.core.scraper
+
+
+def warn_on_generator_with_return_value_stub(spider, callable):
+    pass
+
+
+scrapy.utils.misc.warn_on_generator_with_return_value = warn_on_generator_with_return_value_stub
+scrapy.core.scraper.warn_on_generator_with_return_value = warn_on_generator_with_return_value_stub
 
 port = ApiServer().get_config().get('port')
 url = Client().get_config().get('start_url')
 
 
-# async def open_web_server():
 def open_web_server():
     if Socket.check_port_used(port):
         print('Port: ' + str(port) + " is Exists")
@@ -21,38 +31,19 @@ def open_web_server():
         app.run(port=port)
 
 
-# async def open_url(url):
-#     await asyncio.sleep(3)
 def open_url():
     time.sleep(1)
     webbrowser.open(url)
 
 
-class myThread (threading.Thread):
-    def __init__(self, thread_id, name, func):
-        threading.Thread.__init__(self)
-        self.thread_id = thread_id
-        self.name = name
-        self.func = func
-
-    def run(self):
-        print("开始线程：" + self.name)
-        self.func()
-
-# async def main():
-#     await asyncio.gather(
-#         open_web_server(),
-#         open_url(url)
-#     )
-
-
 if __name__ == '__main__':
+    open_web_server()
+"""
     argvs = sys.argv
-    t1 = myThread(1, 't1', open_web_server)
-    t2 = myThread(2, 't2', open_url)
+    sth = SThread.get_instance()
     if not argvs[1:]:
-        t1.start()
-        t2.start()
+        sth.run_task(open_web_server)
+        sth.run_task(open_url)
     else:
         help_str = "WebServer.py --start-server --start-client"
         try:
@@ -65,9 +56,10 @@ if __name__ == '__main__':
                 print(help_str)
                 sys.exit()
             if opt in ('-s', '--start-server'):
-                t1.start()
+                sth.run_task(open_web_server)
             if opt in ('-c', '--start-client'):
-                t2.start()
+                sth.run_task(open_url)
+"""
     # asyncio.run(main())
     # t1 = threading.Thread(target=open_web_server())
     # t2 = threading.Thread(target=open_url())
