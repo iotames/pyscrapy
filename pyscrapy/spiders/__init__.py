@@ -12,4 +12,4 @@ from .shefit import ShefitSpider
 from .aloyoga import AloyogaSpider
 from .myprotein import MyproteinSpider
 from .ridestore import RidestoreSpider
-
+from .lululemon import LululemonSpider

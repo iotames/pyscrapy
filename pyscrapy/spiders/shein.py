@@ -158,6 +158,7 @@ class SheinSpider(BaseSpider):
         super(SheinSpider, self).closed(reason)
         print("============Close Spider : " + self.name)
         if self.spider_child == self.CHILD_GOODS_CATEGORIES:
+            # 关联已保存的category的parent_id
             db_session = GoodsCategory.get_db_session()
             all_model = GoodsCategory.get_all_model(db_session, {'site_id': self.site_id})
             for model in all_model:

@@ -1,6 +1,6 @@
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
-from pyscrapy.spiders import GympluscoffeeSpider, StrongerlabelSpider, AmazonSpider, SheinSpider, ShefitSpider
+from pyscrapy.enum.spider import *
 from Config import Config
 from service import DB
 from pyscrapy.models import Table
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     dirpath = Config.get_logs_dir()
     args = {
         'logs_dir': dirpath,
-        'spider_child': StrongerlabelSpider.CHILD_GOODS_DETAIL,
+        'spider_child': CHILD_GOODS_LIST,
         'log_id': "",  # "39"
     }
-    Spider.crawl(StrongerlabelSpider.name, spider_args=args)
+    Spider.crawl(NAME_LULULEMON, spider_args=args)
