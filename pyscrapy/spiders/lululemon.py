@@ -1,6 +1,5 @@
 import re
 from urllib.parse import urlencode
-import json
 from scrapy.http import TextResponse
 from scrapy import Request
 from pyscrapy.items import BaseGoodsItem
@@ -39,6 +38,11 @@ class LululemonSpider(BaseSpider):
         '/api/c/men',
     ]
 
+    xpath_reviews_num = '//span[@class="reviews-link__count"]/text()'  # ' (89)'
+    xpath_details_list = '//div[@class="accordion-3Usrq accordionLarge-1hCr9"]/div'
+    xpath_detail_title = 'h3/span/span/text()'
+    xpath_detail_items = 'div//ul/li/span/text()'
+
     def __init__(self, name=None, **kwargs):
         super(LululemonSpider, self).__init__(name=name, **kwargs)
         self.domain = "shop.lululemon.com"
@@ -68,13 +72,11 @@ class LululemonSpider(BaseSpider):
             goods_list_len = len(self.goods_model_list)
             print('=======goods_list_len============ : {}'.format(str(goods_list_len)))
             if goods_list_len > 0:
-                for model in self.goods_model_list:
+                for model in [self.goods_model_list[0]]:
                     yield Request(self.get_site_url(model.url), headers={'referer': self.base_url},
                                   callback=self.parse_goods_detail, meta=dict(model=model))
             else:
                 raise RuntimeError('待更新的商品数量为0, 退出运行')
-
-    goods_list_count = 0
 
     def parse_goods_list(self, response: TextResponse):
         meta = response.meta
@@ -142,6 +144,32 @@ class LululemonSpider(BaseSpider):
         model = meta['model']
         # availableQuantity 库存
         print('====parse_goods_detail====goods_id={}===='.format(str(model.id)))
+
+        # status = self.statuses[status_text] if status_text in self.statuses else Goods.STATUS_UNKNOWN
+        reviews_num = 0
+        reviews_num_text = response.xpath(self.xpath_reviews_num).extract()
+        if reviews_num_text:
+            reviews_num_text = reviews_num_text[0].strip()
+            info = re.findall(r"\((.+?)\)", reviews_num_text)
+            if info and info[0]:
+                reviews_num = int(info[0])
+        details_list = []
+        details = json.loads(model.details)
+        details['details_list'] = []
+        eles = response.xpath(self.xpath_details_list)
+        for elee in eles:
+            ele = BaseElement(elee)
+            ele_title = ele.get_text(self.xpath_detail_title)
+            ele_items = elee.xpath(self.xpath_detail_items)
+            details_list.append({'title': ele_title, 'items': ele_items})
+        goods_item = BaseGoodsItem()
+        goods_item['model'] = model
+        goods_item['spider_name'] = self.name
+        goods_item['reviews_num'] = reviews_num
+        goods_item['details'] = details
+
+        yield goods_item
+
 """
         re_detail = r"_EN={\"id\"(.+?);window.PRELOADED_DELIVERY_DATA"
         re_info = re.findall(re_detail, response.text)
@@ -168,30 +196,6 @@ class LululemonSpider(BaseSpider):
         if status_text != 'InStock':
             self.mylogger.debug("goods_id={}======{}".format(str(model.id), status_text))
 
-        status = self.statuses[status_text] if status_text in self.statuses else Goods.STATUS_UNKNOWN
 
-        image = p_info['image']
-
-        details = {
-            'brand': brand,
-            'currency': offers['priceCurrency'],
-            'rating_value': rating_value,
-            'color': color,
-            'desc': desc
-        }
-        goods_item = BaseGoodsItem()
-        goods_item['model'] = model
-        goods_item['spider_name'] = self.name
-        goods_item['category_name'] = category_name
-        goods_item['image'] = image
-        goods_item['code'] = p_info['sku']
-        goods_item['title'] = p_info['name']
-        goods_item['image_urls'] = [image + "?fit=max&w=450&q=70&dpr=2&usm=15&auto=format"]
-        goods_item['url'] = response.url
-        goods_item['price'] = price
-        goods_item['reviews_num'] = reviews_num
-        goods_item['status'] = status
-        goods_item['details'] = details
-        yield goods_item
 """
 
