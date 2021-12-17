@@ -3,7 +3,7 @@ from pyscrapy.extracts.amazon import GoodsReviews as XReviews, Common as XAmazon
 from pyscrapy.grabs.amazon import BasePage
 from pyscrapy.grabs.basegrab import BaseElement
 from pyscrapy.items import GoodsReviewAmazonItem
-from pyscrapy.models import Goods as GoodsModel
+from datetime import datetime
 from scrapy import Request
 
 
@@ -67,7 +67,9 @@ class AmazonGoodsReviews(BasePage):
             item['title'] = review.title
             item['sku_text'] = review.sku_text
             item['body'] = review.body
-            item['review_date'] = review.review_date
+            time_text = review.review_date
+            item['review_date'] = datetime.strptime(time_text, "%Y年%m月%d日")  # datetime.fromtimestamp(timestamp)
+            item['time_str'] = time_text
             item['url'] = review.url
             item['color'] = review.color
             yield item
@@ -85,6 +87,8 @@ class AmazonGoodsReviews(BasePage):
 
 
 class GoodsReview(BaseElement):
+
+    BASE_URL = "https://www.amazon.com"
 
     @property
     def code(self):

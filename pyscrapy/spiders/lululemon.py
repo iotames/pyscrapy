@@ -72,7 +72,7 @@ class LululemonSpider(BaseSpider):
             goods_list_len = len(self.goods_model_list)
             print('=======goods_list_len============ : {}'.format(str(goods_list_len)))
             if goods_list_len > 0:
-                for model in [self.goods_model_list[0]]:
+                for model in self.goods_model_list:
                     yield Request(self.get_site_url(model.url), headers={'referer': self.base_url},
                                   callback=self.parse_goods_detail, meta=dict(model=model))
             else:
@@ -155,47 +155,18 @@ class LululemonSpider(BaseSpider):
                 reviews_num = int(info[0])
         details_list = []
         details = json.loads(model.details)
-        details['details_list'] = []
         eles = response.xpath(self.xpath_details_list)
         for elee in eles:
             ele = BaseElement(elee)
+            # TODO  Material and care 有2个条目
             ele_title = ele.get_text(self.xpath_detail_title)
-            ele_items = elee.xpath(self.xpath_detail_items)
+            ele_items = elee.xpath(self.xpath_detail_items).extract()
             details_list.append({'title': ele_title, 'items': ele_items})
+        details['details_list'] = details_list
         goods_item = BaseGoodsItem()
         goods_item['model'] = model
         goods_item['spider_name'] = self.name
         goods_item['reviews_num'] = reviews_num
         goods_item['details'] = details
-
         yield goods_item
-
-"""
-        re_detail = r"_EN={\"id\"(.+?);window.PRELOADED_DELIVERY_DATA"
-        re_info = re.findall(re_detail, response.text)
-        text = re_info[0]
-        json_info_text = "{\"id\"" + text
-        info = json.loads(json_info_text)
-        brand = info['brand']
-        color = info['color']
-        desc = info['desc']
-        category_name = info['productTypeCategory']['name']
-        reviews_info = info['reviews']
-        reviews_num = reviews_info['total_reviews']
-        rating_value = reviews_info['average_score']
-
-        json_product_text = response.xpath(self.xpath_json_product).get()
-        # color = response.xpath(self.xpath_detail_color).get().strip()
-        p_info = json.loads(json_product_text)
-        offers = p_info['offers']
-        price = offers['price']
-        status_text = offers['availability'].split('/')[-1]
-        condition_text = offers['itemCondition'].split('/')[-1]
-        if condition_text != 'NewCondition':
-            self.mylogger.debug("goods_id={}======{}".format(str(model.id), condition_text))
-        if status_text != 'InStock':
-            self.mylogger.debug("goods_id={}======{}".format(str(model.id), status_text))
-
-
-"""
 

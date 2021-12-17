@@ -117,36 +117,31 @@ class AmazonSpider(BaseSpider):
                     meta=dict(page=1)
                 )
         if self.spider_child == self.CHILD_GOODS_REVIEWS:
-            asin = "B08Q82QYSV"
+            asin = "B093GZ8797"
             goods_url = XAmazon.get_url_by_code(asin, self.url_params)
             reviews_url = XGoodsReviews.get_reviews_url_by_asin(asin)
-            next_request = Request(
+            goods_model = Goods.get_model(self.db_session, {'code': asin, 'site_id': self.site_id})
+            if not goods_model:
+                raise RuntimeError("ASIN {} : 商品不存在， 请先通过ASIN采集商品详情".format(asin))
+            yield Request(
                 reviews_url,
                 callback=AmazonGoodsReviews.parse,
                 headers=dict(referer=goods_url),
-                meta=dict(goods_code=asin)  # goods_id=goods_id
-            )
-            yield Request(
-                goods_url,
-                callback=AmazonGoodsDetail.parse,
-                headers=dict(referer=self.base_url),
-                meta=dict(next_request=next_request)
+                meta=dict(goods_code=asin, goods_id=goods_model.id)
             )
         if self.spider_child == self.CHILD_GOODS_LIST_ASIN:
-            store_name = 'Smallshow'
-            store_find = {'name': store_name, 'site_id': self.site_id}
-            store_model = self.db_session.query(SiteMerchant).filter_by(**store_find).first()
-            merchant_id = store_model.id
+            # store_name = 'Smallshow'
+            # store_find = {'name': store_name, 'site_id': self.site_id}
+            # store_model = self.db_session.query(SiteMerchant).filter_by(**store_find).first()
+            # merchant_id = store_model.id
+            merchant_id = 0
             # 手动填写 asin_list [ASIN列表通过mitmproxy中间代理人抓取, 注意缓存后可能会不再走网络请求而是直接读取缓存]
             self.asin_list = [
-                {
-                    'tag': 'Maternity',
-                    'items': ["B0943RM3NC", "B08GSHMFST", "B088LLD2T7", "B07Y7TFNXL", "B08FXFCSSD", "B085NV7HCR", "B08GQZRK3D", "B07ZK3BV19", "B08CBW2KWT", "B088LJ29SK", "B07Y2W3LL7", "B089GGQ3XR", "B085DDG54H", "B087N8FP2F", "B08J2KHHQG", "B089Y5ZXRS", "B08B54GCG2", "B08DHC9WDM"],
-                }
+                {'category_name': 'unknown', 'items': ['B089DJBKN4', 'B093GZ8797']}
             ]
             # self.asin_list = [self.asin_list[-1]]
             for group in self.asin_list:
-                category_name = group['tag']
+                category_name = group['category_name']
                 for asin in group['items']:
                     item = AmazonGoodsItem()
                     item['merchant_id'] = merchant_id
