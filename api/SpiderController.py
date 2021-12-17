@@ -24,7 +24,9 @@ class SpiderController(BaseController):
         data = []
         for log in logs:
             row = {"id": log.id, "created_at": self.f_time(log.created_at),
-                   "spider_name": log.spider_name, "status": SpiderRunLog.STATUS_MAP[log.status]
+                   "spider_name": log.spider_name,
+                   "spider_child": log.spider_child,
+                   "status": SpiderRunLog.STATUS_MAP[log.status]
                    }
             data.append(row)
         return data

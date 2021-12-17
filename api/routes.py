@@ -25,6 +25,13 @@ def get_spider_logs():
     return Response.success({"items": items})
 
 
+@app.route('/api/spider/log/excel', methods=['POST'])
+def spider_log_excel():
+    data = request.get_json()
+    log_id = data.get('log_id')
+    return Response.success({}, "操作成功: id={}".format(str(log_id)))
+
+
 @app.route('/api/database/init', methods=['POST'])
 def database_init():
     from service import DB
