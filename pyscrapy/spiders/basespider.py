@@ -1,9 +1,9 @@
 from scrapy import Spider
-from scrapy.http import TextResponse
+import time
 from ..helpers import Logger
 from Config import Config
 from ..database import Database
-from ..models import Site, SpiderRunLog
+from ..models import Site, SpiderRunLog, RankingLog
 from scrapy.exceptions import UsageError
 import datetime
 from config.spider import Spider as SpiderConfig
@@ -114,6 +114,35 @@ class BaseSpider(Spider):
         self.db_session.commit()
         self.log_id = log.id
         return self.log_id
+
+    def get_ranking_log_real(self, category_name: str, rank_type: str, log_id=0):
+        db_session = RankingLog.get_db_session()
+        ranking_log = RankingLog.get_log(db_session, self.site_id, category_name, rank_type, log_id=log_id)
+        if not ranking_log:
+            raise RuntimeError('RankingLog not found !')
+        return ranking_log
+
+    def get_ranking_log(self, category_name: str, rank_type: str, log_id=0):
+        db_session = RankingLog.get_db_session()
+        ranking_log = RankingLog.get_log(db_session, self.site_id, category_name, rank_type, log_id=log_id)
+        if ranking_log:
+            # 判断 created_at 来确定是否新建 ranking_log
+            if (time.time() - ranking_log.created_at) > 3600 * 72:
+                ranking_log = None
+        if not ranking_log:
+            now_date = datetime.datetime.now()
+            attrs = {
+                'site_id': self.site_id,
+                'category_name': category_name,
+                'rank_type': rank_type,
+                'rank_date': now_date
+            }
+            db_session = RankingLog.get_db_session()
+            ranking_log = RankingLog(**attrs)
+            db_session.add(ranking_log)
+            db_session.commit()
+            ranking_log = self.get_ranking_log(category_name, rank_type, log_id)
+        return ranking_log
 
     def closed(self, reason):
         print("============Close Base Spider : " + self.name)

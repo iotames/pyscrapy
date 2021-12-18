@@ -30,7 +30,7 @@ class GoodsRankingList(BasePage):
             goods_item = ele.item
             goods_item["details"] = {'rank_num': rank_num}
             rank_num += 1
-            yield Request(url, callback=AmazonGoodsDetail.parse, meta=dict(item=goods_item))
+            yield Request(url, callback=AmazonGoodsDetail.parse, meta=dict(item=goods_item), dont_filter=True)
         if page == 1:
             yield Request(
                 response.url.replace('pg=1', 'pg=2'),

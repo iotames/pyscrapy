@@ -182,6 +182,8 @@ class GoodsAmazon(Base):
             db_session.add(model)
         db_session.commit()
         print(opt_str + ' GOODS : ' + json.dumps(attrs))
+        if spider.ranking_log:
+            GoodsBase.save_ranking_goods(model, spider)
 
 
 class GoodsBase(Base):
@@ -221,33 +223,38 @@ class GoodsBase(Base):
             model = Goods(**attrs)
             db_session.add(model)
         db_session.commit()
-        if spider.ranking_log:
-            details = json.loads(model.details)
-            rank_num = details['rank_num'] if 'rank_num' in details else 0
-            spu = details['spu'] if 'spu' in details else ''
-            xlog = spider.ranking_log
-            # 添加或更新goods和ranking_log对应关系
-            xd_find = {'site_id': spider.site_id, 'ranking_log_id': xlog.id, 'goods_id': model.id}
-            print(xd_find)
-            db_session = RankingGoods.get_db_session()
-            xgoods = RankingGoods.get_model(db_session, xd_find)
-            update_data = {
-                'spider_run_log_id': spider.log_id,
-                'goods_code': model.code,
-                'rank_num': rank_num,
-                'goods_spu': spu,
-                'reviews_num': model.reviews_num,
-                'goods_title': model.title,
-                'goods_url': model.url
-            }
-            if xgoods:
-                # 更新goods和ranking_log对应关系
-                RankingGoods.update_model(db_session, update_data, xd_find)
-            else:
-                # 添加goods和ranking_log对应关系
-                xd_find.update(update_data)
-                xgoods = RankingGoods(**xd_find)
-                db_session.add(xgoods)
-            db_session.commit()
-
         print(opt_str + ' GOODS : ' + json.dumps(attrs))
+
+        # 添加或更新goods和ranking_log对应关系
+        if spider.ranking_log:
+            self.save_ranking_goods(model, spider)
+
+    @staticmethod
+    def save_ranking_goods(model: Goods, spider: BaseSpider):
+        details = json.loads(model.details)
+        rank_num = details['rank_num'] if 'rank_num' in details else 0
+        spu = details['spu'] if 'spu' in details else ''
+        spu = spu if spu else model.asin
+        xlog = spider.ranking_log
+        xd_find = {'site_id': spider.site_id, 'ranking_log_id': xlog.id, 'goods_id': model.id}
+        print(xd_find)
+        db_session = RankingGoods.get_db_session()
+        xgoods = RankingGoods.get_model(db_session, xd_find)
+        update_data = {
+            'spider_run_log_id': spider.log_id,
+            'goods_code': model.code,
+            'rank_num': rank_num,
+            'goods_spu': spu,
+            'reviews_num': model.reviews_num,
+            'goods_title': model.title,
+            'goods_url': model.url
+        }
+        if xgoods:
+            # 更新goods和ranking_log对应关系
+            RankingGoods.update_model(db_session, update_data, xd_find)
+        else:
+            # 添加goods和ranking_log对应关系
+            xd_find.update(update_data)
+            xgoods = RankingGoods(**xd_find)
+            db_session.add(xgoods)
+        db_session.commit()

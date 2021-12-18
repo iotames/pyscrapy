@@ -7,8 +7,10 @@ from pyscrapy.grabs.amazon_goods_list import GoodsRankingList, GoodsListInStore
 from pyscrapy.grabs.amazon_goods import AmazonGoodsDetail
 from pyscrapy.grabs.amazon_goods_reviews import AmazonGoodsReviews
 from pyscrapy.extracts.amazon import Common as XAmazon, GoodsReviews as XGoodsReviews
-from pyscrapy.models import SiteMerchant, Goods
+from pyscrapy.models import SiteMerchant, Goods, RankingGoods
 from pyscrapy.items import AmazonGoodsItem
+from pyscrapy.enum.amazon import EnumGoodsRanking
+from pyscrapy.enum.spider import *
 
 
 class AmazonSpider(BaseSpider):
@@ -33,12 +35,6 @@ class AmazonSpider(BaseSpider):
     url_params = {
         "language": 'zh_CN'
     }
-
-    top_goods_urls = [
-        # '/Best-Sellers-Womens-Activewear-Skirts-Skorts/zgbs/fashion/23575633011?{}'
-        '/bestsellers/fashion/10208103011?{}'  # 骑行短裤
-        # '/bestsellers/sporting-goods/706814011?{}'  # 户外休闲销售排行榜
-    ]
 
     stores_urls = [
         {
@@ -72,13 +68,6 @@ class AmazonSpider(BaseSpider):
     ]
 
     asin_list = []
-
-    CHILD_GOODS_LIST_STORE_PAGE = 'goods_list_store_page'
-    CHILD_GOODS_LIST_RANKING = 'goods_list_ranking'
-    CHILD_GOODS_REVIEWS = 'goods_reviews'
-    CHILD_GOODS_LIST_ASIN = 'goods_list_asin'
-    CHILD_GOODS_LIST_ALL_COLORS = 'goods_list_all_colors'
-
     goods_model_list: list
 
     def __init__(self, name=None, **kwargs):
@@ -89,7 +78,7 @@ class AmazonSpider(BaseSpider):
         self.spider_child = kwargs['spider_child']
 
     def start_requests(self):
-        if self.spider_child == self.CHILD_GOODS_LIST_STORE_PAGE:
+        if self.spider_child == CHILD_GOODS_LIST_STORE_PAGE:
             category_name = 'Nursing'  # Nursing Maternity
             for store in self.stores_urls:
                 store_name = store['store_name']
@@ -106,17 +95,19 @@ class AmazonSpider(BaseSpider):
                         callback=GoodsListInStore.parse,
                         meta=dict(merchant_id=store_model.id, category_name=category_name)
                     )
-        if self.spider_child == self.CHILD_GOODS_LIST_RANKING:
-            for url in self.top_goods_urls:
-                self.url_params['pg'] = "1"
-                url = self.base_url + url.format(urlencode(self.url_params))
-                yield Request(
-                    url,
-                    callback=GoodsRankingList.parse,
-                    headers=dict(referer=self.base_url),
-                    meta=dict(page=1)
-                )
-        if self.spider_child == self.CHILD_GOODS_REVIEWS:
+        if self.spider_child == CHILD_GOODS_LIST_RANKING:
+            category_name = "Women's Sports Clothing"
+            url = '/Best-Sellers-Women/zgbs/sporting-goods/11444119011'
+            log_id = 0
+            self.ranking_log = self.get_ranking_log(category_name, EnumGoodsRanking.TYPE_BESTSELLERS, log_id=log_id)
+            self.url_params['pg'] = "1"
+            yield Request(
+                self.get_site_url("{}?{}".format(url, urlencode(self.url_params))),
+                callback=GoodsRankingList.parse,
+                headers=dict(referer=self.base_url),
+                meta=dict(page=1)
+            )
+        if self.spider_child == CHILD_GOODS_REVIEWS:
             asin = "B093GZ8797"
             goods_url = XAmazon.get_url_by_code(asin, self.url_params)
             reviews_url = XGoodsReviews.get_reviews_url_by_asin(asin)
@@ -129,7 +120,23 @@ class AmazonSpider(BaseSpider):
                 headers=dict(referer=goods_url),
                 meta=dict(goods_code=asin, goods_id=goods_model.id)
             )
-        if self.spider_child == self.CHILD_GOODS_LIST_ASIN:
+        if self.spider_child == CHILD_GOODS_REVIEWS_BY_RANKING:
+            category_name = "Women's Sports Clothing"
+            ranking_log = self.get_ranking_log_real(category_name, EnumGoodsRanking.TYPE_BESTSELLERS)
+            db_session = RankingGoods.get_db_session()
+            ranking_goods_list = RankingGoods.get_all_model(db_session, {'ranking_log_id': ranking_log.id})
+            print('==================goods_list_len = ' + str(len(ranking_goods_list)))
+            for xgd in ranking_goods_list:
+                model = Goods.get_model(db_session, {'id': xgd.goods_id})
+                reviews_url = XGoodsReviews.get_reviews_url_by_asin(model.code)
+                yield Request(
+                    reviews_url,
+                    callback=AmazonGoodsReviews.parse,
+                    headers=dict(referer=model.url),
+                    meta=dict(goods_code=model.code, goods_id=model.id)
+                )
+
+        if self.spider_child == CHILD_GOODS_LIST_ASIN:
             # store_name = 'Smallshow'
             # store_find = {'name': store_name, 'site_id': self.site_id}
             # store_model = self.db_session.query(SiteMerchant).filter_by(**store_find).first()
@@ -154,7 +161,7 @@ class AmazonSpider(BaseSpider):
                         # dont_filter=True,
                         meta=dict(item=item)
                     )
-        if self.spider_child == self.CHILD_GOODS_LIST_ALL_COLORS:
+        if self.spider_child == CHILD_GOODS_LIST_ALL_COLORS:
             self.goods_model_list = Goods.get_all_model(self.db_session, {'site_id': self.site_id})
             asin_list = []
             for goods_model in self.goods_model_list:
