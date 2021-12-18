@@ -12,7 +12,7 @@ class LululemonOutput(BaseOutput):
     def output(self):
         sheet = self.work_sheet
         # sheet.sheet_format.defaultRowHeight = 30
-        title_row = ('商品ID', 'code', '图片', '分类', '商品标题', '商品链接', '更新时间', '价格', '评论数', '颜色数')
+        title_row = ('商品ID', 'code', '图片', '分类', '商品标题', '商品链接', '更新时间', '价格', '评论数', '颜色数', '面料', '其他')
         title_col = 1
         for title in title_row:
             sheet.cell(1, title_col, title)
@@ -32,9 +32,22 @@ class LululemonOutput(BaseOutput):
 
             goods_url = goods.url
 
+            materials_text = ""
+            if details['materials_list']:
+                for material in details['materials_list']:
+                    materials_text += material['title'] + ":" + material['value'] + "\r\n"
+
+            details_text = ""
+            if details['details_list']:
+                for detail in details['details_list']:
+                    ditem_text = ''
+                    for ditem in detail['items']:
+                        ditem_text += "," + ditem
+                    details_text += "{}:{}".format(detail['title'], ditem_text) + "\r\n"
+
             goods_info_list = [
                 goods.id, goods.code, image, goods.category_name, goods.title, goods_url, time_str, goods.price,
-                goods.reviews_num, color_num
+                goods.reviews_num, color_num, materials_text, details_text
             ]
             print(goods_info_list)
             # 返回商品信息递增列 next col index

@@ -41,7 +41,7 @@ class LululemonSpider(BaseSpider):
     xpath_reviews_num = '//span[@class="reviews-link__count"]/text()'  # ' (89)'
     xpath_details_list = '//div[@class="accordion-3Usrq accordionLarge-1hCr9"]/div'
     xpath_detail_title = 'h3/span/span/text()'
-    xpath_detail_items = 'div//ul/li/span/text()'
+    # xpath_detail_items = 'div/div/div/div/ul/li/span/text()'
 
     def __init__(self, name=None, **kwargs):
         super(LululemonSpider, self).__init__(name=name, **kwargs)
@@ -155,14 +155,37 @@ class LululemonSpider(BaseSpider):
                 reviews_num = int(info[0])
         details_list = []
         details = json.loads(model.details)
+        materials_list = []
         eles = response.xpath(self.xpath_details_list)
         for elee in eles:
             ele = BaseElement(elee)
             # TODO  Material and care 有2个条目
-            ele_title = ele.get_text(self.xpath_detail_title)
-            ele_items = elee.xpath(self.xpath_detail_items).extract()
-            details_list.append({'title': ele_title, 'items': ele_items})
+            div_eles = elee.xpath('div/div/div/div')
+            i = 0
+            for div_item in div_eles:
+                ele_title = ele.get_text(self.xpath_detail_title)
+                i += 1
+                if i > 1:
+                    ele_items = div_item.xpath('ul/li/span/text()').extract()
+                    if ele_items:
+                        ele_title += ":" + div_item.xpath('div/text()').extract()[0]
+                        details_list.append({'title': ele_title, 'items': ele_items})
+                if i == 1 and len(div_eles) == 1:
+                    ele_items = div_item.xpath('ul/li/span/text()').extract()
+                    if ele_items:
+                        details_list.append({'title': ele_title, 'items': ele_items})
+                if i == 1 and len(div_eles) > 1:
+                    title_child = div_item.xpath('div/text()').extract()[0].strip()  # Materials
+                    ele_title += ":" + title_child
+                    if title_child.lower() == "materials":
+                        ele_materials = div_item.xpath('ul/li/span/dl')
+                        for material_ele in ele_materials:
+                            material_title = material_ele.xpath('dt/text()').get().strip()
+                            material_value = material_ele.xpath('dd/text()').get()
+                            materials_list.append({'title': material_title.replace(':', ''), 'value': material_value})
+
         details['details_list'] = details_list
+        details['materials_list'] = materials_list
         goods_item = BaseGoodsItem()
         goods_item['model'] = model
         goods_item['spider_name'] = self.name
