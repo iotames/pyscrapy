@@ -98,6 +98,7 @@ class SheinSpider(BaseSpider):
                     meta=dict(only_category=True, spider=self)
                 )
 
+        # 评论采集方式: get_simple() 时间顺序 获取1次
         if self.spider_child == self.CHILD_GOODS_DETAIL:
             db_session = Goods.get_db_session()
             self.goods_model_list = Goods.get_all_model(db_session, {'site_id': self.site_id})
@@ -107,9 +108,9 @@ class SheinSpider(BaseSpider):
 
         if self.spider_child == self.CHILD_GOODS_LIST_TOP_REVIEWS:
             sort_by = 7
-            category_name = 'Women Activewear'
-            goods_list_url = '/category/Active-sc-00856973.html'   # 女装运动服
-            ranking_log_id = 2
+            category_name = 'Women Sports Tees & Tanks'
+            goods_list_url = '/Women-Sports-Tees-Tanks-c-2185.html'
+            ranking_log_id = 0
             db_session = RankingLog.get_db_session()
             ranking_log = self.get_ranking_log(category_name, ranking_log_id)
             if ranking_log:
@@ -131,11 +132,12 @@ class SheinSpider(BaseSpider):
 
             url = "{}{}?{}".format(self.base_url, goods_list_url, urlencode({'page': 1, 'sort': sort_by}))
             meta = dict(spider=self, categories_map=self.categories_map)
-            self.ranking_log = ranking_log  # 最终数据管道保存goods_item信息到数据库时，再存储 goods和ranking_log 的关联关系
+            self.ranking_log = ranking_log  # 最终数据管道保存goods_item信息到数据库时，先保存或更新goods, 再存储 goods和ranking_log 的对应关系
             yield self.get_request_goods_list(url, meta)
 
+        # 评论采集方式: get_all() 时间逆序 获取最近3个月评论
         if self.spider_child == self.CHILD_GOODS_DETAIL_TOP_REVIEWS:
-            category_name = 'Women Activewear'
+            category_name = 'Women Sports Tees & Tanks'
             ranking_log = self.get_ranking_log(category_name)
             if not ranking_log:
                 raise RuntimeError('RankingLog not found !')

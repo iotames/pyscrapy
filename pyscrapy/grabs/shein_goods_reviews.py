@@ -121,6 +121,7 @@ class ReviewRequest(object):
         self.filter_type = self.TYPE_SIMPLE
         self.set_from_meta(meta)
         self.limit = 3
+        self.sort = self.SORT_ASC
         return Request(self.request_url, callback=self.parse, headers=self.headers, dont_filter=True)
 
     @property
@@ -192,22 +193,6 @@ class ReviewRequest(object):
         # print(rinfo['num'])
         return dict(code=0, msg='ok', total=total, items=items)
 
-    def next_process(self, data: dict):
-        reviews_list = data['items']
-        if not self.goods_id and not self.comment_rank and not self.size:
-            self.goods_item['reviews_num'] = data['total']
-            if self.sort == self.SORT_ASC and self.page == 1:
-                first_review_time = reviews_list[0]['comment_time']
-                self.goods_item['details']['first_review_time'] = first_review_time
-        # for i in range(1, 6):
-        # 1星评论
-        return Request(
-            url=self.request_url,
-            callback=self.parse,
-            headers=self.headers,
-            dont_filter=True
-        )
-
     def is_last_page(self) -> bool:
         total_reviews = self.data['total']
         had_len = (self.page - 1) * self.limit + len(self.data['items'])
@@ -232,9 +217,14 @@ class ReviewRequest(object):
             return False
 
         total_reviews = data['total']
-        self.goods_item['reviews_num'] = total_reviews
+        self.goods_item['reviews_num'] = total_reviews  # 评论总数
+        # 获取首次评论时间
+        if self.sort == self.SORT_ASC and self.page == 1:
+            first_review_time = data['items'][0]['comment_time']
+            self.goods_item['details']['first_review_time'] = first_review_time
 
         if self.filter_type == self.TYPE_SIMPLE:
+            print('=======get simple reviews=========')
             yield self.goods_item
 
         if self.filter_type == self.TYPE_ALL:
@@ -242,12 +232,13 @@ class ReviewRequest(object):
             for review in data['items']:
                 yield self.get_review_item(review, self.review_item)
 
-            self.goods_item['reviews_num'] = total_reviews
             if self.is_last_page() or self.is_review_exists or self.is_review_too_old:
-                yield self.goods_item
+                # 切换请求方式。 获取首次评论的时间。 yield self.goods_item
+                print('========get all views end=======' + str(self.goods_model.id))
+                yield self.get_simple(meta=dict(goods_model=self.goods_model, goods_item=self.goods_item))
             else:
                 self.page += 1
-                yield self.next_process(data)
+                yield Request(url=self.request_url, callback=self.parse, headers=self.headers, dont_filter=True)
 
         if self.filter_type == self.TYPE_SCHEMA:
             # TODO 似乎陷入了死循环
@@ -264,7 +255,7 @@ class ReviewRequest(object):
             else:
                 if not self.comment_rank and not self.process_end:
                     self.comment_rank = 1
-                    yield self.next_process(data)
+                    yield Request(url=self.request_url, callback=self.parse, headers=self.headers, dont_filter=True)
 
             if self.comment_rank and not self.process_end:
                 if self.comment_rank < 5:
@@ -273,14 +264,14 @@ class ReviewRequest(object):
                     else:
                         self.goods_item['details']['rank_score'][str(self.comment_rank)] = data['total']
                     self.comment_rank += 1
-                    yield self.next_process(data)
+                    yield Request(url=self.request_url, callback=self.parse, headers=self.headers, dont_filter=True)
                 else:
                     self.goods_item['details']['rank_score'][str(self.comment_rank)] = data['total']
                     self.comment_rank = ""
                     if self.goods_item['details']['relation_colors']:
                         self.goods_color_index = 0
                         self.goods_id = self.goods_item['details']['relation_colors'][self.goods_color_index]['goods_id']
-                        yield self.next_process(data)
+                        yield Request(url=self.request_url, callback=self.parse, headers=self.headers, dont_filter=True)
                     else:
                         print('==========222==============')
                         self.process_end = True
@@ -293,7 +284,7 @@ class ReviewRequest(object):
                     goods_id = self.goods_item['details']['relation_colors'][colorii]['goods_id']
                     self.goods_id = goods_id
                     self.goods_color_index += 1
-                    yield self.next_process(data)
+                    yield Request(url=self.request_url, callback=self.parse, headers=self.headers, dont_filter=True)
                 else:
                     self.goods_id = ''
                     self.process_end = True

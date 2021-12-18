@@ -188,8 +188,9 @@ class GoodsBase(Base):
 
     def process_item(self, item: BaseGoodsItem, spider: BaseSpider):
         if 'spider_name' not in item:
-            print('spider_name not in BaseGoodsItem. Skip process_item!!!')
-            return False
+            err_msg = 'process_item error: spider_name not in BaseGoodsItem!!!'
+            print(err_msg)
+            raise RuntimeError(err_msg)
 
         db_session = self.db_session
         not_update = ['image_urls', 'image_paths', 'model', 'spider_name']

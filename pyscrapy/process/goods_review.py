@@ -24,14 +24,14 @@ class BaseReview(Base):
             model = db_session.query(GoodsReview).filter(
                 GoodsReview.code == item['code'], GoodsReview.site_id == site_id).first()
         if model:
-            opt_str = 'SUCCESS UPDATE id = {} : '.format(str(model.id))
+            opt_str = 'SUCCESS UPDATE GOODS REVIEW id = {} : '.format(str(model.id))
             db_session.query(GoodsReview).filter(GoodsReview.id == model.id).update(attrs)
         else:
-            opt_str = 'SUCCESS ADD '
+            opt_str = 'SUCCESS ADD GOODS REVIEW'
             model = GoodsReview(**attrs)
             db_session.add(model)
         db_session.commit()
-        print(opt_str + ' GOODS REVIEW : ')
+        print(opt_str)
         print(attrs)
 
 

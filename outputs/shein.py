@@ -19,6 +19,10 @@ class SheinOutput(BaseOutput):
     def output_top_100(self):
         sheet = self.work_sheet
         log = self.get_ranking_log(self.rank_category)
+        if not log:
+            raise RuntimeError('找不到排行榜数据')
+        if time.time() - log.created_at > 3600 * 72:
+            raise RuntimeError('最近排行榜数据已超过72小时, 请重新采集')
         db_session = self.db_session
         ranking_goods_list = RankingGoods.get_all_model(db_session, {'ranking_log_id': log.id})
         current_time = int(time.time())
@@ -27,8 +31,8 @@ class SheinOutput(BaseOutput):
         month_in_1 = current_time - 3600 * 24 * 30
         week_in_1 = current_time - 3600 * 24 * 7
 
-        title_row = ('ID', '图片', '排名', '上架时间（首个评论）', 'goods_id', 'SPU', '颜色', '品类', '商品标题', '商品链接', '更新时间',
-                     '价格/US$', '3个月内评论数', '2个月内评论', '1个月内评论', '1周内评论', '所属品牌', 'SKU数')
+        title_row = ('ID', '图片', '排名', '首评时间', 'goods_id', 'SPU', '颜色', '品类', '商品标题', '商品链接', '更新时间',
+                     '价格/US$', '3个月内评论数', '2个月内评论', '1个月内评论', '1周内评论', '所属品牌', 'SKU数', '总评论数')
         title_col = 1
         for title in title_row:
             sheet.cell(1, title_col, title)
@@ -60,9 +64,9 @@ class SheinOutput(BaseOutput):
 
             goods_col_index = 1
             goods_info_list = [
-                goods.id, image, rgoods.rank_num, first_at, goods.code, goods.asin, color, goods.category_name, goods.title, goods.url,
-                updated_at,
-                goods.price, len(reviews_month_3), len(reviews_month_2), len(reviews_month_1), len(reviews_week_1), brand, sku_num
+                goods.id, image, rgoods.rank_num, first_at, goods.code, goods.asin, color, goods.category_name,
+                goods.title, goods.url, updated_at, goods.price, len(reviews_month_3), len(reviews_month_2),
+                len(reviews_month_1), len(reviews_week_1), brand, sku_num, goods.reviews_num
             ]
             # 返回商品信息递增列 next col index
             self.set_values_to_row(sheet, goods_info_list, goods_row_index, goods_col_index)
@@ -123,7 +127,7 @@ class SheinOutput(BaseOutput):
 
 if __name__ == '__main__':
     ot = SheinOutput()
-    ot.rank_category = "Women Activewear"
+    ot.rank_category = "Women Sports Tees & Tanks"  # "Women Sports Leggings"  # "Women Activewear"
     ot.output_top_100()
     # db_session = RankingGoods.get_db_session()
     # rank_goods_list = RankingGoods.get_all_model(db_session, {'site_id': 1})
