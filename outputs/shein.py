@@ -7,17 +7,18 @@ import json
 
 class SheinOutput(BaseOutput):
     site_name = 'shein'
+    rank_category: str
 
     def __init__(self):
         super(SheinOutput, self).__init__('商品明细', self.site_name)
 
-    def get_ranking_log(self):
+    def get_ranking_log(self, category_name: str):
         db_session = RankingLog.get_db_session()
-        return RankingLog.get_log(db_session, self.site_id)
+        return RankingLog.get_log(db_session, self.site_id, category_name)
 
     def output_top_100(self):
         sheet = self.work_sheet
-        log = self.get_ranking_log()
+        log = self.get_ranking_log(self.rank_category)
         db_session = self.db_session
         ranking_goods_list = RankingGoods.get_all_model(db_session, {'ranking_log_id': log.id})
         current_time = int(time.time())
@@ -122,6 +123,7 @@ class SheinOutput(BaseOutput):
 
 if __name__ == '__main__':
     ot = SheinOutput()
+    ot.rank_category = "Women Activewear"
     ot.output_top_100()
     # db_session = RankingGoods.get_db_session()
     # rank_goods_list = RankingGoods.get_all_model(db_session, {'site_id': 1})

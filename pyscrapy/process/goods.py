@@ -225,6 +225,7 @@ class GoodsBase(Base):
             rank_num = details['rank_num'] if 'rank_num' in details else 0
             spu = details['spu'] if 'spu' in details else ''
             xlog = spider.ranking_log
+            # 添加或更新goods和ranking_log对应关系
             xd_find = {'site_id': spider.site_id, 'ranking_log_id': xlog.id, 'goods_id': model.id}
             print(xd_find)
             db_session = RankingGoods.get_db_session()
@@ -238,10 +239,11 @@ class GoodsBase(Base):
                 'goods_title': model.title,
                 'goods_url': model.url
             }
-            xd_find.update()
             if xgoods:
+                # 更新goods和ranking_log对应关系
                 RankingGoods.update_model(db_session, update_data, xd_find)
             else:
+                # 添加goods和ranking_log对应关系
                 xd_find.update(update_data)
                 xgoods = RankingGoods(**xd_find)
                 db_session.add(xgoods)

@@ -9,7 +9,6 @@ from pyscrapy.grabs.shein_goods import GoodsDetail
 from pyscrapy.extracts.shein import BASE_URL
 from pyscrapy.models import GoodsCategory, Goods, RankingLog, RankingGoods
 from pyscrapy.enum.shein import EnumGoodsRanking
-from sqlalchemy import and_
 
 
 class SheinSpider(BaseSpider):
@@ -77,7 +76,8 @@ class SheinSpider(BaseSpider):
         )
 
     def get_request_goods_detail(self, model: Goods):
-        return Request(model.url, callback=GoodsDetail.parse, headers=dict(referer=self.base_url), meta=dict(spider=self, categories_map=self.categories_map, goods_model=model))
+        return Request(model.url, callback=GoodsDetail.parse, headers=dict(referer=self.base_url),
+                       meta=dict(spider=self, categories_map=self.categories_map, goods_model=model))
 
     def start_requests(self):
         if self.spider_child == self.CHILD_GOODS_LIST:
@@ -106,29 +106,37 @@ class SheinSpider(BaseSpider):
                 yield self.get_request_goods_detail(model)
 
         if self.spider_child == self.CHILD_GOODS_LIST_TOP_REVIEWS:
+            sort_by = 7
+            category_name = 'Women Activewear'
+            goods_list_url = '/category/Active-sc-00856973.html'   # 女装运动服
+            ranking_log_id = 2
             db_session = RankingLog.get_db_session()
-            # '/category/Active-sc-00856973.html'  # 女装运动服
-            ranking_log = self.get_ranking_log()
-            # TODO 改为判断 created_at 或 rank_date 来确定是否新建 ranking_log
+            ranking_log = self.get_ranking_log(category_name, ranking_log_id)
+            if ranking_log:
+                # 判断 created_at 来确定是否新建 ranking_log
+                if (time.time() - ranking_log.created_at) > 3600*24:
+                    ranking_log = None
             if not ranking_log:
+                now_date = datetime.datetime.now()
                 attrs = {
                     'site_id': self.site_id,
-                    'category_name': 'Women Activewear',
+                    'category_name': category_name,
                     'rank_type': EnumGoodsRanking.TYPE_TOP_REVIEWS,
-                    'rank_date': datetime.datetime.now()
+                    'rank_date': now_date
                 }
                 ranking_log = RankingLog(**attrs)
                 db_session.add(ranking_log)
                 db_session.commit()
-                ranking_log = self.get_ranking_log()
+                ranking_log = self.get_ranking_log(category_name)
 
-            url = "{}{}?{}".format(self.base_url, '/category/Active-sc-00856973.html', urlencode({'page': 1, 'sort': 7}))
+            url = "{}{}?{}".format(self.base_url, goods_list_url, urlencode({'page': 1, 'sort': sort_by}))
             meta = dict(spider=self, categories_map=self.categories_map)
-            self.ranking_log = ranking_log
+            self.ranking_log = ranking_log  # 最终数据管道保存goods_item信息到数据库时，再存储 goods和ranking_log 的关联关系
             yield self.get_request_goods_list(url, meta)
 
         if self.spider_child == self.CHILD_GOODS_DETAIL_TOP_REVIEWS:
-            ranking_log = self.get_ranking_log()
+            category_name = 'Women Activewear'
+            ranking_log = self.get_ranking_log(category_name)
             if not ranking_log:
                 raise RuntimeError('RankingLog not found !')
             db_session = RankingGoods.get_db_session()
@@ -138,9 +146,9 @@ class SheinSpider(BaseSpider):
                 model = Goods.get_model(db_session, {'id': xgd.goods_id})
                 yield self.get_request_goods_detail(model)
 
-    def get_ranking_log(self, log_id=0):
+    def get_ranking_log(self, category_name: str, log_id=0):
         db_session = RankingLog.get_db_session()
-        return RankingLog.get_log(db_session, self.site_id, rank_type=EnumGoodsRanking.TYPE_TOP_REVIEWS, log_id=log_id)
+        return RankingLog.get_log(db_session, self.site_id, category_name, EnumGoodsRanking.TYPE_TOP_REVIEWS, log_id=log_id)
 
     def get_categories_map(self):
         db_session = GoodsCategory.get_db_session()
