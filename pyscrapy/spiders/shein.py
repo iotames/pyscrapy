@@ -109,6 +109,7 @@ class SheinSpider(BaseSpider):
             db_session = RankingLog.get_db_session()
             # '/category/Active-sc-00856973.html'  # 女装运动服
             ranking_log = self.get_ranking_log()
+            # TODO 改为判断 created_at 或 rank_date 来确定是否新建 ranking_log
             if not ranking_log:
                 attrs = {
                     'site_id': self.site_id,
@@ -137,14 +138,9 @@ class SheinSpider(BaseSpider):
                 model = Goods.get_model(db_session, {'id': xgd.goods_id})
                 yield self.get_request_goods_detail(model)
 
-    def get_ranking_log(self):
+    def get_ranking_log(self, log_id=0):
         db_session = RankingLog.get_db_session()
-        ranking_log = db_session.query(RankingLog).filter(and_(
-            RankingLog.site_id == self.site_id,
-            RankingLog.rank_type == EnumGoodsRanking.TYPE_TOP_REVIEWS,
-            RankingLog.created_at > (time.time() - 3600 * 24)
-        )).first()
-        return ranking_log
+        return RankingLog.get_log(db_session, self.site_id, rank_type=EnumGoodsRanking.TYPE_TOP_REVIEWS, log_id=log_id)
 
     def get_categories_map(self):
         db_session = GoodsCategory.get_db_session()

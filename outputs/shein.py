@@ -3,8 +3,6 @@ import time
 from pyscrapy.models import Goods, RankingGoods, RankingLog, GoodsReview
 from outputs.baseoutput import BaseOutput
 import json
-from sqlalchemy import and_
-from pyscrapy.enum.shein import EnumGoodsRanking
 
 
 class SheinOutput(BaseOutput):
@@ -15,11 +13,7 @@ class SheinOutput(BaseOutput):
 
     def get_ranking_log(self):
         db_session = RankingLog.get_db_session()
-        ranking_log = db_session.query(RankingLog).filter(and_(
-            RankingLog.site_id == self.site_id,
-            RankingLog.rank_type == EnumGoodsRanking.TYPE_TOP_REVIEWS
-        )).order_by(RankingLog.created_at.desc()).first()
-        return ranking_log
+        return RankingLog.get_log(db_session, self.site_id)
 
     def output_top_100(self):
         sheet = self.work_sheet
