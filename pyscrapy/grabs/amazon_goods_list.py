@@ -35,7 +35,8 @@ class GoodsRankingList(BasePage):
             yield Request(
                 response.url.replace('pg=1', 'pg=2'),
                 callback=cls.parse,
-                meta=dict(page=2)
+                meta=dict(page=2),
+                dont_filter=True
             )
 
 

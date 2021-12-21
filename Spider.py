@@ -48,7 +48,7 @@ if __name__ == '__main__':
     dirpath = Config.get_logs_dir()
     args = {
         'logs_dir': dirpath,
-        'spider_child': CHILD_GOODS_LIST_RANKING,
+        'spider_child': CHILD_GOODS_REVIEWS_BY_RANKING,
         'log_id': "",  # "39"
     }
     Spider.crawl(NAME_AMAZON, spider_args=args)

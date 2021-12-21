@@ -1,11 +1,11 @@
-from pyscrapy.models import Goods, GoodsReview
+from pyscrapy.models import Goods, RankingGoods, RankingLog, GoodsReview
 from outputs.baseoutput import BaseOutput
 from pyscrapy.extracts.amazon import Common as XAmazon
-from pyscrapy.spiders.amazon import AmazonSpider
 import json
 from sqlalchemy import and_
 from openpyxl.styles import PatternFill
 from openpyxl import load_workbook
+from time import time
 
 
 class AmazonOutput(BaseOutput):
@@ -14,9 +14,14 @@ class AmazonOutput(BaseOutput):
     cell_fill = PatternFill("solid", fgColor="1874CD")
     goods_id_to_title = {}
     colors_show_times = {}
+    rank_category: str
     
     def __init__(self):
         super(AmazonOutput, self).__init__('商品信息列表', self.site_name)
+
+    def get_ranking_log(self, category_name: str):
+        db_session = RankingLog.get_db_session()
+        return RankingLog.get_log(db_session, self.site_id, category_name)
 
     def set_reviews_colors(self, reviews: list, detail_rows, color_partial=True):
         for review in reviews:
@@ -46,24 +51,41 @@ class AmazonOutput(BaseOutput):
 
     def output(self):
         sheet = self.work_sheet
+        log = self.get_ranking_log(self.rank_category)
+        if not log:
+            raise RuntimeError('找不到排行榜数据')
+        if time() - log.created_at > 3600 * 72:
+            raise RuntimeError('最近排行榜数据已超过72小时, 请重新采集')
+
+        db_session = self.db_session
+        ranking_goods_list = RankingGoods.get_all_model(db_session, {'ranking_log_id': log.id})
+        current_time = int(time())
+        month_in_3 = current_time - 3600 * 24 * 90
+        month_in_2 = current_time - 3600 * 24 * 60
+        month_in_1 = current_time - 3600 * 24 * 30
+        week_in_1 = current_time - 3600 * 24 * 7
+
         # sheet.sheet_format.defaultRowHeight = 30
         title_row = ('商品ID', 'code', '亚马逊ASIN', '分类', '图片', '商品标题', '商品链接', '上架时间', '更新时间', '价格/US$', '原价', '节省',
-                     '评论数', '大类排名', '当前排名', '商品描述', '所有排名')
+                     '评论数', '3个月内评论数', '2个月内评论', '1个月内评论', '1周内评论', '大类排名', '当前排名', '商品描述', '所有排名')
         title_col = 1
         for title in title_row:
             sheet.cell(1, title_col, title)
             title_col += 1
-        goods_list = self.db_session.query(Goods).filter(
-            Goods.site_id == self.site_id,
-            # Goods.merchant_id == 1
-        ).all()
+
+        goods_list = ranking_goods_list
+        # goods_list = self.db_session.query(Goods).filter(
+        #     Goods.site_id == self.site_id,
+        #     # Goods.merchant_id == 1
+        # ).all()
         print(len(goods_list))
 
         # ASIN 分组整理 , 并剔除重复的SPU。 START
         asin_list = []
         asin_goods_map = {}
         code_list = []
-        for goods in goods_list:
+        for rgoods in goods_list:
+            goods = Goods.get_model(db_session, {'id': rgoods.goods_id})
             asin = goods.asin
             code = XAmazon.get_code_by_goods_url(goods.url)
             goods.code = code  # 重写 code
@@ -75,6 +97,7 @@ class AmazonOutput(BaseOutput):
             else:
                 if code not in code_list:  # 剔除重复的SPU
                     asin_goods_map[asin].append(goods)
+
         goods_list = []
         for asin, gd_list in asin_goods_map.items():
             for model in gd_list:
@@ -106,9 +129,20 @@ class AmazonOutput(BaseOutput):
             details_items = ""
             for item in details['items']:
                 details_items += item + "\n|"
+
+            reviews_month_3 = db_session.query(GoodsReview).filter(
+                GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_3).count()
+            reviews_month_2 = db_session.query(GoodsReview).filter(
+                GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_2).count()
+            reviews_month_1 = db_session.query(GoodsReview).filter(
+                GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_1).count()
+            reviews_week_1 = db_session.query(GoodsReview).filter(
+                GoodsReview.goods_id == goods.id, GoodsReview.review_time > week_in_1).count()
+
             goods_info_list = [
-                goods.id, goods.code, asin, goods.category_name, image, goods.title, goods_url, sale_at, time_str, goods.price, details['price_base'],
-                details['price_save'], goods.reviews_num, root_rank, rank_num, details_items, rank_detail
+                goods.id, goods.code, asin, goods.category_name, image, goods.title, goods_url, sale_at, time_str,
+                goods.price, details['price_base'], details['price_save'], goods.reviews_num, reviews_month_3,
+                reviews_month_2, reviews_month_1, reviews_week_1, root_rank, rank_num, details_items, rank_detail
             ]
             print(goods_info_list)
             # 返回商品信息递增列 next col index
@@ -171,5 +205,6 @@ class AmazonOutput(BaseOutput):
 
 if __name__ == '__main__':
     ot = AmazonOutput()
+    ot.rank_category = "Women's Sports Clothing"
     # ot.update_excel(ot.output_dir + "/amazon_2021-12-13_08_28.xlsx")
     ot.output()

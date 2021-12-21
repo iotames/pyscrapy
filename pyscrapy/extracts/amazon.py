@@ -132,7 +132,7 @@ class GoodsReviews(object):
     """
 
     reviews_url = BASE_URL + "/product-reviews/{}"
-    reviews_url_more = reviews_url + '/ref=cm_cr_arp_d_paging_btm_next_{}?pageNumber={}'
+    reviews_url_more = reviews_url + '/ref=cm_cr_arp_d_paging_btm_next_{}'  # cm_cr_getr_d_paging_btm_next_2
 
     xpath_reviews_count = '//*[@id="filter-info-section"]/div/span/text()'
 
@@ -158,11 +158,13 @@ class GoodsReviews(object):
         return result_url
 
     @classmethod
-    def get_reviews_url_by_asin(cls, asin, page=1, language='zh_CN') -> str:
-        url = cls.reviews_url.format(asin) + "?language=" + language
+    def get_reviews_url_by_asin(cls, asin, page=1, language='zh_CN', sort_by='recent') -> str:
+        params = {'language': language, 'sortBy': sort_by}
+        url = cls.reviews_url.format(asin) + "?" + urlencode(params)
         if page > 1:
             pgstr = str(page)
-            url = cls.reviews_url_more.format(asin, pgstr, pgstr) + "&language=" + language
+            params['pageNumber'] = pgstr
+            url = cls.reviews_url_more.format(asin, pgstr) + "?" + urlencode(params)
         return url
 
     @classmethod

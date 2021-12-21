@@ -1,5 +1,4 @@
 import time
-
 from pyscrapy.models import Goods, RankingGoods, RankingLog, GoodsReview
 from outputs.baseoutput import BaseOutput
 import json
@@ -26,8 +25,8 @@ class SheinOutput(BaseOutput):
         db_session = self.db_session
         ranking_goods_list = RankingGoods.get_all_model(db_session, {'ranking_log_id': log.id})
         current_time = int(time.time())
-        month_in_3 = current_time - 3600*24*90
-        month_in_2 = current_time - 3600*24*60
+        month_in_3 = current_time - 3600 * 24 * 90
+        month_in_2 = current_time - 3600 * 24 * 60
         month_in_1 = current_time - 3600 * 24 * 30
         week_in_1 = current_time - 3600 * 24 * 7
 
@@ -54,19 +53,19 @@ class SheinOutput(BaseOutput):
                     sku_num += len(relation_colors)
 
             reviews_month_3 = db_session.query(GoodsReview).filter(
-                GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_3).all()
+                GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_3).count()
             reviews_month_2 = db_session.query(GoodsReview).filter(
-                GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_2).all()
+                GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_2).count()
             reviews_month_1 = db_session.query(GoodsReview).filter(
-                GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_1).all()
+                GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_1).count()
             reviews_week_1 = db_session.query(GoodsReview).filter(
-                GoodsReview.goods_id == goods.id, GoodsReview.review_time > week_in_1).all()
+                GoodsReview.goods_id == goods.id, GoodsReview.review_time > week_in_1).count()
 
             goods_col_index = 1
             goods_info_list = [
                 goods.id, image, rgoods.rank_num, first_at, goods.code, goods.asin, color, goods.category_name,
-                goods.title, goods.url, updated_at, goods.price, len(reviews_month_3), len(reviews_month_2),
-                len(reviews_month_1), len(reviews_week_1), brand, sku_num, goods.reviews_num
+                goods.title, goods.url, updated_at, goods.price, reviews_month_3, reviews_month_2, reviews_month_1,
+                reviews_week_1, brand, sku_num, goods.reviews_num
             ]
             # 返回商品信息递增列 next col index
             self.set_values_to_row(sheet, goods_info_list, goods_row_index, goods_col_index)

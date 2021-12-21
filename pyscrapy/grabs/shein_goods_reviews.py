@@ -10,6 +10,7 @@ from Config import Config
 from pyscrapy.models import Goods, GoodsReview
 import copy
 from pyscrapy.items import GoodsReviewSheinItem, BaseGoodsItem
+from pyscrapy.enum.spider import REVIEWED_TIME_IN
 
 
 class ReviewRequest(object):
@@ -61,11 +62,10 @@ class ReviewRequest(object):
     process_end = False
     is_review_exists = False
     is_review_too_old = False
-    reviewed_time_before = 3600*24*90  # 只取最近3个月的评论为有效期
 
     def check_time_old(self, comment_timestamp: int):
         # 判断评论时间是否在有效期之外
-        old_time = int(time.time()) - self.reviewed_time_before
+        old_time = int(time.time()) - REVIEWED_TIME_IN
         if comment_timestamp < old_time:
             self.is_review_too_old = True
             return True

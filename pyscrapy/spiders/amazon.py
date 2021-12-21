@@ -100,12 +100,13 @@ class AmazonSpider(BaseSpider):
             url = '/Best-Sellers-Women/zgbs/sporting-goods/11444119011'
             log_id = 0
             self.ranking_log = self.get_ranking_log(category_name, EnumGoodsRanking.TYPE_BESTSELLERS, log_id=log_id)
-            self.url_params['pg'] = "1"
+            page = 1
+            self.url_params['pg'] = str(page)
             yield Request(
                 self.get_site_url("{}?{}".format(url, urlencode(self.url_params))),
                 callback=GoodsRankingList.parse,
                 headers=dict(referer=self.base_url),
-                meta=dict(page=1)
+                meta=dict(page=page)
             )
         if self.spider_child == CHILD_GOODS_REVIEWS:
             asin = "B093GZ8797"
@@ -118,7 +119,7 @@ class AmazonSpider(BaseSpider):
                 reviews_url,
                 callback=AmazonGoodsReviews.parse,
                 headers=dict(referer=goods_url),
-                meta=dict(goods_code=asin, goods_id=goods_model.id)
+                meta=dict(goods_code=asin, goods_id=goods_model.id, spider=self)
             )
         if self.spider_child == CHILD_GOODS_REVIEWS_BY_RANKING:
             category_name = "Women's Sports Clothing"
@@ -133,7 +134,7 @@ class AmazonSpider(BaseSpider):
                     reviews_url,
                     callback=AmazonGoodsReviews.parse,
                     headers=dict(referer=model.url),
-                    meta=dict(goods_code=model.code, goods_id=model.id)
+                    meta=dict(goods_code=model.code, goods_id=model.id, spider=self)
                 )
 
         if self.spider_child == CHILD_GOODS_LIST_ASIN:
