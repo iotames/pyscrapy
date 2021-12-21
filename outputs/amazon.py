@@ -60,6 +60,8 @@ class AmazonOutput(BaseOutput):
         db_session = self.db_session
         ranking_goods_list = RankingGoods.get_all_model(db_session, {'ranking_log_id': log.id})
         current_time = int(time())
+        month_in_12 = current_time - 3600 * 24 * 180
+        month_in_6 = current_time - 3600 * 24 * 180
         month_in_3 = current_time - 3600 * 24 * 90
         month_in_2 = current_time - 3600 * 24 * 60
         month_in_1 = current_time - 3600 * 24 * 30
@@ -67,7 +69,7 @@ class AmazonOutput(BaseOutput):
 
         # sheet.sheet_format.defaultRowHeight = 30
         title_row = ('商品ID', 'code', '亚马逊ASIN', '分类', '图片', '商品标题', '商品链接', '上架时间', '更新时间', '价格/US$', '原价', '节省',
-                     '评论数', '3个月内评论数', '2个月内评论', '1个月内评论', '1周内评论', '大类排名', '当前排名', '商品描述', '所有排名')
+                     '评论数', '1年内评论', '6个月内评论数', '3个月内评论数', '2个月内评论', '1个月内评论', '1周内评论', '大类排名', '当前排名', '商品描述', '所有排名')
         title_col = 1
         for title in title_row:
             sheet.cell(1, title_col, title)
@@ -129,7 +131,10 @@ class AmazonOutput(BaseOutput):
             details_items = ""
             for item in details['items']:
                 details_items += item + "\n|"
-
+            reviews_month_12 = db_session.query(GoodsReview).filter(
+                GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_12).count()
+            reviews_month_6 = db_session.query(GoodsReview).filter(
+                GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_6).count()
             reviews_month_3 = db_session.query(GoodsReview).filter(
                 GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_3).count()
             reviews_month_2 = db_session.query(GoodsReview).filter(
@@ -141,8 +146,9 @@ class AmazonOutput(BaseOutput):
 
             goods_info_list = [
                 goods.id, goods.code, asin, goods.category_name, image, goods.title, goods_url, sale_at, time_str,
-                goods.price, details['price_base'], details['price_save'], goods.reviews_num, reviews_month_3,
-                reviews_month_2, reviews_month_1, reviews_week_1, root_rank, rank_num, details_items, rank_detail
+                goods.price, details['price_base'], details['price_save'], goods.reviews_num, reviews_month_12, reviews_month_6,
+                reviews_month_3, reviews_month_2, reviews_month_1, reviews_week_1, root_rank, rank_num, details_items,
+                rank_detail
             ]
             print(goods_info_list)
             # 返回商品信息递增列 next col index
@@ -161,7 +167,7 @@ class AmazonOutput(BaseOutput):
                 total_asin_list.append(asin)
 
         sheet_reviews = self.wb.create_sheet(title='reviews', index=1)
-        detail_rows = [('商品', '评论概要', '评论详情', '颜色', '评分', 'SKU', '评论源地址', '标记')]
+        detail_rows = [('商品', '评论概要', '评论详情', '颜色', '评分', 'SKU', '评论源地址', '尺码问题')]
         for goods in goods_list:
             reviews = self.db_session.query(GoodsReview).filter(
                 and_(
