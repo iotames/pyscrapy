@@ -73,7 +73,9 @@ class AmazonOutput(BaseOutput):
             raise RuntimeError('最近排行榜数据已超过72小时, 请重新采集')
 
         db_session = self.db_session
-        ranking_goods_list = RankingGoods.get_all_model(db_session, {'ranking_log_id': log.id})
+        # db_session.query(cls).filter_by(**args).all()
+        ranking_goods_list = db_session.query(RankingGoods).filter_by(**{'ranking_log_id': log.id}).order_by(
+            RankingGoods.rank_num.asc()).all()
         current_time = int(time())
         month_in_12 = current_time - 3600 * 24 * 365
         month_in_6 = current_time - 3600 * 24 * 180
@@ -237,7 +239,7 @@ class AmazonOutput(BaseOutput):
 
 
 if __name__ == '__main__':
-    ot = AmazonOutput("Women-s Sports Jackets and Coats")
-    ot.rank_category = "Women's Sports Jackets & Coats"
+    ot = AmazonOutput("Women-s Sports Pants")
+    ot.rank_category = "Women's Sports Pants"
     # ot.update_excel(ot.output_dir + "/amazon_2021-12-13_08_28.xlsx")
     ot.output()

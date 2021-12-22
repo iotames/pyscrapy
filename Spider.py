@@ -51,8 +51,9 @@ if __name__ == '__main__':
         'spider_child': CHILD_GOODS_REVIEWS_BY_RANKING,
         'log_id': "",  # "39"
         'input_args': {
-            'category_name': "Women's Sports Jackets & Coats",
-            # 'url': '/Best-Sellers-Sports-Outdoors-Jackets-Coats/zgbs/sporting-goods/11444139011'
+            'category_name': "Women's Sports Pants",
+            # 'page': 1,
+            # 'url': '/Best-Sellers-Sports-Outdoors-Pants/zgbs/sporting-goods/11444127011'
         }
     }
     Spider.crawl(NAME_AMAZON, spider_args=args)

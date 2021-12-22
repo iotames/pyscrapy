@@ -109,13 +109,18 @@ class AmazonSpider(BaseSpider):
             if 'rank_type' in self.input_args:
                 rank_type = self.input_args['rank_type']
 
+            page = self.input_args['page']  # 第二页采集的时候经常取不到数据
+
             self.ranking_log = self.get_ranking_log(category_name, rank_type, log_id=ranking_log_id)
-            page = 1
             self.url_params['pg'] = str(page)
+            referer = self.base_url
+            start_url = self.get_site_url("{}?{}".format(url, urlencode(self.url_params)))
+            if page == 2:
+                referer = start_url.replace('pg=2', 'pg=1')
             yield Request(
-                self.get_site_url("{}?{}".format(url, urlencode(self.url_params))),
+                start_url,
                 callback=GoodsRankingList.parse,
-                headers=dict(referer=self.base_url),
+                headers=dict(referer=referer),
                 meta=dict(page=page),
                 dont_filter=True
             )

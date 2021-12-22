@@ -25,7 +25,8 @@ class SheinOutput(BaseOutput):
         if time.time() - log.created_at > 3600 * 72:
             raise RuntimeError('最近排行榜数据已超过72小时, 请重新采集')
         db_session = self.db_session
-        ranking_goods_list = RankingGoods.get_all_model(db_session, {'ranking_log_id': log.id})
+        ranking_goods_list = db_session.query(RankingGoods).filter_by(**{'ranking_log_id': log.id}).order_by(
+            RankingGoods.rank_num.asc()).all()
         current_time = int(time.time())
         month_in_3 = current_time - 3600 * 24 * 90
         month_in_2 = current_time - 3600 * 24 * 60
