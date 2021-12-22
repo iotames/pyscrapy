@@ -7,7 +7,7 @@ from pyscrapy.grabs.shein_goods import GoodsDetail
 from pyscrapy.extracts.shein import BASE_URL
 from pyscrapy.models import GoodsCategory, Goods, RankingGoods
 from pyscrapy.enum.shein import EnumGoodsRanking
-from pyscrapy.enum.spider import CHILD_GOODS_REVIEWS_BY_RANKING
+from pyscrapy.enum.spider import *  # CHILD_GOODS_REVIEWS_BY_RANKING
 
 
 class SheinSpider(BaseSpider):
@@ -44,10 +44,6 @@ class SheinSpider(BaseSpider):
         }
     ]
 
-    CHILD_GOODS_LIST = 'goods_list'
-    CHILD_GOODS_REVIEWS = 'goods_reviews'
-    CHILD_GOODS_LIST_TOP_REVIEWS = 'goods_list_top_reviews'
-
     def __init__(self, name=None, **kwargs):
         super(SheinSpider, self).__init__(name=name, **kwargs)
         self.base_url = BASE_URL
@@ -78,7 +74,7 @@ class SheinSpider(BaseSpider):
                        meta=dict(spider=self, categories_map=self.categories_map, goods_model=model))
 
     def start_requests(self):
-        if self.spider_child == self.CHILD_GOODS_LIST:
+        if self.spider_child == CHILD_GOODS_LIST:
             meta = dict(spider=self, categories_map=self.categories_map)
             for category in self.category_goods_list:
                 total_page = category['total_page']
@@ -104,20 +100,33 @@ class SheinSpider(BaseSpider):
             for model in self.goods_model_list:
                 yield self.get_request_goods_detail(model)
 
-        if self.spider_child == self.CHILD_GOODS_LIST_TOP_REVIEWS:
-            sort_by = 7
-            category_name = 'Women Sports Tees & Tanks'
-            goods_list_url = '/Women-Sports-Tees-Tanks-c-2185.html'
+        if self.spider_child == CHILD_GOODS_LIST_RANKING:
+            category_name = self.input_args["category_name"]  # 'Women Sports Tees & Tanks'
+            goods_list_url = self.input_args['url']  # '/Women-Sports-Tees-Tanks-c-2185.html'
+
             ranking_log_id = 0
-            ranking_log = self.get_ranking_log(category_name, EnumGoodsRanking.TYPE_TOP_REVIEWS, ranking_log_id)
-            url = "{}{}?{}".format(self.base_url, goods_list_url, urlencode({'page': 1, 'sort': sort_by}))
+            if 'ranking_log_id' in self.input_args:
+                ranking_log_id = int(self.input_args['ranking_log_id'])
+
+            sort_by = 7
+            if 'sort_by' in self.input_args:
+                sort_by = int(self.input_args['sort_by'])
+
+            rank_type = EnumGoodsRanking.TYPE_TOP_REVIEWS
+            if 'rank_type' in self.input_args:
+                rank_type = self.input_args['rank_type']
+
+            # 最终数据管道保存goods_item信息到数据库时，先保存或更新goods, 再存储 goods和ranking_log 的对应关系
+            self.ranking_log = self.get_ranking_log(category_name, rank_type, log_id=ranking_log_id)
+
+            page = 1
+            url = "{}{}?{}".format(self.base_url, goods_list_url, urlencode({'page': page, 'sort': sort_by}))
             meta = dict(spider=self, categories_map=self.categories_map)
-            self.ranking_log = ranking_log  # 最终数据管道保存goods_item信息到数据库时，先保存或更新goods, 再存储 goods和ranking_log 的对应关系
             yield self.get_request_goods_list(url, meta)
 
-        # 评论采集方式: get_all() 时间逆序 获取最近3个月评论
+        # 评论采集方式: get_all() 时间逆序 获取最近N个月评论
         if self.spider_child == CHILD_GOODS_REVIEWS_BY_RANKING:
-            category_name = 'Women Sports Tees & Tanks'
+            category_name = self.input_args["category_name"]  # 'Women Sports Tees & Tanks'
             ranking_log = self.get_ranking_log_real(category_name, EnumGoodsRanking.TYPE_TOP_REVIEWS)
             db_session = RankingGoods.get_db_session()
             ranking_goods_list = RankingGoods.get_all_model(db_session, {'ranking_log_id': ranking_log.id})

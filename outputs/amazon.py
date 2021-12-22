@@ -16,12 +16,20 @@ class AmazonOutput(BaseOutput):
     colors_show_times = {}
     rank_category: str
     
-    def __init__(self):
-        super(AmazonOutput, self).__init__('商品信息列表', self.site_name)
+    def __init__(self, filename=None):
+        if not filename:
+            filename = self.site_name
+        super(AmazonOutput, self).__init__('商品信息列表', filename)
 
     def get_ranking_log(self, category_name: str):
         db_session = RankingLog.get_db_session()
         return RankingLog.get_log(db_session, self.site_id, category_name)
+
+    def set_colors_show_times(self, colorr: str):
+        if colorr in self.colors_show_times:
+            self.colors_show_times[colorr] = self.colors_show_times[colorr] + 1
+        else:
+            self.colors_show_times[colorr] = 1
 
     def set_reviews_colors(self, reviews: list, detail_rows, color_partial=True):
         for review in reviews:
@@ -30,26 +38,33 @@ class AmazonOutput(BaseOutput):
             rating = review.rating_value
             sku = review.sku_text
             url = review.url
-            detail_rows.append((product_title, review_title, review.body, review.color, rating, sku, url, 0))
+            detail_rows.append((review.time_str, product_title, review_title, review.body, review.color, rating, sku, url, 0))
             if review.color is None:
                 continue
             print(review.color)
-
-            def set_colors_show_times(colorr: str):
-                if colorr in self.colors_show_times:
-                    self.colors_show_times[colorr] = self.colors_show_times[colorr] + 1
-                else:
-                    self.colors_show_times[colorr] = 1
-
             if color_partial:
                 colors = review.color.split(' ')
                 for color in colors:
-                    set_colors_show_times(color)
+                    self.set_colors_show_times(color)
             else:
                 color = review.color
-                set_colors_show_times(color)
+                self.set_colors_show_times(color)
 
     def output(self):
+
+        # reviews = self.db_session.query(GoodsReview).filter(
+        #     and_(
+        #         GoodsReview.site_id == self.site_id
+        #     )).all()
+        # ok = 0
+        # for review in reviews:
+        #     if not review.review_time:
+        #         review.review_time = review.review_date.timestamp()
+        #         ok += 1
+        # self.db_session.commit()
+        # print(ok)
+        # exit()
+
         sheet = self.work_sheet
         log = self.get_ranking_log(self.rank_category)
         if not log:
@@ -60,7 +75,7 @@ class AmazonOutput(BaseOutput):
         db_session = self.db_session
         ranking_goods_list = RankingGoods.get_all_model(db_session, {'ranking_log_id': log.id})
         current_time = int(time())
-        month_in_12 = current_time - 3600 * 24 * 180
+        month_in_12 = current_time - 3600 * 24 * 365
         month_in_6 = current_time - 3600 * 24 * 180
         month_in_3 = current_time - 3600 * 24 * 90
         month_in_2 = current_time - 3600 * 24 * 60
@@ -122,6 +137,7 @@ class AmazonOutput(BaseOutput):
             asin = details['asin']
             root_rank = details['root_rank']
             goods_url = goods.url
+            category_name = goods.category_name if goods.category_name else self.rank_category
             rank_list = details['rank_list']
             rank_num = details['rank_num'] if 'rank_num' in details else 0
             rank_detail = ''
@@ -145,7 +161,7 @@ class AmazonOutput(BaseOutput):
                 GoodsReview.goods_id == goods.id, GoodsReview.review_time > week_in_1).count()
 
             goods_info_list = [
-                goods.id, goods.code, asin, goods.category_name, image, goods.title, goods_url, sale_at, time_str,
+                goods.id, goods.code, asin, category_name, image, goods.title, goods_url, sale_at, time_str,
                 goods.price, details['price_base'], details['price_save'], goods.reviews_num, reviews_month_12, reviews_month_6,
                 reviews_month_3, reviews_month_2, reviews_month_1, reviews_week_1, root_rank, rank_num, details_items,
                 rank_detail
@@ -166,27 +182,38 @@ class AmazonOutput(BaseOutput):
             else:
                 total_asin_list.append(asin)
 
-        sheet_reviews = self.wb.create_sheet(title='reviews', index=1)
-        detail_rows = [('商品', '评论概要', '评论详情', '颜色', '评分', 'SKU', '评论源地址', '尺码问题')]
+        sheet_reviews = self.wb.create_sheet(title='评论详情', index=1)
+        details_title_row = ('时间', '商品', '评论概要', '评论详情', '颜色', '评分', 'SKU', '评论源地址', '尺码问题')
+        detail_rows = [details_title_row]
         for goods in goods_list:
             reviews = self.db_session.query(GoodsReview).filter(
                 and_(
                     GoodsReview.site_id == self.site_id,
-                    GoodsReview.goods_id == goods.id
-                )).all()
-            self.set_reviews_colors(reviews, detail_rows, False)
+                    GoodsReview.goods_id == goods.id,
+                    GoodsReview.review_time > month_in_12
+                )).order_by(GoodsReview.review_time.desc()).all()
+            self.set_reviews_colors(reviews, detail_rows)
 
         for row in detail_rows:
+            # 基础评论数据
             sheet_reviews.append(row)
+
+        sheet_analysis = self.wb.create_sheet(title="颜色统计", index=2)
+        sheet_analysis.append(('颜色', '出现次数'))
+        for color_name, color_times in self.colors_show_times.items():
+            # 热卖颜色分析
+            sheet_analysis.append((color_name, color_times))
+        size_index = len(details_title_row) - 1
         for row in sheet_reviews.rows:
+            # 尺码问题标记
             for cell in row:
                 if type(cell.value) == str:
                     if cell.value.find("size") > -1:
                         cell.fill = self.cell_fill
-                        row[7].value = 1
+                        row[size_index].value = 1
                     if cell.value.find("Size") > -1:
                         cell.fill = self.cell_fill
-                        row[7].value = 1
+                        row[size_index].value = 1
 
         self.wb.save(self.output_file)
 
@@ -210,7 +237,7 @@ class AmazonOutput(BaseOutput):
 
 
 if __name__ == '__main__':
-    ot = AmazonOutput()
-    ot.rank_category = "Women's Sports Clothing"
+    ot = AmazonOutput("Women-s Sports Jackets and Coats")
+    ot.rank_category = "Women's Sports Jackets & Coats"
     # ot.update_excel(ot.output_dir + "/amazon_2021-12-13_08_28.xlsx")
     ot.output()

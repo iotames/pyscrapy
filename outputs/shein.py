@@ -8,8 +8,10 @@ class SheinOutput(BaseOutput):
     site_name = 'shein'
     rank_category: str
 
-    def __init__(self):
-        super(SheinOutput, self).__init__('商品明细', self.site_name)
+    def __init__(self, filename=None):
+        if not filename:
+            filename = self.site_name
+        super(SheinOutput, self).__init__('商品明细', filename)
 
     def get_ranking_log(self, category_name: str):
         db_session = RankingLog.get_db_session()

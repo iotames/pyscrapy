@@ -5,7 +5,6 @@ CHILD_GOODS_LIST_RANKING = "goods_list_ranking"
 CHILD_GOODS_LIST_ASIN = "goods_list_asin"
 CHILD_GOODS_REVIEWS = "goods_reviews"
 CHILD_GOODS_REVIEWS_BY_RANKING = "goods_reviews_by_ranking"
-CHILD_GOODS_LIST_TOP_REVIEWS = "goods_list_top_reviews"
 CHILD_GOODS_LIST_STORE_PAGE = 'goods_list_store_page'
 CHILD_GOODS_LIST_ALL_COLORS = 'goods_list_all_colors'
 
@@ -13,11 +12,10 @@ CHILD_TITLE_MAP = {
     CHILD_GOODS_LIST: "商品列表",
     CHILD_GOODS_DETAIL: "商品详情",
     CHILD_GOODS_CATEGORIES: "商品分类",
-    CHILD_GOODS_LIST_RANKING: "商品排行榜列表",
+    CHILD_GOODS_LIST_RANKING: "排行榜商品列表",
     CHILD_GOODS_LIST_ASIN: "商品ASIN列表",
     CHILD_GOODS_REVIEWS: "单商品评论",
     CHILD_GOODS_REVIEWS_BY_RANKING: "排行榜商品评论",
-    CHILD_GOODS_LIST_TOP_REVIEWS: "热评榜商品列表"
 }
 
 NAME_ALOYOGA = "aloyoga"
@@ -47,7 +45,7 @@ SPIDER_CHILDREN_MAP = {
     NAME_SHEFIT: [CHILD_GOODS_DETAIL, CHILD_GOODS_LIST],
     NAME_SHEIN: [
         CHILD_GOODS_REVIEWS_BY_RANKING,
-        CHILD_GOODS_LIST_TOP_REVIEWS,
+        CHILD_GOODS_LIST_RANKING,
         CHILD_GOODS_DETAIL,
         CHILD_GOODS_LIST,
         CHILD_GOODS_CATEGORIES
@@ -57,7 +55,7 @@ SPIDER_CHILDREN_MAP = {
     NAME_LULULEMON: [CHILD_GOODS_DETAIL, CHILD_GOODS_LIST]
 }
 
-REVIEWED_TIME_IN = 3600 * 24 * 180  # 只取最近6个月的评论为有效期
+REVIEWED_TIME_IN = 3600 * 24 * 365  # 取最近半年180天(or 1年365天)内的评论为有效期
 
 
 def get_children_list(name: str) -> list:

@@ -15,7 +15,7 @@ from pyscrapy.enum.spider import *
 
 class AmazonSpider(BaseSpider):
 
-    name = 'amazon'
+    name = NAME_AMAZON
     base_url = XAmazon.BASE_URL
 
     # handle_httpstatus_list = [404]
@@ -96,17 +96,28 @@ class AmazonSpider(BaseSpider):
                         meta=dict(merchant_id=store_model.id, category_name=category_name)
                     )
         if self.spider_child == CHILD_GOODS_LIST_RANKING:
-            category_name = "Women's Sports Clothing"
-            url = '/Best-Sellers-Women/zgbs/sporting-goods/11444119011'
-            log_id = 0
-            self.ranking_log = self.get_ranking_log(category_name, EnumGoodsRanking.TYPE_BESTSELLERS, log_id=log_id)
+            # "Women's Sports Dresses"
+            category_name = self.input_args["category_name"]
+            # '/Best-Sellers-Sports-Outdoors-Dresses/zgbs/sporting-goods/11444135011'
+            url = self.input_args['url']
+
+            ranking_log_id = 0
+            if 'ranking_log_id' in self.input_args:
+                ranking_log_id = int(self.input_args['ranking_log_id'])
+
+            rank_type = EnumGoodsRanking.TYPE_BESTSELLERS
+            if 'rank_type' in self.input_args:
+                rank_type = self.input_args['rank_type']
+
+            self.ranking_log = self.get_ranking_log(category_name, rank_type, log_id=ranking_log_id)
             page = 1
             self.url_params['pg'] = str(page)
             yield Request(
                 self.get_site_url("{}?{}".format(url, urlencode(self.url_params))),
                 callback=GoodsRankingList.parse,
                 headers=dict(referer=self.base_url),
-                meta=dict(page=page)
+                meta=dict(page=page),
+                dont_filter=True
             )
         if self.spider_child == CHILD_GOODS_REVIEWS:
             asin = "B093GZ8797"
@@ -122,7 +133,7 @@ class AmazonSpider(BaseSpider):
                 meta=dict(goods_code=asin, goods_id=goods_model.id, spider=self)
             )
         if self.spider_child == CHILD_GOODS_REVIEWS_BY_RANKING:
-            category_name = "Women's Sports Clothing"
+            category_name = self.input_args["category_name"]  # "Women's Sports Dresses"
             ranking_log = self.get_ranking_log_real(category_name, EnumGoodsRanking.TYPE_BESTSELLERS)
             db_session = RankingGoods.get_db_session()
             ranking_goods_list = RankingGoods.get_all_model(db_session, {'ranking_log_id': ranking_log.id})

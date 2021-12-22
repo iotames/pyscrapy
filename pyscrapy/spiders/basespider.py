@@ -28,6 +28,7 @@ class BaseSpider(Spider):
     app_env: str
     spider_config: SpiderConfig
     ranking_log = None
+    input_args = {}
 
     # 该属性cls静态调用 无法继承覆盖。 必须在继承的类中重写
     custom_settings = {
@@ -76,6 +77,10 @@ class BaseSpider(Spider):
         spider_config = SpiderConfig()
         self.app_env = spider_config.get_config().get("env")
         self.spider_config = spider_config
+
+        # 爬虫入参
+        if 'input_args' in kwargs:
+            self.input_args = kwargs['input_args']
 
         # 检查是否传入 log_id 参数
         self.log_id = 0

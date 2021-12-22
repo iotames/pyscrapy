@@ -5,6 +5,7 @@ from pyscrapy.grabs.amazon_goods import AmazonGoodsDetail
 from pyscrapy.items import AmazonGoodsItem
 from scrapy.http import TextResponse
 from scrapy import Request
+from time import sleep
 
 
 class GoodsRankingList(BasePage):
@@ -32,6 +33,8 @@ class GoodsRankingList(BasePage):
             rank_num += 1
             yield Request(url, callback=AmazonGoodsDetail.parse, meta=dict(item=goods_item), dont_filter=True)
         if page == 1:
+            print('=========跳转太快第二页会没有数据==稍等5秒===')
+            sleep(5)
             yield Request(
                 response.url.replace('pg=1', 'pg=2'),
                 callback=cls.parse,
