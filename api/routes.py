@@ -28,15 +28,15 @@ def get_spider_logs():
 
 @app.route('/api/spider/log/excel', methods=['POST'])
 def spider_log_excel():
-    try:
-        data = request.get_json()
-        log_id = data.get('log_id')
-        output = SpiderController().output_excel_by_run_log_id(log_id)
-        url = request.url_root + output.downloads_dirname + "/" + output.download_filename
-        if not output.is_download_file_exists():
-            output.output()
-    except Exception as e:
-        return Response.error(str(e))
+    # try:
+    data = request.get_json()
+    log_id = data.get('log_id')
+    output = SpiderController().output_excel_by_run_log_id(log_id)
+    url = request.url_root + output.downloads_dirname + "/" + output.download_filename
+    if not output.is_download_file_exists():
+        output.output()
+    # except Exception as e:
+    #     return Response.error(str(e))
     return Response.success({'url': url, "filename": output.download_filename}, "操作成功: id={}".format(str(log_id)))
 
 

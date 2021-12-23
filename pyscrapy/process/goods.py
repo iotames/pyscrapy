@@ -147,7 +147,7 @@ class GoodsSweatybetty(Base):
             opt_str = 'SUCCESS ADD '
             model = Goods(**attrs)
             db_session.add(model)
-        # add_or_update_goods_quantity_log(model, spider.log_id, db_session)
+        add_or_update_goods_quantity_log(model, spider.log_id, db_session)
         db_session.commit()
         print(opt_str + ' GOODS : ' + json.dumps(attrs))
 
