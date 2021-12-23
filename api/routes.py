@@ -2,6 +2,7 @@ from api import app, Response
 from api.SpiderController import SpiderController
 from flask import request, redirect
 from Config import Config
+import os
 # https://medium.com/analytics-vidhya/integrating-scrapy-with-flask-8611debc4579
 import crochet
 crochet.setup()
@@ -27,9 +28,16 @@ def get_spider_logs():
 
 @app.route('/api/spider/log/excel', methods=['POST'])
 def spider_log_excel():
-    data = request.get_json()
-    log_id = data.get('log_id')
-    return Response.success({}, "操作成功: id={}".format(str(log_id)))
+    try:
+        data = request.get_json()
+        log_id = data.get('log_id')
+        output = SpiderController().output_excel_by_run_log_id(log_id)
+        url = request.url_root + output.downloads_dirname + "/" + output.download_filename
+        if not output.is_download_file_exists():
+            output.output()
+    except Exception as e:
+        return Response.error(str(e))
+    return Response.success({'url': url, "filename": output.download_filename}, "操作成功: id={}".format(str(log_id)))
 
 
 @app.route('/api/database/init', methods=['POST'])
@@ -85,7 +93,6 @@ def get_table_columns():
 def update_config(item):
     # post_data = json.loads(request.get_data())
     from config.baseconfig import BaseConfig
-    import os
     import json
     filepath = BaseConfig.CONFIG_DIR_PATH + os.sep + item + ".json"
     if not os.path.isfile(filepath):

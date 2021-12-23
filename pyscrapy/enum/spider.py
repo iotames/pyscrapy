@@ -55,7 +55,7 @@ SPIDER_CHILDREN_MAP = {
     NAME_LULULEMON: [CHILD_GOODS_DETAIL, CHILD_GOODS_LIST]
 }
 
-REVIEWED_TIME_IN = 3600 * 24 * 365  # 取最近半年180天(or 1年365天)内的评论为有效期
+REVIEWED_TIME_IN = 3600 * 24 * 180  # 取最近半年180天(or 1年365天)内的评论为有效期
 
 
 def get_children_list(name: str) -> list:

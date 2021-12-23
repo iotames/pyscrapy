@@ -5,6 +5,8 @@ from Config import Config
 from service.DB import DB
 from pyscrapy.models import Site
 import os
+import shutil
+from config.api_server import ApiServer
 import time
 from sqlalchemy.orm.session import Session
 # from scrapy.utils.project import get_project_settings
@@ -23,8 +25,12 @@ class BaseOutput:
     output_dir = Config.ROOT_PATH + '/runtime'
     output_file: str = output_dir + '/{}_' + time.strftime("%Y-%m-%d_%H_%M", time.localtime()) + '.xlsx'
     images_dir: str
+    downloads_dirname = "downloads"
+    download_filename = None
+    server_config: ApiServer
 
     def __init__(self, sheet_title='库存详情', filename='output'):
+        self.server_config = ApiServer()
         self.images_dir = BaseSpider.custom_settings.get('IMAGES_STORE')  # get_project_settings().get('IMAGES_STORE')
         db = DB(Config().get_database())
         db.ROOT_PATH = Config.ROOT_PATH
@@ -80,6 +86,27 @@ class BaseOutput:
     def timestamp_to_str(timestamp=None, format_str="%Y-%m-%d %H:%M") -> str:
         time_tuple = time.localtime(timestamp)
         return time.strftime(format_str, time_tuple)
+
+    def copy_to_download_path(self, srcfile):
+        if not os.path.isfile(srcfile):
+            msg = "file: {} not exists!".format(srcfile)
+            raise RuntimeError(msg)
+        shutil.copyfile(srcfile, self.get_downloads_dir() + os.path.sep + self.download_filename)
+
+    def is_download_file_exists(self) -> bool:
+        filepath = self.get_downloads_dir() + os.path.sep + self.download_filename
+        if os.path.isfile(filepath):
+            return True
+        return False
+
+    def get_downloads_dir(self):
+        downloads_dir = self.server_config.get_config()['static_folder'] + os.path.sep + self.downloads_dirname
+        if not os.path.exists(downloads_dir):
+            os.makedirs(downloads_dir)
+        return downloads_dir
+
+    def output(self):
+        pass
 
     # def output_to_excel(self):
         # sheet = self.work_sheet

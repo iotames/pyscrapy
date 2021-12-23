@@ -1,4 +1,4 @@
-from pyscrapy.models import Goods, RankingGoods, RankingLog, GoodsReview
+from pyscrapy.models import Goods, RankingGoods, RankingLog, GoodsReview, SpiderRunLog
 from outputs.baseoutput import BaseOutput
 from pyscrapy.extracts.amazon import Common as XAmazon
 import json
@@ -15,15 +15,19 @@ class AmazonOutput(BaseOutput):
     goods_id_to_title = {}
     colors_show_times = {}
     rank_category: str
+    ranking_log_model: RankingLog
     
-    def __init__(self, filename=None):
-        if not filename:
-            filename = self.site_name
+    def __init__(self, run_log: SpiderRunLog):
+        ranking_log_id = int(run_log.link_id)
+        self.ranking_log_model = RankingLog.get_model(RankingLog.get_db_session(), {"id": ranking_log_id})
+        self.rank_category = self.ranking_log_model.category_name
+        filename = "{}_{}".format(self.site_name, self.rank_category).replace(' ', '_').replace("'", "-").replace("&", "and")
+        self.download_filename = "{}_{}.xlsx".format(filename, str(self.ranking_log_model.id))
         super(AmazonOutput, self).__init__('商品信息列表', filename)
 
-    def get_ranking_log(self, category_name: str):
-        db_session = RankingLog.get_db_session()
-        return RankingLog.get_log(db_session, self.site_id, category_name)
+    # def get_ranking_log(self, category_name: str):
+    #     db_session = RankingLog.get_db_session()
+    #     return RankingLog.get_log(db_session, self.site_id, category_name)
 
     def set_colors_show_times(self, colorr: str):
         if colorr in self.colors_show_times:
@@ -51,22 +55,10 @@ class AmazonOutput(BaseOutput):
                 self.set_colors_show_times(color)
 
     def output(self):
-
-        # reviews = self.db_session.query(GoodsReview).filter(
-        #     and_(
-        #         GoodsReview.site_id == self.site_id
-        #     )).all()
-        # ok = 0
-        # for review in reviews:
-        #     if not review.review_time:
-        #         review.review_time = review.review_date.timestamp()
-        #         ok += 1
-        # self.db_session.commit()
-        # print(ok)
-        # exit()
-
+        if self.is_download_file_exists():
+            return True
         sheet = self.work_sheet
-        log = self.get_ranking_log(self.rank_category)
+        log = self.ranking_log_model
         if not log:
             raise RuntimeError('找不到排行榜数据')
         if time() - log.created_at > 3600 * 72:
@@ -218,6 +210,7 @@ class AmazonOutput(BaseOutput):
                         row[size_index].value = 1
 
         self.wb.save(self.output_file)
+        self.copy_to_download_path(self.output_file)
 
     def update_excel(self, filepath):
         self.wb = load_workbook(filepath)
@@ -237,9 +230,12 @@ class AmazonOutput(BaseOutput):
 
         self.wb.save(filepath)
 
+    def debug(self):
+        print(self.rank_category)
+
 
 if __name__ == '__main__':
-    ot = AmazonOutput("Women-s Sports Pants")
-    ot.rank_category = "Women's Sports Pants"
-    # ot.update_excel(ot.output_dir + "/amazon_2021-12-13_08_28.xlsx")
+    db_session = RankingLog.get_db_session()
+    log = RankingLog.get_model(db_session, {'id': 9})
+    ot = AmazonOutput(log)
     ot.output()

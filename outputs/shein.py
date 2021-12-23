@@ -1,5 +1,5 @@
 import time
-from pyscrapy.models import Goods, RankingGoods, RankingLog, GoodsReview
+from pyscrapy.models import Goods, RankingGoods, RankingLog, GoodsReview, SpiderRunLog
 from outputs.baseoutput import BaseOutput
 import json
 
@@ -7,19 +7,21 @@ import json
 class SheinOutput(BaseOutput):
     site_name = 'shein'
     rank_category: str
+    ranking_log_model: RankingLog
 
-    def __init__(self, filename=None):
-        if not filename:
-            filename = self.site_name
-        super(SheinOutput, self).__init__('商品明细', filename)
-
-    def get_ranking_log(self, category_name: str):
-        db_session = RankingLog.get_db_session()
-        return RankingLog.get_log(db_session, self.site_id, category_name)
+    def __init__(self, run_log: SpiderRunLog):
+        ranking_log_id = int(run_log.link_id)
+        self.ranking_log_model = RankingLog.get_model(RankingLog.get_db_session(), {"id": ranking_log_id})
+        self.rank_category = self.ranking_log_model.category_name
+        filename = "{}_{}".format(self.site_name, self.rank_category).replace(' ', '_').replace("'", "-").replace("&", "and")
+        self.download_filename = "{}_{}.xlsx".format(filename, str(self.ranking_log_model.id))
+        super(SheinOutput, self).__init__('商品信息列表', filename)
 
     def output_top_100(self):
+        if self.is_download_file_exists():
+            return True
         sheet = self.work_sheet
-        log = self.get_ranking_log(self.rank_category)
+        log = self.ranking_log_model
         if not log:
             raise RuntimeError('找不到排行榜数据')
         if time.time() - log.created_at > 3600 * 72:
@@ -28,13 +30,15 @@ class SheinOutput(BaseOutput):
         ranking_goods_list = db_session.query(RankingGoods).filter_by(**{'ranking_log_id': log.id}).order_by(
             RankingGoods.rank_num.asc()).all()
         current_time = int(time.time())
+        month_in_12 = current_time - 3600 * 24 * 365
+        month_in_6 = current_time - 3600 * 24 * 180
         month_in_3 = current_time - 3600 * 24 * 90
         month_in_2 = current_time - 3600 * 24 * 60
         month_in_1 = current_time - 3600 * 24 * 30
         week_in_1 = current_time - 3600 * 24 * 7
 
         title_row = ('ID', '图片', '排名', '首评时间', 'goods_id', 'SPU', '颜色', '品类', '商品标题', '商品链接', '更新时间',
-                     '价格/US$', '3个月内评论数', '2个月内评论', '1个月内评论', '1周内评论', '所属品牌', 'SKU数', '总评论数')
+                     '价格/US$', '1年内评论', '6个月内评论数', '3个月内评论数', '2个月内评论', '1个月内评论', '1周内评论', '所属品牌', 'SKU数', '总评论数')
         title_col = 1
         for title in title_row:
             sheet.cell(1, title_col, title)
@@ -55,6 +59,10 @@ class SheinOutput(BaseOutput):
                 if relation_colors:
                     sku_num += len(relation_colors)
 
+            reviews_month_12 = db_session.query(GoodsReview).filter(
+                GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_12).count()
+            reviews_month_6 = db_session.query(GoodsReview).filter(
+                GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_6).count()
             reviews_month_3 = db_session.query(GoodsReview).filter(
                 GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_3).count()
             reviews_month_2 = db_session.query(GoodsReview).filter(
@@ -67,70 +75,22 @@ class SheinOutput(BaseOutput):
             goods_col_index = 1
             goods_info_list = [
                 goods.id, image, rgoods.rank_num, first_at, goods.code, goods.asin, color, goods.category_name,
-                goods.title, goods.url, updated_at, goods.price, reviews_month_3, reviews_month_2, reviews_month_1,
-                reviews_week_1, brand, sku_num, goods.reviews_num
+                goods.title, goods.url, updated_at, goods.price, reviews_month_12, reviews_month_6, reviews_month_3,
+                reviews_month_2, reviews_month_1, reviews_week_1, brand, sku_num, goods.reviews_num
             ]
             # 返回商品信息递增列 next col index
             self.set_values_to_row(sheet, goods_info_list, goods_row_index, goods_col_index)
             goods_row_index += 1
         self.wb.save(self.output_file)
+        self.copy_to_download_path(self.output_file)
 
     def output(self):
-        sheet = self.work_sheet
-        # sheet.sheet_format.defaultRowHeight = 30
-        title_row = ('ID', '图片', '排名', '上架时间（首个评论）', 'goods_id', 'SPU', '颜色', '品类', '商品标题', '商品链接', '更新时间',
-                     '价格/US$', '评论数', '销量(评论*20)', '销售额(估算)', '所属品牌', 'SKU数', '1星评论数', '2星评论数', '3星评论数',
-                     '4星评论数', '5星评论数', '颜色销量')
-        title_col = 1
-        for title in title_row:
-            sheet.cell(1, title_col, title)
-            title_col += 1
-        goods_list = self.db_session.query(Goods).filter(Goods.site_id == self.site_id, Goods.reviews_num > 0).all()
-        goods_row_index = 2
-
-        for goods in goods_list:
-            # 商品信息元组
-            goods_col_index = 1
-            details = json.loads(goods.details)
-            updated_at = self.timestamp_to_str(goods.updated_at)
-            first_at = ''
-            if 'first_review_time' in details:
-                first_at = details['first_review_time']
-            image = ''
-            if goods.local_image:
-                image = self.get_image_info(goods.local_image)
-
-            brand = details['brand'] if 'brand' in details else ''
-            spu = details['spu'] if 'spu' in details else ''
-            goods_id = details['goods_id'] if 'goods_id' in details else ''
-            color = details['color'] if 'color' in details else ''
-            rank_score = details['rank_score']
-            relation_colors = details['relation_colors']
-            sku_num = 1
-            if relation_colors:
-                sku_num += len(relation_colors)
-            category_name = goods.category_name
-            goods_url = goods.url
-            reviews_num = goods.reviews_num
-            rank_num = details['rank_num'] if 'rank_num' in details else 0
-            if not rank_num:
-                rank_num = details['rank_in'] if 'rank_in' in details else 0
-
-            goods_info_list = [
-                goods.id, image, rank_num, first_at, goods_id, spu, color, category_name, goods.title, goods_url, updated_at,
-                goods.price, reviews_num, reviews_num*20, reviews_num*20*goods.price, brand, sku_num, rank_score["1"],
-                rank_score["2"], rank_score["3"], rank_score["4"], rank_score["5"]
-            ]
-            # 返回商品信息递增列 next col index
-            self.set_values_to_row(sheet, goods_info_list, goods_row_index, goods_col_index)
-            goods_row_index += 1
-        self.wb.save(self.output_file)
+        self.output_top_100()
 
 
-if __name__ == '__main__':
-    ot = SheinOutput()
-    ot.rank_category = "Women Sports Tees & Tanks"  # "Women Sports Leggings"  # "Women Activewear"
-    ot.output_top_100()
+# if __name__ == '__main__':
+    # ot = SheinOutput()
+    # ot.output_top_100()
     # db_session = RankingGoods.get_db_session()
     # rank_goods_list = RankingGoods.get_all_model(db_session, {'site_id': 1})
     # total_reviews_num = 0

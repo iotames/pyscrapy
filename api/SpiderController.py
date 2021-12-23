@@ -1,4 +1,5 @@
-from pyscrapy.models import Site, SpiderRunLog
+from pyscrapy.models import Site, SpiderRunLog, RankingLog
+from outputs.baseoutput import BaseOutput
 from api.BaseController import BaseController
 from api.tables import Spiders as SpidersTable, SpiderRunLogs as SpiderRunLogsTable
 from pyscrapy.enum.spider import get_children_list
@@ -20,7 +21,8 @@ class SpiderController(BaseController):
         return data
 
     def get_spiders_run_logs(self, name) -> list:
-        logs = self.db_session.query(SpiderRunLog).filter(SpiderRunLog.spider_name == name).all()
+        logs = self.db_session.query(SpiderRunLog).filter(SpiderRunLog.spider_name == name).order_by(
+            SpiderRunLog.created_at.desc()).all()
         data = []
         for log in logs:
             row = {"id": log.id, "created_at": self.f_time(log.created_at),
@@ -39,3 +41,21 @@ class SpiderController(BaseController):
         }
         return tables_cols[name]
 
+    def output_excel_by_run_log_id(self, log_id: int) -> BaseOutput:
+        run_log: SpiderRunLog = SpiderRunLog.get_model(self.db_session, {'id': log_id})
+        if run_log.status != SpiderRunLog.STATUS_DONE:
+            raise RuntimeError("爬虫运行结果异常")
+        spider_name: str = run_log.spider_name
+        class_name = spider_name.capitalize() + "Output"
+        module = __import__("outputs")
+        full_class = getattr(module, class_name)
+        obj = full_class(run_log)
+        # getattr(obj, "output")()
+        return obj
+
+
+if __name__ == '__main__':
+    ctl = SpiderController()
+    output = ctl.output_excel_by_run_log_id(53)
+    print(output.output_file)
+    print(output.download_filename)

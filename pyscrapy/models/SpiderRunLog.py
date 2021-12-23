@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, SmallInteger
+from sqlalchemy import Column, String, DateTime, SmallInteger, Integer
 from . import BaseModel, Goods
 
 
@@ -22,4 +22,5 @@ class SpiderRunLog(BaseModel):
     spider_name = Column(String(64), comment='爬虫名')
     spider_child = Column(String(64), default='子爬虫名')
     datetime = Column(DateTime, comment='运行日期')
+    link_id = Column(String(255), comment='连接ID')
     status = Column(SmallInteger, comment='运行状态')

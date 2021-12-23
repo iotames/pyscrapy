@@ -156,6 +156,9 @@ class BaseSpider(Spider):
         if self.app_env == SpiderConfig.ENV_DEVELOPMENT:
             return True
         log_cls = SpiderRunLog
-        res = self.db_session.query(log_cls).filter(log_cls.id == self.log_id).update({"status": log_cls.STATUS_DONE})
+        update_data = {"status": log_cls.STATUS_DONE}
+        if self.ranking_log:
+            update_data["link_id"] = self.ranking_log.id
+        res = self.db_session.query(log_cls).filter(log_cls.id == self.log_id).update()
         print(res)
         self.db_session.commit()

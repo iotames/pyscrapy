@@ -71,9 +71,9 @@ class AmazonGoodsReviews(BasePage):
             item['goods_code'] = goods_code
             review_code = review.code
             item['code'] = review_code
-            model = GoodsReviewModel.get_model(db_session, {'code': review_code, 'site_id': spider.site_id})
-            if model:
-                is_review_exists = True
+            # model = GoodsReviewModel.get_model(db_session, {'code': review_code, 'site_id': spider.site_id})
+            # if model:
+            #     is_review_exists = True
             item['rating_value'] = review.rating_value
             item['title'] = review.title
             item['sku_text'] = review.sku_text
