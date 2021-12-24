@@ -28,8 +28,7 @@ class AmazonSpider(BaseSpider):
         'CONCURRENT_REQUESTS_PER_DOMAIN': 3,  # default 8
         'CONCURRENT_REQUESTS': 5,  # default 16 recommend 5-8
         'IMAGES_STORE': Config.ROOT_PATH + "/runtime/images",
-        'COMPONENTS_NAME_LIST_DENY': [],
-        'SELENIUM_ENABLED': False
+        'COMPONENTS_NAME_LIST_DENY': []
     }
 
     url_params = {
@@ -72,10 +71,9 @@ class AmazonSpider(BaseSpider):
 
     def __init__(self, name=None, **kwargs):
         super(AmazonSpider, self).__init__(name=name, **kwargs)
-        if 'spider_child' not in kwargs:
-            msg = 'lost param spider_child'
-            raise UsageError(msg)
-        self.spider_child = kwargs['spider_child']
+        selenium_children = [CHILD_GOODS_LIST_RANKING]
+        if self.spider_child in selenium_children:
+            self.SELENIUM_ENABLED = True  # 启用 Selenium 中间件
 
     def start_requests(self):
         if self.spider_child == CHILD_GOODS_LIST_STORE_PAGE:
@@ -109,7 +107,7 @@ class AmazonSpider(BaseSpider):
             if 'rank_type' in self.input_args:
                 rank_type = self.input_args['rank_type']
 
-            page = self.input_args['page']  # 第二页采集的时候经常取不到数据
+            page = self.input_args['page'] if 'page' in self.input_args else 1  # 第二页采集的时候经常取不到数据
 
             self.ranking_log = self.get_ranking_log(category_name, rank_type, log_id=ranking_log_id)
             self.url_params['pg'] = str(page)

@@ -32,15 +32,15 @@ class GoodsRankingList(BasePage):
             goods_item["details"] = {'rank_num': rank_num}
             rank_num += 1
             yield Request(url, callback=AmazonGoodsDetail.parse, meta=dict(item=goods_item), dont_filter=True)
-        # if page == 1:
-        #     print('=========跳转太快第二页会没有数据==稍等5秒===')
-        #     sleep(5)
-        #     yield Request(
-        #         response.url.replace('pg=1', 'pg=2'),
-        #         callback=cls.parse,
-        #         meta=dict(page=2),
-        #         dont_filter=True
-        #     )
+        if page == 1:
+            print('=========跳转太快第二页会没有数据==稍等3秒===')
+            sleep(3)
+            yield Request(
+                response.url.replace('pg=1', 'pg=2'),
+                callback=cls.parse,
+                meta=dict(page=2),
+                dont_filter=True
+            )
 
 
 class GoodsInRankList(BaseElement):

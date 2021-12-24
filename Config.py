@@ -18,7 +18,7 @@ class Config:
         for disk in ['C:', 'D:', 'E:', 'F:', 'G:', 'H:']:
             if path.startswith(disk):
                 return path
-        return Config.ROOT_PATH + '/' + path
+        return Config.ROOT_PATH + os.path.sep + path
 
     @staticmethod
     def get_logs_dir():

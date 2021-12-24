@@ -3,6 +3,7 @@
 # See documentation in:
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
+import time
 from scrapy import signals
 from scrapy.http import Request, HtmlResponse
 from config import Spider as SpiderConfig, UserAgent, HttpProxy
@@ -142,10 +143,15 @@ class SeleniumMiddleware:
         if enabled:
             timeout = selenium.get_config()['timeout']
             self.browser = selenium.get_driver()
+            print('=========browser=======')
+            print(self.browser)
             self.browser.set_page_load_timeout(timeout)
+            seconds = 15
+            print('Through SeleniumMiddleware. get spider object when __init__ {}秒后开始浏览器爬虫'.format(str(seconds)))
+            time.sleep(seconds)
 
     def __del__(self):
-        if self.enabled:
+        if self.enabled and self.browser:
             self.browser.close()
             self.browser.quite()
 
@@ -163,6 +169,6 @@ class SeleniumMiddleware:
 
     @classmethod
     def from_crawler(cls, crawler):
-        print('SeleniumMiddleware is Starting ...')
-        enabled = crawler.settings.getbool('SELENIUM_ENABLED')
+        spider = crawler.spider
+        enabled = spider.SELENIUM_ENABLED
         return cls(selenium=Selenium(), enabled=enabled)

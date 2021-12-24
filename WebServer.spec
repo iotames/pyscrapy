@@ -11,6 +11,8 @@ a = Analysis(['WebServer.py'],
              pathex=[],
              binaries=[],
              datas=[
+                ('./runtime/logs', './runtime/logs'),
+                ('./bin', './bin'),
                 ('./config/*.json', './config'),
                 ('sqlite3.db', './')
              ],

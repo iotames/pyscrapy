@@ -10,7 +10,7 @@ class Spiders(Base):
         cols = super().columns.copy()
         append_cols = [
             {'name': 'name', 'attributes': {'title': '爬虫名', 'width': '160'}},
-            {'name': 'home_url', 'attributes': {'title': '网站首页', 'width': '200'}},
+            {'name': 'home_url', 'attributes': {'title': '网站首页', 'width': '280'}},
         ]
         cols.extend(append_cols)
         return cols

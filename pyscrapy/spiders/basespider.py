@@ -12,6 +12,9 @@ from pyscrapy.helpers import JsonFile
 
 class BaseSpider(Spider):
 
+    SELENIUM_ENABLED = False
+    SPLASH_ENABLED = False
+
     @staticmethod
     def cookie_to_dic(cookies) -> dict:
         return JsonFile.cookie_to_dic(cookies)
@@ -33,8 +36,7 @@ class BaseSpider(Spider):
     # 该属性cls静态调用 无法继承覆盖。 必须在继承的类中重写
     custom_settings = {
         'IMAGES_STORE': Config.ROOT_PATH + "/runtime/images",
-        'COMPONENTS_NAME_LIST_DENY': [],
-        'SELENIUM_ENABLED': False
+        'COMPONENTS_NAME_LIST_DENY': []
     }
 
     CHILD_GOODS_LIST = 'goods_list'
@@ -132,7 +134,7 @@ class BaseSpider(Spider):
         ranking_log = RankingLog.get_log(db_session, self.site_id, category_name, rank_type, log_id=log_id)
         if ranking_log:
             # 判断 created_at 来确定是否新建 ranking_log
-            if (time.time() - ranking_log.created_at) > 3600 * 72:
+            if (time.time() - ranking_log.created_at) > 3600 * 24:
                 ranking_log = None
         if not ranking_log:
             now_date = datetime.datetime.now()
@@ -159,6 +161,6 @@ class BaseSpider(Spider):
         update_data = {"status": log_cls.STATUS_DONE}
         if self.ranking_log:
             update_data["link_id"] = self.ranking_log.id
-        res = self.db_session.query(log_cls).filter(log_cls.id == self.log_id).update()
+        res = self.db_session.query(log_cls).filter(log_cls.id == self.log_id).update(update_data)
         print(res)
         self.db_session.commit()

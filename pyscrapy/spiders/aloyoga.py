@@ -34,7 +34,6 @@ class AloyogaSpider(BaseSpider):
         # 'CONCURRENT_REQUESTS': 5,  # default 16 recommend 5
         'IMAGES_STORE': Config.ROOT_PATH + "/runtime/images",
         # 'COMPONENTS_NAME_LIST_DENY': ['user_agent'],
-        'SELENIUM_ENABLED': False
     }
 
     handle_list = [

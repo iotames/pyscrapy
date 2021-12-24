@@ -13,11 +13,10 @@ class HelloSpider(BaseSpider):
 
     custom_settings = {
         'LOG_LEVEL': 'WARNING',  # 没有效果
-        'SELENIUM_ENABLED': False,
-        'SPLASH_ENABLED': True,
         'SPLASH_URL': 'http://127.0.0.1:8050',
         'DOWNLOADER_MIDDLEWARES': {
             'pyscrapy.middlewares.PyscrapyDownloaderMiddleware': 543,
+            'pyscrapy.middlewares.SeleniumMiddleware': 550,
             'scrapy_splash.SplashCookiesMiddleware': 723,
             'scrapy_splash.SplashMiddleware': 725,
             'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware': 810,
@@ -40,13 +39,14 @@ class HelloSpider(BaseSpider):
         # 初始化IP代理池
         spider_config = Spider()
         self.http_proxy = spider_config.get_component(HttpProxy.name)
+        self.SELENIUM_ENABLED = True
 
     def start_requests(self):
         # headers = {
         #     'content-type': 'application/json',
         # }
         start_url = self.start_urls[0]
-        if self.settings.getbool('SPLASH_ENABLED'):
+        if self.SPLASH_ENABLED:
             args = {}
             # TODO 更换UA请求头要通过splash LUA脚本注入才有效
             if self.http_proxy:
@@ -68,9 +68,9 @@ class HelloSpider(BaseSpider):
         print('current url =======================' + url)
         if url.find('httpbin') > -1:
             self.mylogger.debug(text)
-        if self.settings.getbool('SELENIUM_ENABLED'):
+        if self.SELENIUM_ENABLED:
             yield self.parse_selenium(response)
-        if self.settings.getbool('SPLASH_ENABLED'):
+        if self.SPLASH_ENABLED:
             yield self.parse_splash(response)
         # self.logger.debug(text)
 
@@ -80,7 +80,7 @@ class HelloSpider(BaseSpider):
             browser.find_element_by_xpath('//*[@id="kw"]').send_keys('hello word')
             browser.find_element_by_xpath('//*[@id="su"]').click()
         # browser.get('https://www.baidu.com')
-        yield Request(url='https://www.baidu.com')
+        return Request(url='https://www.baidu.com')
 
     lua_source = """
     function main(splash, args)

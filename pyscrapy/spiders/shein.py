@@ -27,8 +27,7 @@ class SheinSpider(BaseSpider):
         # 'CONCURRENT_REQUESTS_PER_DOMAIN': 8,  # default 8
         # 'CONCURRENT_REQUESTS': 16,  # default 16 recommend 5-8
         'IMAGES_STORE': Config.ROOT_PATH + "/runtime/images",
-        'COMPONENTS_NAME_LIST_DENY': [],
-        'SELENIUM_ENABLED': False
+        'COMPONENTS_NAME_LIST_DENY': []
     }
 
     url_params = {
