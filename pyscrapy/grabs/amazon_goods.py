@@ -96,7 +96,9 @@ class AmazonGoodsDetail(BasePage):
     @classmethod
     def parse(cls, response: TextResponse):
         if cls.check_robot_happened(response):
-            return False
+            is_next = input("continue: <Enter yes>")
+            if is_next.lower() != "yes":
+                return False
         meta = response.meta
         spider = meta['spider'] if 'spider' in meta else None
 

@@ -20,18 +20,22 @@ class SpiderController(BaseController):
             })
         return data
 
-    def get_spiders_run_logs(self, name) -> list:
-        logs = self.db_session.query(SpiderRunLog).filter(SpiderRunLog.spider_name == name).order_by(
-            SpiderRunLog.created_at.desc()).all()
-        data = []
+    def get_spiders_run_logs(self, name, page=1, limit=10) -> dict:
+        offset = (page - 1) * limit
+        query = self.db_session.query(SpiderRunLog).filter(SpiderRunLog.spider_name == name)
+        logs = query.order_by(
+            SpiderRunLog.created_at.desc()).limit(limit).offset(offset).all()
+        total = query.count()
+        items = []
         for log in logs:
             row = {"id": log.id, "created_at": self.f_time(log.created_at),
                    "spider_name": log.spider_name,
                    "spider_child": log.spider_child,
+                   "link_id": log.link_id,
                    "status": SpiderRunLog.STATUS_MAP[log.status]
                    }
-            data.append(row)
-        return data
+            items.append(row)
+        return dict(items=items, total=total)
 
     @staticmethod
     def get_table_columns(name: str) -> list:

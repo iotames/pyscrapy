@@ -51,9 +51,9 @@ if __name__ == '__main__':
         'spider_child': CHILD_GOODS_REVIEWS_BY_RANKING,
         'log_id': "",  # "39"
         'input_args': {
-            "ranking_log_id": 12,
-            # 'category_name': "Women's Tennis Skirts",
-            # 'url': 'https://www.amazon.com/bestsellers/fashion/2371144011'
+            # "ranking_log_id": 13,
+            'category_name': "Women's Running Shorts",
+            'url': 'https://www.amazon.com/bestsellers/fashion/2371114011'
         }
     }
     Spider.crawl(NAME_AMAZON, spider_args=args)

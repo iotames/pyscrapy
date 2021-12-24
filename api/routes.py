@@ -22,8 +22,10 @@ def get_spiders():
 @app.route('/api/spider/logs')
 def get_spider_logs():
     name = request.args.get("name")
-    items = SpiderController().get_spiders_run_logs(name)
-    return Response.success({"items": items})
+    page = request.args.get("page", 1)
+    limit = request.args.get("limit", 10)
+    data = SpiderController().get_spiders_run_logs(name, int(page), int(limit))
+    return Response.success(data)
 
 
 @app.route('/api/spider/log/excel', methods=['POST'])

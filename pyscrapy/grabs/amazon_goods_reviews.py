@@ -51,7 +51,9 @@ class AmazonGoodsReviews(BasePage):
         goods_id = meta['goods_id'] if 'goods_id' in meta else 0
         spider = meta['spider']
         if cls.check_robot_happened(response):
-            return False
+            is_next = input("continue: <Enter yes>")
+            if is_next.lower() != "yes":
+                return False
 
         if 'item' in meta:
             item = response.meta['item']

@@ -25,6 +25,7 @@ class SpiderRunLogs(Base):
         append_cols = [
             {'name': 'spider_name', 'attributes': {'title': '爬虫名', 'width': '160'}},
             {'name': 'spider_child', 'attributes': {'title': '任务类型', 'width': '180'}},
+            {'name': 'link_id', 'attributes': {'title': '关联ID', 'width': '100'}},
             {'name': 'status', 'attributes': {'title': '状态', 'width': '100'}},
         ]
         cols.extend(append_cols)

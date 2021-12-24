@@ -19,7 +19,9 @@ class GoodsRankingList(BasePage):
         if response.status == 404:
             print(response.text)
         if cls.check_robot_happened(response):
-            return False
+            is_next = input("continue: <Enter yes>")
+            if is_next.lower() != "yes":
+                return False
         page = response.meta['page']
         grab = cls(response)
         rank_num = 1 if page == 1 else 51
@@ -87,7 +89,9 @@ class GoodsListInStore(BasePage):
     @classmethod
     def parse(cls, response: TextResponse):
         if cls.check_robot_happened(response):
-            raise RuntimeError('check_robot_happened')
+            is_next = input("continue: <Enter yes>")
+            if is_next.lower() != "yes":
+                return False
         meta = response.meta
         merchant_id = meta['merchant_id']
         category_name = meta['category_name'] if 'category_name' in meta else ''
