@@ -18,7 +18,7 @@ class RankingLog(BaseModel):
     rank_date = Column(DateTime, comment='排名日期')
 
     @classmethod
-    def get_log(cls, db_session, site_id, category_name, rank_type=0, log_id=0):
+    def get_log(cls, db_session, site_id, category_name="", rank_type=0, log_id=0):
         if log_id:
             return db_session.query(cls).filter(cls.id == log_id).first()
         return db_session.query(cls).filter(and_(

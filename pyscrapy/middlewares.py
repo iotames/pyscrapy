@@ -159,7 +159,7 @@ class SeleniumMiddleware:
         if not self.browser:
             return None
         try:
-            print('SeleniumMiddleware  process_request is starting ...')
+            print('SeleniumMiddleware process_request() ...')
             self.browser.get(request.url)
             request.meta['browser']: WebDriver = self.browser
             return HtmlResponse(url=request.url, body=self.browser.page_source, request=request, status=200,

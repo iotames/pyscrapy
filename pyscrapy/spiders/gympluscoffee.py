@@ -8,6 +8,7 @@ import json
 from sqlalchemy import and_, or_
 import time
 from .basespider import BaseSpider
+from pyscrapy.enum.spider import *
 # from translate import Translator
 
 
@@ -25,9 +26,6 @@ class GympluscoffeeSpider(BaseSpider):
 
     goods_model_list: list
     start_categories = ['merch', 'mens', 'womens']
-    CHILD_GOODS_LIST = 'goods_list'
-    CHILD_GOODS_DETAIL = 'goods_detail'
-    CHILD_GOODS_CATEGORIES = 'goods_categories'
     spider_child = CHILD_GOODS_CATEGORIES
 
     xpath_categories = '//ul[@class="list-menu list-menu--inline"]/li/div[@class="header-menu-item-father"]'
@@ -51,7 +49,7 @@ class GympluscoffeeSpider(BaseSpider):
     #     return self.translator.translate(content)
 
     def start_requests(self):
-        if self.spider_child == self.CHILD_GOODS_DETAIL:
+        if self.spider_child == CHILD_GOODS_DETAIL:
             # goods = self.db_session.query(Goods).filter(Goods.id == 1).first()
             # yield Request(goods.url, callback=self.parse, meta={'goods': goods})
 
@@ -74,7 +72,7 @@ class GympluscoffeeSpider(BaseSpider):
             # TODO 异步并发请求待优化
             yield Request(self.base_url, callback=self.update_goods_detail)
 
-        if self.spider_child == self.CHILD_GOODS_LIST:
+        if self.spider_child == CHILD_GOODS_LIST:
             categories = self.db_session.query(GoodsCategory).filter(and_(
                 GoodsCategory.site_id == self.site_id, GoodsCategory.parent_id > 0)).all()
             for category in categories:
@@ -83,7 +81,7 @@ class GympluscoffeeSpider(BaseSpider):
                 print(start_url)
                 yield Request(start_url, callback=self.parse, meta={'category': category, 'page': 1})
 
-        if self.spider_child == self.CHILD_GOODS_CATEGORIES:
+        if self.spider_child == CHILD_GOODS_CATEGORIES:
             yield Request(self.base_url, callback=self.parse)
 
     def update_goods_detail(self, response):

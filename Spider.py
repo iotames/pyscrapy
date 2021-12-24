@@ -46,15 +46,14 @@ class Spider:
 if __name__ == '__main__':
     # Spider.create_all_tables()
     dirpath = Config.get_logs_dir()
-    # TODO CHILD_GOODS_LIST_RANKING 用 selenium
     args = {
         'logs_dir': dirpath,
-        'spider_child': CHILD_GOODS_LIST_RANKING,
+        'spider_child': CHILD_GOODS_REVIEWS_BY_RANKING,
         'log_id': "",  # "39"
         'input_args': {
-            'category_name': "Women's Sports Track Jackets",
-            # 'page': 1,
-            'url': 'https://www.amazon.com/bestsellers/fashion/1046602'
+            "ranking_log_id": 12,
+            # 'category_name': "Women's Tennis Skirts",
+            # 'url': 'https://www.amazon.com/bestsellers/fashion/2371144011'
         }
     }
     Spider.crawl(NAME_AMAZON, spider_args=args)

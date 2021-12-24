@@ -103,9 +103,7 @@ class SheinSpider(BaseSpider):
             category_name = self.input_args["category_name"]  # 'Women Sports Tees & Tanks'
             goods_list_url = self.input_args['url']  # '/Women-Sports-Tees-Tanks-c-2185.html'
 
-            ranking_log_id = 0
-            if 'ranking_log_id' in self.input_args:
-                ranking_log_id = int(self.input_args['ranking_log_id'])
+            ranking_log_id = int(self.input_args['ranking_log_id']) if 'ranking_log_id' in self.input_args else 0
 
             sort_by = 7
             if 'sort_by' in self.input_args:
@@ -116,7 +114,7 @@ class SheinSpider(BaseSpider):
                 rank_type = self.input_args['rank_type']
 
             # 最终数据管道保存goods_item信息到数据库时，先保存或更新goods, 再存储 goods和ranking_log 的对应关系
-            self.ranking_log = self.get_ranking_log(category_name, rank_type, log_id=ranking_log_id)
+            self.create_ranking_log(category_name, rank_type, log_id=ranking_log_id)
 
             page = 1
             url = "{}{}?{}".format(self.base_url, goods_list_url, urlencode({'page': page, 'sort': sort_by}))
@@ -125,13 +123,13 @@ class SheinSpider(BaseSpider):
 
         # 评论采集方式: get_all() 时间逆序 获取最近N个月评论
         if self.spider_child == CHILD_GOODS_REVIEWS_BY_RANKING:
-            category_name = self.input_args["category_name"]  # 'Women Sports Tees & Tanks'
-            ranking_log = self.get_ranking_log_real(category_name, EnumGoodsRanking.TYPE_TOP_REVIEWS)
-            db_session = RankingGoods.get_db_session()
-            ranking_goods_list = RankingGoods.get_all_model(db_session, {'ranking_log_id': ranking_log.id})
+            if 'ranking_log_id' not in self.input_args:
+                raise RuntimeError("缺少ranking_log_id参数")
+            self.ranking_log_id = int(self.input_args['ranking_log_id'])
+            ranking_goods_list = RankingGoods.get_all_model(self.db_session, {'ranking_log_id': self.ranking_log_id})
             print('==================goods_list_len = ' + str(len(ranking_goods_list)))
             for xgd in ranking_goods_list:
-                model = Goods.get_model(db_session, {'id': xgd.goods_id})
+                model = Goods.get_model(self.db_session, {'id': xgd.goods_id})
                 yield self.get_request_goods_detail(model)
 
     def get_categories_map(self):

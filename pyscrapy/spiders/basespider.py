@@ -30,7 +30,7 @@ class BaseSpider(Spider):
     log_id: int
     app_env: str
     spider_config: SpiderConfig
-    ranking_log = None
+    ranking_log_id = 0
     input_args = {}
 
     # 该属性cls静态调用 无法继承覆盖。 必须在继承的类中重写
@@ -122,19 +122,13 @@ class BaseSpider(Spider):
         self.log_id = log.id
         return self.log_id
 
-    def get_ranking_log_real(self, category_name: str, rank_type: str, log_id=0):
-        db_session = RankingLog.get_db_session()
-        ranking_log = RankingLog.get_log(db_session, self.site_id, category_name, rank_type, log_id=log_id)
-        if not ranking_log:
-            raise RuntimeError('RankingLog not found !')
-        return ranking_log
-
-    def get_ranking_log(self, category_name: str, rank_type: str, log_id=0):
+    def create_ranking_log(self, category_name="", rank_type=0, log_id=0):
         db_session = RankingLog.get_db_session()
         ranking_log = RankingLog.get_log(db_session, self.site_id, category_name, rank_type, log_id=log_id)
         if ranking_log:
+            self.ranking_log_id = ranking_log.id
             # 判断 created_at 来确定是否新建 ranking_log
-            if (time.time() - ranking_log.created_at) > 3600 * 24:
+            if (time.time() - ranking_log.created_at) > 3600 * 12:
                 ranking_log = None
         if not ranking_log:
             now_date = datetime.datetime.now()
@@ -148,8 +142,7 @@ class BaseSpider(Spider):
             ranking_log = RankingLog(**attrs)
             db_session.add(ranking_log)
             db_session.commit()
-            ranking_log = self.get_ranking_log(category_name, rank_type, log_id)
-        return ranking_log
+            self.ranking_log_id = ranking_log.id
 
     def closed(self, reason):
         print("============Close Base Spider : " + self.name)
@@ -159,8 +152,8 @@ class BaseSpider(Spider):
             return True
         log_cls = SpiderRunLog
         update_data = {"status": log_cls.STATUS_DONE}
-        if self.ranking_log:
-            update_data["link_id"] = self.ranking_log.id
+        if self.ranking_log_id > 0:
+            update_data["link_id"] = self.ranking_log_id
         res = self.db_session.query(log_cls).filter(log_cls.id == self.log_id).update(update_data)
         print(res)
         self.db_session.commit()

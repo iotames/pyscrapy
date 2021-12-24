@@ -64,16 +64,16 @@ class AmazonGoodsReviews(BasePage):
         eles = page_ele.elements
         db_session = GoodsReviewModel.get_db_session()
         is_review_too_old = False
-        # is_review_exists = False
+        is_review_exists = False
         for ele in eles:
             review = GoodsReview(ele)
             item['goods_id'] = goods_id
             item['goods_code'] = goods_code
             review_code = review.code
             item['code'] = review_code
-            # model = GoodsReviewModel.get_model(db_session, {'code': review_code, 'site_id': spider.site_id})
-            # if model:
-            #     is_review_exists = True
+            model = GoodsReviewModel.get_model(db_session, {'code': review_code, 'site_id': spider.site_id})
+            if model:
+                is_review_exists = True
             item['rating_value'] = review.rating_value
             item['title'] = review.title
             item['sku_text'] = review.sku_text
@@ -93,8 +93,8 @@ class AmazonGoodsReviews(BasePage):
             yield item
 
         print('===============total_page : ' + str(total_page))
-        if (page < total_page) and (not is_review_too_old):  # and (not is_review_exists):
-            # 仅取3个月内的评论
+        if (page < total_page) and (not is_review_too_old) and (not is_review_exists):
+            # 仅取N个月内的评论
             next_page = page + 1
             print('=======current page:  ' + str(page) + '====next page : ' + str(next_page))
             next_url = XReviews.get_reviews_url_by_asin(goods_code, next_page)

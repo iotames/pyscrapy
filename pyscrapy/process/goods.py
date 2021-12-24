@@ -226,7 +226,7 @@ class GoodsBase(Base):
         print(opt_str + ' GOODS : ' + json.dumps(attrs))
 
         # 添加或更新goods和ranking_log对应关系
-        if spider.ranking_log:
+        if spider.ranking_log_id > 0:
             self.save_ranking_goods(model, spider)
 
     @staticmethod
@@ -235,8 +235,7 @@ class GoodsBase(Base):
         rank_num = details['rank_num'] if 'rank_num' in details else 0
         spu = details['spu'] if 'spu' in details else ''
         spu = spu if spu else model.asin
-        xlog = spider.ranking_log
-        xd_find = {'site_id': spider.site_id, 'ranking_log_id': xlog.id, 'goods_id': model.id}
+        xd_find = {'site_id': spider.site_id, 'ranking_log_id': spider.ranking_log_id, 'goods_id': model.id}
         print(xd_find)
         db_session = RankingGoods.get_db_session()
         xgoods = RankingGoods.get_model(db_session, xd_find)

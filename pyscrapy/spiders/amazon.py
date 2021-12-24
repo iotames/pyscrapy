@@ -22,7 +22,7 @@ class AmazonSpider(BaseSpider):
 
     # 该属性cls静态调用 无法继承覆盖
     custom_settings = {
-        'DOWNLOAD_DELAY': 3,
+        'DOWNLOAD_DELAY': 2,
         'RANDOMIZE_DOWNLOAD_DELAY': True,
         'COOKIES_ENABLED': False,
         'CONCURRENT_REQUESTS_PER_DOMAIN': 3,  # default 8
@@ -98,10 +98,7 @@ class AmazonSpider(BaseSpider):
             category_name = self.input_args["category_name"]
             # '/Best-Sellers-Sports-Outdoors-Dresses/zgbs/sporting-goods/11444135011'
             url = self.input_args['url']
-
-            ranking_log_id = 0
-            if 'ranking_log_id' in self.input_args:
-                ranking_log_id = int(self.input_args['ranking_log_id'])
+            ranking_log_id = int(self.input_args['ranking_log_id']) if 'ranking_log_id' in self.input_args else 0
 
             rank_type = EnumGoodsRanking.TYPE_BESTSELLERS
             if 'rank_type' in self.input_args:
@@ -109,7 +106,7 @@ class AmazonSpider(BaseSpider):
 
             page = self.input_args['page'] if 'page' in self.input_args else 1  # 第二页采集的时候经常取不到数据
 
-            self.ranking_log = self.get_ranking_log(category_name, rank_type, log_id=ranking_log_id)
+            self.create_ranking_log(category_name, rank_type, log_id=ranking_log_id)
             self.url_params['pg'] = str(page)
             referer = self.base_url
             start_url = self.get_site_url("{}?{}".format(url, urlencode(self.url_params)))
@@ -136,13 +133,13 @@ class AmazonSpider(BaseSpider):
                 meta=dict(goods_code=asin, goods_id=goods_model.id, spider=self)
             )
         if self.spider_child == CHILD_GOODS_REVIEWS_BY_RANKING:
-            category_name = self.input_args["category_name"]  # "Women's Sports Dresses"
-            ranking_log = self.get_ranking_log_real(category_name, EnumGoodsRanking.TYPE_BESTSELLERS)
-            db_session = RankingGoods.get_db_session()
-            ranking_goods_list = RankingGoods.get_all_model(db_session, {'ranking_log_id': ranking_log.id})
+            if 'ranking_log_id' not in self.input_args:
+                raise RuntimeError("缺少ranking_log_id参数")
+            self.ranking_log_id = int(self.input_args['ranking_log_id'])
+            ranking_goods_list = RankingGoods.get_all_model(self.db_session, {'ranking_log_id': self.ranking_log_id})
             print('==================goods_list_len = ' + str(len(ranking_goods_list)))
             for xgd in ranking_goods_list:
-                model = Goods.get_model(db_session, {'id': xgd.goods_id})
+                model = Goods.get_model(self.db_session, {'id': xgd.goods_id})
                 reviews_url = XGoodsReviews.get_reviews_url_by_asin(model.code)
                 yield Request(
                     reviews_url,
