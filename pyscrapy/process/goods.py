@@ -182,7 +182,7 @@ class GoodsAmazon(Base):
             db_session.add(model)
         db_session.commit()
         print(opt_str + ' GOODS : ' + json.dumps(attrs))
-        if spider.ranking_log:
+        if spider.ranking_log_id:
             GoodsBase.save_ranking_goods(model, spider)
 
 

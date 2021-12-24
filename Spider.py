@@ -51,9 +51,14 @@ if __name__ == '__main__':
         'spider_child': CHILD_GOODS_REVIEWS_BY_RANKING,
         'log_id': "",  # "39"
         'input_args': {
-            # "ranking_log_id": 13,
-            'category_name': "Women's Running Shorts",
-            'url': 'https://www.amazon.com/bestsellers/fashion/2371114011'
+            "ranking_log_id": 14,
+            # 'category_name': "Women's Running Shorts",
+            # TODO
+            # Women's Running Shorts: https://www.amazon.com/gp/bestsellers/fashion/2371114011/ref=pd_zg_hrsr_fashion DONE
+            # Women's Tennis Skorts: https://www.amazon.com/Best-Sellers-Clothing-Shoes-Jewelry-Skorts/zgbs/fashion/2371145011/ref=zg_bs_nav_fashion_5_2371144011
+            # Women's Outdoor Recreation Shirts: https://www.amazon.com/gp/bestsellers/sporting-goods/11443924011/ref=pd_zg_hrsr_sporting-goods
+            # Tennisröcke für Damen https://www.amazon.de/gp/bestsellers/sports/3771963031/ref=pd_zg_hrsr_sports
+            # 'url': 'https://www.amazon.com/bestsellers/fashion/2371114011'
         }
     }
     Spider.crawl(NAME_AMAZON, spider_args=args)

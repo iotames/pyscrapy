@@ -146,7 +146,7 @@ class SeleniumMiddleware:
             print('=========browser=======')
             print(self.browser)
             self.browser.set_page_load_timeout(timeout)
-            seconds = 15
+            seconds = 5
             print('Through SeleniumMiddleware. get spider object when __init__ {}秒后开始浏览器爬虫'.format(str(seconds)))
             time.sleep(seconds)
 
