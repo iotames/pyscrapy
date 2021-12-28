@@ -86,6 +86,8 @@ class ImagePipeline(ImagesPipeline):
             if os.path.isfile(file_path):
                 print('SkipUrl: {} Exists File {}'.format(image_url, file_path))
                 continue
+            if spider.image_referer:
+                meta = {"referer": spider.image_referer}
             yield Request(image_url, meta=meta)
 
     def item_completed(self, results, item, info: ImagesPipeline.SpiderInfo):

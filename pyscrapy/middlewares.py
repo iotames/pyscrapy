@@ -14,6 +14,7 @@ from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.common.exceptions import TimeoutException
 # useful for handling different item types with a single interface
 from itemadapter import is_item, ItemAdapter
+from twisted.internet.error import TCPTimedOutError, TimeoutError
 
 
 class PyscrapySpiderMiddleware:
@@ -85,18 +86,8 @@ class PyscrapyDownloaderMiddleware:
         return s
 
     def process_request(self, request: Request, spider):
-        # print('PyscrapyDownloaderMiddleware  process_request is starting ...')
-        settings = spider.settings
-        deny_list = settings.getlist('COMPONENTS_NAME_LIST_DENY')
-        if self.user_agent and (UserAgent.name not in deny_list):
-            request.headers['User-Agent'] = self.user_agent.choice_one_from_items()
-        if self.http_proxy and (UserAgent.name not in deny_list):
-            proxy_addr = self.http_proxy.choice_one_from_items()
-            splash_enabled = settings.getbool('SPLASH_ENABLED')
-            if not splash_enabled:
-                # request.meta['splash']['args']['proxy'] = proxy_addr 会出现本地IP代理池接口服务请求也走代理
-                request.meta['proxy'] = proxy_addr
-
+        print('PyscrapyDownloaderMiddleware  process_request is starting ...')
+        self.process_request_back(request, spider)
         referer = request.meta.get('referer', None)
         if referer:
             request.headers['referer'] = referer
@@ -119,7 +110,32 @@ class PyscrapyDownloaderMiddleware:
         # - or raise IgnoreRequest
         return response
 
+    def process_request_back(self, request, spider):
+        # request.meta["proxy"] = xun.proxy
+        # request.headers["Proxy-Authorization"] = xun.headers
+        settings = spider.settings
+        deny_list = settings.getlist('COMPONENTS_NAME_LIST_DENY')
+        if self.user_agent and (UserAgent.name not in deny_list):
+            request.headers['User-Agent'] = self.user_agent.choice_one_from_items()
+        if self.http_proxy and (HttpProxy.name not in deny_list):
+            print('use http_proxy component ...')
+            proxy_addr = self.http_proxy.choice_one_from_items()
+            request.meta['http_proxy_component'] = self.http_proxy
+
+            if not spider.SPLASH_ENABLED:
+                # request.meta['splash']['args']['proxy'] = proxy_addr 会出现本地IP代理池接口服务请求也走代理
+                print('==========proxy=' + proxy_addr)
+                request.meta['proxy'] = proxy_addr
+
     def process_exception(self, request, exception, spider):
+        if isinstance(exception, TimeoutError):
+            self.process_request_back(request, spider)  # 连接超时才启用代理ip机制
+            return request
+
+        if isinstance(exception, TCPTimedOutError):
+            self.process_request_back(request, spider)
+            return request
+
         # Called when a download handler or a process_request()
         # (from other downloader middleware) raises an exception.
 
@@ -146,7 +162,7 @@ class SeleniumMiddleware:
             print('=========browser=======')
             print(self.browser)
             self.browser.set_page_load_timeout(timeout)
-            seconds = 5
+            seconds = 2
             print('Through SeleniumMiddleware. get spider object when __init__ {}秒后开始浏览器爬虫'.format(str(seconds)))
             time.sleep(seconds)
 

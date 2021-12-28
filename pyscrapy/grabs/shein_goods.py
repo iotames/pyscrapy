@@ -4,6 +4,7 @@ from pyscrapy.grabs.basegrab import BaseResponse
 from pyscrapy.items import BaseGoodsItem
 from pyscrapy.grabs.shein_goods_reviews import ReviewRequest
 import json
+from pyscrapy.enum.spider import *
 
 
 class GoodsDetail(BaseResponse):
@@ -151,10 +152,10 @@ class GoodsDetail(BaseResponse):
         if spu:
             rev = ReviewRequest(spu, spider=meta['spider'], headers={'referer': response.url})
             spider = meta['spider']
-            if spider.spider_child == 'goods_detail_top_reviews':
+            if spider.spider_child == CHILD_GOODS_REVIEWS_BY_RANKING:
                 # yield rev.get_schema(meta={'goods_item': item, 'goods_model': goods_model})
                 yield rev.get_all(meta={'goods_item': item, 'goods_model': goods_model})
-            if spider.spider_child == 'goods_detail':
+            if spider.spider_child == CHILD_GOODS_DETAIL:
                 yield rev.get_simple(meta={'goods_item': item, 'goods_model': goods_model})
         else:
             yield item

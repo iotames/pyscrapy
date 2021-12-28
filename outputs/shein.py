@@ -82,22 +82,16 @@ class SheinOutput(BaseOutput):
             self.set_values_to_row(sheet, goods_info_list, goods_row_index, goods_col_index)
             goods_row_index += 1
         self.wb.save(self.output_file)
-        self.copy_to_download_path(self.output_file)
+        # self.copy_to_download_path(self.output_file)
 
     def output(self):
         self.output_top_100()
 
 
-# if __name__ == '__main__':
-    # ot = SheinOutput()
-    # ot.output_top_100()
-    # db_session = RankingGoods.get_db_session()
-    # rank_goods_list = RankingGoods.get_all_model(db_session, {'site_id': 1})
-    # total_reviews_num = 0
-    # for rgoods in rank_goods_list:
-    #     goods = Goods.get_model(db_session, {'id': rgoods.goods_id})
-    #     rgoods.reviews_num = goods.reviews_num
-    #     total_reviews_num += goods.reviews_num
-    # db_session.commit()
-    # print(total_reviews_num)
+if __name__ == '__main__':
+    db_session = SpiderRunLog.get_db_session()
+    log = SpiderRunLog.get_model(db_session, {'id': 5})
+    ot = SheinOutput(log)
+    ot.output()
+
 

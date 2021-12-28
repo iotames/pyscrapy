@@ -46,6 +46,7 @@ class SheinSpider(BaseSpider):
     def __init__(self, name=None, **kwargs):
         super(SheinSpider, self).__init__(name=name, **kwargs)
         self.base_url = BASE_URL
+        print('================startttttttttttttttttt=============')
 
     __get_categories_map = {}
 

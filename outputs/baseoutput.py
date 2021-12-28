@@ -96,6 +96,7 @@ class BaseOutput:
     def is_download_file_exists(self) -> bool:
         filepath = self.get_downloads_dir() + os.path.sep + self.download_filename
         if os.path.isfile(filepath):
+            print("file exist: " + filepath)
             return True
         return False
 

@@ -1,6 +1,6 @@
 from pyscrapy.models import Goods, RankingGoods, RankingLog, GoodsReview, SpiderRunLog
 from outputs.baseoutput import BaseOutput
-from pyscrapy.extracts.amazon import Common as XAmazon
+from pyscrapy.extracts.amazon import Common as XAmazon, GoodsReviews as XReviews
 import json
 from sqlalchemy import and_
 from openpyxl.styles import PatternFill
@@ -42,16 +42,24 @@ class AmazonOutput(BaseOutput):
             rating = review.rating_value
             sku = review.sku_text
             url = review.url
-            detail_rows.append((review.time_str, product_title, review_title, review.body, review.color, rating, sku, url, 0))
-            if review.color is None:
+            color_text = ""
+            if not review.color:
+                print(sku)
+                color_text = XReviews.get_color_in_sku_text(sku)
+                if not color_text:
+                    color_text = XReviews.get_color_in_sku_text(sku, "en")
+            row_detail = (review.time_str, product_title, review_title, review.body, color_text, rating, sku, url, 0)
+            print(row_detail)
+            detail_rows.append(row_detail)
+            if not color_text:
                 continue
-            print(review.color)
+            print(color_text)
             if color_partial:
-                colors = review.color.split(' ')
+                colors = color_text.split(' ')
                 for color in colors:
                     self.set_colors_show_times(color)
             else:
-                color = review.color
+                color = color_text
                 self.set_colors_show_times(color)
 
     def output(self):
@@ -198,16 +206,19 @@ class AmazonOutput(BaseOutput):
             # 热卖颜色分析
             sheet_analysis.append((color_name, color_times))
         size_index = len(details_title_row) - 1
+        # sku_text_index = size_index - 2
         for row in sheet_reviews.rows:
             # 尺码问题标记
+            row_index = 0
             for cell in row:
-                if type(cell.value) == str:
+                if type(cell.value) == str and (row_index == 2 or row_index == 3):
                     if cell.value.find("size") > -1:
                         cell.fill = self.cell_fill
                         row[size_index].value = 1
                     if cell.value.find("Size") > -1:
                         cell.fill = self.cell_fill
                         row[size_index].value = 1
+                row_index += 1
 
         self.wb.save(self.output_file)
         self.copy_to_download_path(self.output_file)
@@ -235,7 +246,8 @@ class AmazonOutput(BaseOutput):
 
 
 if __name__ == '__main__':
-    db_session = RankingLog.get_db_session()
-    log = RankingLog.get_model(db_session, {'id': 9})
+    # TODO BUG： 通过API接口下载和通过本入口生成的EXCEL， 文件内容不一样。
+    db_session = SpiderRunLog.get_db_session()
+    log = SpiderRunLog.get_model(db_session, {'id': 127})
     ot = AmazonOutput(log)
     ot.output()

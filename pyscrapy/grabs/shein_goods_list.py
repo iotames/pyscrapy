@@ -23,7 +23,7 @@ class GoodsList(BasePage):
         page = meta['page'] if 'page' in meta else 1
         grab = cls(response)
         spider = meta['spider']
-        categories_map = meta['categories_map']
+        categories_map = meta['categories_map'] if 'categories_map' in meta else None
 
         if 'only_category' in meta:
             for cat in grab.categories:

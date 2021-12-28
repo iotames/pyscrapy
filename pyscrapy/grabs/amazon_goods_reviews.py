@@ -50,15 +50,20 @@ class AmazonGoodsReviews(BasePage):
         page = meta['page'] if 'page' in meta else 1
         goods_id = meta['goods_id'] if 'goods_id' in meta else 0
         spider = meta['spider']
-        if cls.check_robot_happened(response):
-            is_next = input("continue: <Enter yes>")
-            if is_next.lower() != "yes":
-                return False
 
         if 'item' in meta:
             item = response.meta['item']
         else:
             item = GoodsReviewAmazonItem()
+
+        if cls.check_robot_happened(response):
+            meta["item"] = item
+            is_next = input("continue: <Enter yes>")
+            if is_next.lower() != "yes":
+                return False
+            if "http_proxy_component" in meta:
+                meta["http_proxy_component"].delete_proxy()
+            yield Request(response.url, callback=cls.parse, meta=meta, dont_filter=True)
 
         page_ele = cls(response)
         reviews_num = page_ele.reviews_count
@@ -95,7 +100,7 @@ class AmazonGoodsReviews(BasePage):
             yield item
 
         print('===============total_page : ' + str(total_page))
-        if (page < total_page) and (not is_review_too_old) and (not is_review_exists):
+        if (page < total_page) and (not is_review_too_old):  # and (not is_review_exists):
             # 仅取N个月内的评论
             next_page = page + 1
             print('=======current page:  ' + str(page) + '====next page : ' + str(next_page))
@@ -103,7 +108,7 @@ class AmazonGoodsReviews(BasePage):
             yield Request(
                 next_url,
                 cls.parse,
-                meta=dict(goods_id=goods_id, goods_code=goods_code, page=next_page, spider=spider)
+                meta=dict(goods_id=goods_id, goods_code=goods_code, page=next_page, spider=spider, dont_filter=True)
             )
 
 
@@ -164,6 +169,8 @@ class GoodsReview(BaseElement):
     def color(self):
         sku_text = self.sku_text
         if sku_text:
-            return XReviews.get_color_in_sku_text(sku_text)
+            color = XReviews.get_color_in_sku_text(sku_text)
+            if not color:
+                color = XReviews.get_color_in_sku_text(sku_text, "en")
         return ''
 

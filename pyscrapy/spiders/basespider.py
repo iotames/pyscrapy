@@ -15,6 +15,8 @@ class BaseSpider(Spider):
     SELENIUM_ENABLED = False
     SPLASH_ENABLED = False
 
+    image_referer = None
+
     @staticmethod
     def cookie_to_dic(cookies) -> dict:
         return JsonFile.cookie_to_dic(cookies)

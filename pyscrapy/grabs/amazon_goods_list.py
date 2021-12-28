@@ -16,24 +16,29 @@ class GoodsRankingList(BasePage):
 
     @classmethod
     def parse(cls, response: TextResponse):
+        print('============goods_list==========1')
         if response.status == 404:
             print(response.text)
         if cls.check_robot_happened(response):
             is_next = input("continue: <Enter yes>")
             if is_next.lower() != "yes":
                 return False
+        print('============goods_list==========2')
         page = response.meta['page']
         grab = cls(response)
         rank_num = 1 if page == 1 else 51
         for ele in grab.elements:
             ele = GoodsInRankList(ele)
             url = ele.url
+            print('===============goods_list==================3')
+            print(ele.url)
             if not url:
                 continue
             goods_item = ele.item
             goods_item["details"] = {'rank_num': rank_num}
             rank_num += 1
-            yield Request(url, callback=AmazonGoodsDetail.parse, meta=dict(item=goods_item), dont_filter=True)
+            yield goods_item
+            # yield Request(url, callback=AmazonGoodsDetail.parse, meta=dict(item=goods_item), dont_filter=True)
         if page == 1:
             print('=========跳转太快第二页会没有数据==稍等3秒===')
             sleep(3)

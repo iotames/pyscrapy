@@ -24,11 +24,13 @@ class AmazonSpider(BaseSpider):
     custom_settings = {
         'DOWNLOAD_DELAY': 2,
         'RANDOMIZE_DOWNLOAD_DELAY': True,
+        'DOWNLOAD_TIMEOUT': 30,
+        'RETRY_TIMES': 5,
         'COOKIES_ENABLED': False,
         'CONCURRENT_REQUESTS_PER_DOMAIN': 3,  # default 8
         'CONCURRENT_REQUESTS': 5,  # default 16 recommend 5-8
         'IMAGES_STORE': Config.ROOT_PATH + "/runtime/images",
-        'COMPONENTS_NAME_LIST_DENY': []
+        'COMPONENTS_NAME_LIST_DENY': []  # ["http_proxy", "user_agent"]
     }
 
     url_params = {
@@ -40,30 +42,8 @@ class AmazonSpider(BaseSpider):
             'store_name': 'Smallshow',
             'urls': [
                 # '/stores/page/7420E66C-9249-44EB-801D-F05D099D35BF',  # Maternity clothes 18
-                # '/stores/page/7B493245-46E9-445A-AB79-19909EE30490',  # Maternity shirts 13 OK
-                # '/stores/page/C9FAB35C-A576-421D-9198-799B642FBD43',  # Maternity Tank Tops 2
-                # '/stores/page/15BD121B-D100-442B-AD3D-9D23ADD406DE',  # Maternity dress 2
-                # '/stores/page/38DD04F9-2634-4EFB-81FF-D12931D4E19A',  # Maternity Shorts 1
-
-                # '/stores/page/757B7B48-49DA-492B-98B2-832A0F875B0B',  # Nursing Clothes 52 OK
-                # '/stores/page/ADE24067-5927-45F4-B988-80552C16CF90',  # Nursing Shirts 28 OK
-                # '/stores/page/8E67FA87-D57F-475D-9B67-E7A80776EC28',  # Nursing Sweatshirt/hoodie 8 OK
-                # '/stores/page/FA287B95-D080-4F8B-ADEA-63AD26C6CE06',  # Nursing Dress 14 OK
-                # '/stores/page/63EEAE9F-71D4-4944-8867-DC186B1EDA0E'  # Nursing Tank Tops 7 OK
             ]
         }
-        # {'store_name': 'Baleaf', 'urls': ['/stores/page/105CBE98-4967-4033-8601-F8B84867E767']},
-        # {'store_name': 'sponeed', 'urls': [
-        # 7个网页中6个有反爬。 需要从XHR网络请求中抓取ASINList
-        #     '/stores/page/FB3810D0-2453-447E-86C3-45C094E7F3A0',
-        #     '/stores/page/65B90D63-5A93-422C-81F5-CD4297B1B65D',
-        #     '/stores/page/20758B24-570B-4AB8-B53E-6FD5DC9E8514',
-        #     '/stores/page/F36A4167-83B4-45CE-8C08-4F176153083D',
-        #     '/stores/page/FBBC92DD-D089-4156-899F-45B69C58F989',
-        #     '/stores/page/531253C5-D835-4521-8526-A0DAC4EF4C89',
-        #     '/stores/page/258CD320-5D69-43A6-B30D-06F1AFA70C4D'
-        # ]}
-
     ]
 
     asin_list = []
@@ -71,9 +51,17 @@ class AmazonSpider(BaseSpider):
 
     def __init__(self, name=None, **kwargs):
         super(AmazonSpider, self).__init__(name=name, **kwargs)
-        selenium_children = [CHILD_GOODS_LIST_RANKING]
+        self.allowed_domains.append("amazon.de")
+        selenium_children = [CHILD_GOODS_LIST_RANKING, CHILD_GOODS_REVIEWS_BY_RANKING, CHILD_GOODS_DETAIL_RANKING]  #
         if self.spider_child in selenium_children:
             self.SELENIUM_ENABLED = True  # 启用 Selenium 中间件
+
+    def get_site_url(self, url: str) -> str:
+        if url.startswith('http'):
+            return url
+        if url.startswith('/'):
+            return self.base_url + url
+        return self.base_url + '/' + url
 
     def start_requests(self):
         if self.spider_child == CHILD_GOODS_LIST_STORE_PAGE:
@@ -93,11 +81,14 @@ class AmazonSpider(BaseSpider):
                         callback=GoodsListInStore.parse,
                         meta=dict(merchant_id=store_model.id, category_name=category_name)
                     )
+
         if self.spider_child == CHILD_GOODS_LIST_RANKING:
             # "Women's Sports Dresses"
             category_name = self.input_args["category_name"]
             # '/Best-Sellers-Sports-Outdoors-Dresses/zgbs/sporting-goods/11444135011'
             url = self.input_args['url']
+            self.domain = url.split("/")[2]
+            self.base_url = "https://www." + self.domain
             ranking_log_id = int(self.input_args['ranking_log_id']) if 'ranking_log_id' in self.input_args else 0
 
             rank_type = EnumGoodsRanking.TYPE_BESTSELLERS
@@ -112,6 +103,7 @@ class AmazonSpider(BaseSpider):
             start_url = self.get_site_url("{}?{}".format(url, urlencode(self.url_params)))
             if page == 2:
                 referer = start_url.replace('pg=2', 'pg=1')
+            print('===============before request = ' + start_url)
             yield Request(
                 start_url,
                 callback=GoodsRankingList.parse,
@@ -119,6 +111,7 @@ class AmazonSpider(BaseSpider):
                 meta=dict(page=page),
                 dont_filter=True
             )
+
         if self.spider_child == CHILD_GOODS_REVIEWS:
             asin = "B093GZ8797"
             goods_url = XAmazon.get_url_by_code(asin, self.url_params)
@@ -132,6 +125,22 @@ class AmazonSpider(BaseSpider):
                 headers=dict(referer=goods_url),
                 meta=dict(goods_code=asin, goods_id=goods_model.id, spider=self)
             )
+
+        if self.spider_child == CHILD_GOODS_DETAIL_RANKING:
+            if 'ranking_log_id' not in self.input_args:
+                raise RuntimeError("缺少ranking_log_id参数")
+            self.ranking_log_id = int(self.input_args['ranking_log_id'])
+            ranking_goods_list = RankingGoods.get_all_model(self.db_session, {'ranking_log_id': self.ranking_log_id})
+            print('==================goods_list_len = ' + str(len(ranking_goods_list)))
+            for xgd in ranking_goods_list:
+                model: Goods = Goods.get_model(self.db_session, {'id': xgd.goods_id})
+                self.image_referer = "https://{}/".format(model.url.split("/")[2])  # "https://www.amazon.com/"
+                goods_item = AmazonGoodsItem()
+                goods_item["title"] = model.title
+                goods_item["reviews_num"] = model.reviews_num
+                goods_item["model"] = model
+                yield Request(model.url, callback=AmazonGoodsDetail.parse, meta=dict(item=goods_item), dont_filter=True)
+
         if self.spider_child == CHILD_GOODS_REVIEWS_BY_RANKING:
             if 'ranking_log_id' not in self.input_args:
                 raise RuntimeError("缺少ranking_log_id参数")
@@ -139,7 +148,7 @@ class AmazonSpider(BaseSpider):
             ranking_goods_list = RankingGoods.get_all_model(self.db_session, {'ranking_log_id': self.ranking_log_id})
             print('==================goods_list_len = ' + str(len(ranking_goods_list)))
             for xgd in ranking_goods_list:
-                model = Goods.get_model(self.db_session, {'id': xgd.goods_id})
+                model: Goods = Goods.get_model(self.db_session, {'id': xgd.goods_id})
                 reviews_url = XGoodsReviews.get_reviews_url_by_asin(model.code)
                 yield Request(
                     reviews_url,
@@ -173,6 +182,7 @@ class AmazonSpider(BaseSpider):
                         # dont_filter=True,
                         meta=dict(item=item)
                     )
+
         if self.spider_child == CHILD_GOODS_LIST_ALL_COLORS:
             self.goods_model_list = Goods.get_all_model(self.db_session, {'site_id': self.site_id})
             asin_list = []

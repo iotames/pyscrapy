@@ -20,7 +20,7 @@ class HttpProxy(BaseConfig):
     SERVICE_JHAO104 = 'jhao104'  # https://github.com/jhao104/proxy_pool
     SERVICE_MAP = {
         SERVICE_CUIQINGCAI: {'base_url': 'http://127.0.0.1:5555', 'api_get': '/random'},
-        SERVICE_JHAO104: {'base_url': 'http://127.0.0.1:5010', 'api_get': '/get/', 'api_delete': '/delete/'}
+        SERVICE_JHAO104: {'base_url': 'http://127.0.0.1:5010', 'api_get': '/get/?type=https', 'api_delete': '/delete/'}
     }
     IP_POOL_SERVICE = SERVICE_JHAO104
 
@@ -50,16 +50,32 @@ class HttpProxy(BaseConfig):
         url = service['base_url'] + service['api_get']
         return 'http://{}'.format(requests.get(url).text.strip())
 
-    def delete_proxy(self, proxy: str):
+    proxy = ""
+
+    def delete_proxy(self):
+        if self.config['proxy_type'] == self.TYPE_VPN:
+            msg = "TYPE_VPN not suppose delete_proxy"
+            print(msg)
+            return False
+        if self.config['ip_pool_service'] != self.SERVICE_JHAO104:
+            msg = "SERVICE_CUIQINGCAI not suppose delete_proxy"
+            print(msg)
+            return False
         service = self.SERVICE_MAP[self.SERVICE_JHAO104]
-        url = service['base_url'] + service['api_get']
-        requests.get(url + "?proxy={}".format(proxy))
+        url = service['base_url'] + service['api_delete']
+        delete_url = url + "?proxy={}".format(self.proxy)
+        print("delete_proxy: " + delete_url)
+        requests.get(delete_url)
 
     def get_proxy_jhao104(self):
         service = self.SERVICE_MAP[self.SERVICE_JHAO104]
         url = service['base_url'] + service['api_get']
+        print("get_proxy_jhao104: " + url)
         proxy = requests.get(url).json().get('proxy')
-        return "http://{}".format(proxy)
+        self.proxy = proxy
+        http_proxy = "http://{}".format(proxy)
+        print("set proxy=" + http_proxy)
+        return http_proxy
 
     def choice_one_from_items(self):
         def get_proxy_by_pool():

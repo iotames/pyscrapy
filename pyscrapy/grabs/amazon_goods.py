@@ -95,10 +95,6 @@ class AmazonGoodsDetail(BasePage):
 
     @classmethod
     def parse(cls, response: TextResponse):
-        if cls.check_robot_happened(response):
-            is_next = input("continue: <Enter yes>")
-            if is_next.lower() != "yes":
-                return False
         meta = response.meta
         spider = meta['spider'] if 'spider' in meta else None
 
@@ -106,6 +102,15 @@ class AmazonGoodsDetail(BasePage):
             item = response.meta['item']
         else:
             item = AmazonGoodsItem()
+
+        if cls.check_robot_happened(response):
+            meta["item"] = item
+            is_next = input("continue: <Enter yes>")
+            if is_next.lower() != "yes":
+                return False
+            if "http_proxy_component" in meta:
+                meta["http_proxy_component"].delete_proxy()
+            yield Request(response.url, callback=cls.parse, meta=meta, dont_filter=True)
 
         ele = cls(response)
         item['code'] = XAmazon.get_code_by_goods_url(response.url)
