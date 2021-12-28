@@ -133,7 +133,7 @@ class AmazonOutput(BaseOutput):
                 image = self.get_image_info(goods.local_image)
             details = json.loads(goods.details)
 
-            sale_at = details['sale_at']
+            sale_at = details['sale_at'] if 'sale_at' in details else ''
             asin = details['asin']
             root_rank = details['root_rank']
             goods_url = goods.url
@@ -219,7 +219,8 @@ class AmazonOutput(BaseOutput):
                 row_index += 1
 
         self.wb.save(self.output_file)
-        self.copy_to_download_path(self.output_file)
+        # TODO BUG： 通过API接口下载和通过本入口生成的EXCEL， 文件内容不一样。
+        # self.copy_to_download_path(self.output_file)
 
     def update_excel(self, filepath):
         self.wb = load_workbook(filepath)
@@ -244,8 +245,7 @@ class AmazonOutput(BaseOutput):
 
 
 if __name__ == '__main__':
-    # TODO BUG： 通过API接口下载和通过本入口生成的EXCEL， 文件内容不一样。
     db_session = SpiderRunLog.get_db_session()
-    log = SpiderRunLog.get_model(db_session, {'id': 127})
+    log = SpiderRunLog.get_model(db_session, {'id': 148})
     ot = AmazonOutput(log)
     ot.output()

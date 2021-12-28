@@ -105,6 +105,14 @@ class BaseSpider(Spider):
             raise UsageError(msg)
         self.spider_child = kwargs['spider_child']
 
+    def set_base_url(self, url: str):
+        url_ele_list = url.split("/")
+        protocol = url_ele_list[0]  # https:
+        full_domain = url_ele_list[2]
+        domain_ele_list = full_domain.split(".")  # www.abc.com
+        self.domain = domain_ele_list[-2] + "." + domain_ele_list[-1]  # abc.com
+        self.base_url = "{}//{}".format(protocol, full_domain)
+
     def add_spider_log(self, log_id=None) -> int:
         if self.app_env == SpiderConfig.ENV_DEVELOPMENT:
             return 0

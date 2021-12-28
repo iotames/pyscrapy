@@ -52,7 +52,7 @@ class AmazonSpider(BaseSpider):
     def __init__(self, name=None, **kwargs):
         super(AmazonSpider, self).__init__(name=name, **kwargs)
         self.allowed_domains.append("amazon.de")
-        selenium_children = [CHILD_GOODS_LIST_RANKING, CHILD_GOODS_REVIEWS_BY_RANKING, CHILD_GOODS_DETAIL_RANKING]  #
+        selenium_children = [CHILD_GOODS_LIST_RANKING, CHILD_GOODS_REVIEWS_BY_RANKING]  #
         if self.spider_child in selenium_children:
             self.SELENIUM_ENABLED = True  # 启用 Selenium 中间件
 
@@ -87,8 +87,9 @@ class AmazonSpider(BaseSpider):
             category_name = self.input_args["category_name"]
             # '/Best-Sellers-Sports-Outdoors-Dresses/zgbs/sporting-goods/11444135011'
             url = self.input_args['url']
-            self.domain = url.split("/")[2]
-            self.base_url = "https://www." + self.domain
+            if url.find("http") != 0:
+                raise UsageError("url必须以 http 开头")
+            self.set_base_url(url)
             ranking_log_id = int(self.input_args['ranking_log_id']) if 'ranking_log_id' in self.input_args else 0
 
             rank_type = EnumGoodsRanking.TYPE_BESTSELLERS
@@ -108,14 +109,14 @@ class AmazonSpider(BaseSpider):
                 start_url,
                 callback=GoodsRankingList.parse,
                 headers=dict(referer=referer),
-                meta=dict(page=page),
+                meta=dict(page=page, spider=self),
                 dont_filter=True
             )
 
         if self.spider_child == CHILD_GOODS_REVIEWS:
             asin = "B093GZ8797"
             goods_url = XAmazon.get_url_by_code(asin, self.url_params)
-            reviews_url = XGoodsReviews.get_reviews_url_by_asin(asin)
+            reviews_url = XGoodsReviews(self).get_reviews_url_by_asin(asin)
             goods_model = Goods.get_model(self.db_session, {'code': asin, 'site_id': self.site_id})
             if not goods_model:
                 raise RuntimeError("ASIN {} : 商品不存在， 请先通过ASIN采集商品详情".format(asin))
@@ -134,7 +135,8 @@ class AmazonSpider(BaseSpider):
             print('==================goods_list_len = ' + str(len(ranking_goods_list)))
             for xgd in ranking_goods_list:
                 model: Goods = Goods.get_model(self.db_session, {'id': xgd.goods_id})
-                self.image_referer = "https://{}/".format(model.url.split("/")[2])  # "https://www.amazon.com/"
+                self.set_base_url(model.url)
+                self.image_referer = self.base_url + "/"
                 goods_item = AmazonGoodsItem()
                 goods_item["title"] = model.title
                 goods_item["reviews_num"] = model.reviews_num
@@ -149,7 +151,9 @@ class AmazonSpider(BaseSpider):
             print('==================goods_list_len = ' + str(len(ranking_goods_list)))
             for xgd in ranking_goods_list:
                 model: Goods = Goods.get_model(self.db_session, {'id': xgd.goods_id})
-                reviews_url = XGoodsReviews.get_reviews_url_by_asin(model.code)
+                self.set_base_url(model.url)
+                x_reviews = XGoodsReviews(self)
+                reviews_url = x_reviews.get_reviews_url_by_asin(model.code)
                 yield Request(
                     reviews_url,
                     callback=AmazonGoodsReviews.parse,

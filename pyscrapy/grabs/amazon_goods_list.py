@@ -24,35 +24,39 @@ class GoodsRankingList(BasePage):
             if is_next.lower() != "yes":
                 return False
         print('============goods_list==========2')
-        page = response.meta['page']
+        meta = response.meta
+        spider = meta['spider']
+        page = meta['page']
         grab = cls(response)
-        rank_num = 1 if page == 1 else 51
         for ele in grab.elements:
             ele = GoodsInRankList(ele)
+            ele.spider = spider
             url = ele.url
             print('===============goods_list==================3')
             print(ele.url)
             if not url:
                 continue
             goods_item = ele.item
+            rank_num = ele.rank_num
             goods_item["details"] = {'rank_num': rank_num}
-            rank_num += 1
             yield goods_item
             # yield Request(url, callback=AmazonGoodsDetail.parse, meta=dict(item=goods_item), dont_filter=True)
         if page == 1:
-            print('=========跳转太快第二页会没有数据==稍等3秒===')
-            sleep(3)
             yield Request(
                 response.url.replace('pg=1', 'pg=2'),
                 callback=cls.parse,
-                meta=dict(page=2),
+                meta=dict(page=2, spider=spider),
                 dont_filter=True
             )
 
 
 class GoodsInRankList(BaseElement):
 
-    BASE_URL = XAmazon.BASE_URL
+    @property
+    def rank_num(self) -> int:
+        num_text = self.get_text(XRankingList.xpath_rank_num)
+        num_info = num_text.split('#')
+        return int(num_info[1]) if len(num_info) == 2 else 0
 
     @property
     def url(self) -> str:
@@ -85,7 +89,7 @@ class GoodsInRankList(BaseElement):
         goods_item["code"] = self.code
         goods_item["title"] = self.element.xpath(XRankingList.xpath_goods_title).get()
         goods_item["reviews_num"] = self.reviews_num
-        goods_item["image_urls"] = [image]
+        # goods_item["image_urls"] = [image]
         return goods_item
 
 

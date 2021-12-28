@@ -23,11 +23,12 @@ class GoodsListInRanking(object):
     # xpath_review = "div[@class='a-icon-row a-spacing-none']/a[2]/text()"
 
     # 2021-12-28
-    xpath_goods_items = '//*[@id="gridItemRoot"]/div/div[2]/div'
-    xpath_url = 'a[1]/@href'
-    xpath_goods_img = 'a[1]/div/img/@src'
-    xpath_goods_title = 'a[2]/span/div/text()'
-    xpath_review = "div[1]/div/a/span/text()"
+    xpath_goods_items = '//div[@id="gridItemRoot"]/div'
+    xpath_rank_num = "div[1]/div[1]/span/text()"
+    xpath_url = 'div[2]/div/a[1]/@href'
+    xpath_goods_img = 'div[2]/div/a[1]/div/img/@src'
+    xpath_goods_title = 'div[2]/div/a[2]/span/div/text()'
+    xpath_review = "div[2]/div/div[1]/div/a/span/text()"
 
 
 class GoodsDetail(object):
@@ -138,11 +139,8 @@ class GoodsReviews(object):
     商品评论解析类
     """
 
-    reviews_url = BASE_URL + "/product-reviews/{}"
-    reviews_url_more = reviews_url + '/ref=cm_cr_arp_d_paging_btm_next_{}'  # cm_cr_getr_d_paging_btm_next_2
-
+    spider = None
     xpath_reviews_count = '//*[@id="filter-info-section"]/div/span/text()'
-
     xpath_reviews_items = '//div[@class="a-section review aok-relative"]'
     xpath_review_id = '@id'
     xpath_review_sku = 'div/div/div[3]/a/text()'
@@ -153,25 +151,37 @@ class GoodsReviews(object):
     xpath_review_body = 'div//span[@data-hook="review-body"]/span/text()'
     xpath_review_date = 'div//span[@class="a-size-base a-color-secondary review-date"]/text()'
 
-    @classmethod
-    def get_simple_reviews_url(cls, url, page=1):
+    def __init__(self, spider):
+        self.spider = spider
+
+    @property
+    def base_url(self):
+        return self.spider.base_url
+
+    def get_simple_reviews_url(self, url, page=1):
         re_text = r"product-reviews/(.+?)/"
         urls = re.findall(re_text, url)
         asin = urls[0]
-        result_url = cls.reviews_url.format(asin)
+        return self.get_simple_reviews_url_by_asin(asin, page)
+
+    def get_simple_reviews_url_by_asin(self, asin, page=1):
+        result_url = "{}/product-reviews/{}".format(self.base_url, asin)
         if page > 1:
             page_str = str(page)
-            result_url = cls.reviews_url_more.format(asin, page_str, page_str)
+            result_url = result_url + '/ref=cm_cr_arp_d_paging_btm_next_{}'.format(page_str)
         return result_url
 
-    @classmethod
-    def get_reviews_url_by_asin(cls, asin, page=1, language='zh_CN', sort_by='recent') -> str:
-        params = {'language': language, 'sortBy': sort_by}
-        url = cls.reviews_url.format(asin) + "?" + urlencode(params)
+    def get_reviews_url_by_asin(self, asin, page=1, args=None) -> str:
+        params = {'sortBy': 'recent'}
+        if args:
+            params.update(args)
+        # params = {'language': language, 'sortBy': sort_by}  # language='zh_CN', sort_by='recent'
+        url = self.get_simple_reviews_url_by_asin(asin, page)
+        if page == 1:
+            url += "?" + urlencode(params)
         if page > 1:
-            pgstr = str(page)
-            params['pageNumber'] = pgstr
-            url = cls.reviews_url_more.format(asin, pgstr) + "?" + urlencode(params)
+            params['pageNumber'] = str(page)
+            url += "?" + urlencode(params)
         return url
 
     @classmethod

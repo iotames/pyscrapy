@@ -82,6 +82,7 @@ class SheinOutput(BaseOutput):
             self.set_values_to_row(sheet, goods_info_list, goods_row_index, goods_col_index)
             goods_row_index += 1
         self.wb.save(self.output_file)
+        # TODO BUG： 通过API接口下载和通过本入口生成的EXCEL， 文件内容不一样。
         # self.copy_to_download_path(self.output_file)
 
     def output(self):

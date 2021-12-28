@@ -162,7 +162,7 @@ class SeleniumMiddleware:
             print('=========browser=======')
             print(self.browser)
             self.browser.set_page_load_timeout(timeout)
-            seconds = 2
+            seconds = 1
             print('Through SeleniumMiddleware. get spider object when __init__ {}秒后开始浏览器爬虫'.format(str(seconds)))
             time.sleep(seconds)
 
@@ -178,6 +178,9 @@ class SeleniumMiddleware:
             print('SeleniumMiddleware process_request() ...')
             self.browser.get(request.url)
             request.meta['browser']: WebDriver = self.browser
+            # from selenium.webdriver.support.ui import WebDriverWait
+            # WebDriverWait(spider.browser, timeout=30, poll_frequency=3).until(True)
+            time.sleep(2)
             return HtmlResponse(url=request.url, body=self.browser.page_source, request=request, status=200,
                                 encoding='utf-8')
         except TimeoutException:

@@ -74,6 +74,7 @@ class AmazonGoodsReviews(BasePage):
         is_review_exists = False
         for ele in eles:
             review = GoodsReview(ele)
+            review.spider = spider
             item['goods_id'] = goods_id
             item['goods_code'] = goods_code
             review_code = review.code
@@ -86,15 +87,16 @@ class AmazonGoodsReviews(BasePage):
             item['sku_text'] = review.sku_text
             item['body'] = review.body
             time_text = review.review_date
-            time_format = ""
+            print('=======time_text=======' + time_text)
+            time_format = "%d %B %Y"
             if time_text.find("月") > -1:
                 time_format = "%Y年%m月%d日"
             if time_text.find(", ") > -1:
-                time_format = "%B %d, %Y"  # April 11, 2021 NOT November 5, 2019
+                time_format = "%B %d, %Y"  # April 11, 2021 OR November 5, 2019
             if time_text.find(". ") > -1:
-                time_format = "%B %d. %Y"  # 17. April 2020
+                time_format = "%d %B. %Y"  # 17. April 2020
 
-            timestamp = mktime(strptime(time_text, time_format)) if not time_format else 0
+            timestamp = mktime(strptime(time_text, time_format)) if time_text else 0
             old_time = int(time()) - REVIEWED_TIME_IN
             if 0 < timestamp < old_time:
                 is_review_too_old = True
@@ -107,11 +109,12 @@ class AmazonGoodsReviews(BasePage):
             yield item
 
         print('===============total_page : ' + str(total_page))
+        x_reviews = XReviews(spider)
         if (page < total_page) and (not is_review_too_old):  # and (not is_review_exists):
             # 仅取N个月内的评论
             next_page = page + 1
             print('=======current page:  ' + str(page) + '====next page : ' + str(next_page))
-            next_url = XReviews.get_reviews_url_by_asin(goods_code, next_page)
+            next_url = x_reviews.get_reviews_url_by_asin(goods_code, next_page)
             yield Request(
                 next_url,
                 cls.parse,
@@ -120,8 +123,6 @@ class AmazonGoodsReviews(BasePage):
 
 
 class GoodsReview(BaseElement):
-
-    BASE_URL = "https://www.amazon.com"
 
     @property
     def code(self):

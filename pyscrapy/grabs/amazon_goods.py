@@ -97,6 +97,7 @@ class AmazonGoodsDetail(BasePage):
     def parse(cls, response: TextResponse):
         meta = response.meta
         spider = meta['spider'] if 'spider' in meta else None
+        dont_image = meta['dont_image'] if 'dont_image' in meta else False
 
         if 'item' in meta:
             item = response.meta['item']
@@ -123,7 +124,7 @@ class AmazonGoodsDetail(BasePage):
         if ele.asin:
             item['asin'] = ele.asin
 
-        if 'image' not in item:
+        if ('image' not in item) and (not dont_image):
             image = ele.image
             item['image'] = image
             item['image_urls'] = [image]

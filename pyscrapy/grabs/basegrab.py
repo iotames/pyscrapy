@@ -6,7 +6,7 @@ import re
 
 class BaseGrab(object):
 
-    BASE_URL: str
+    spider = None
 
     @staticmethod
     def text_get(xpath: str, response) -> str:
@@ -15,9 +15,8 @@ class BaseGrab(object):
             return ele.get().strip()
         return ''
 
-    @classmethod
-    def get_url(cls, url):
-        return Uri.get_url(url, cls.BASE_URL)
+    def get_url(self, url):
+        return Uri.get_url(url, self.spider.base_url)
 
     @staticmethod
     def get_text_by_re(pattern, text) -> str:

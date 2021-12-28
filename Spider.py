@@ -48,18 +48,17 @@ if __name__ == '__main__':
     dirpath = Config.get_logs_dir()
     args = {
         'logs_dir': dirpath,
-        'spider_child': CHILD_GOODS_REVIEWS_BY_RANKING,
+        'spider_child': CHILD_GOODS_DETAIL_RANKING,
         # 'spider_child': CHILD_GOODS_LIST_RANKING,
         'log_id': "",  # "39"
         'input_args': {
-            "ranking_log_id": 2,
-            # 'category_name': "Sports Shorts Skirts",
-
+            "ranking_log_id": 20,
+            # 'category_name': "Tennisröcke für Damen",
             # Women's Running Shorts: https://www.amazon.com/bestsellers/fashion/2371114011
             # Women's Tennis Skorts: https://www.amazon.com/bestsellers/fashion/2371145011 https://www.amazon.com/Best-Sellers-Clothing-Shoes-Jewelry-Skorts/zgbs/fashion/2371145011/ref=zg_bs_nav_fashion_5_2371144011
             # Women's Outdoor Recreation Shirts: https://www.amazon.com/bestsellers/sporting-goods/11443924011 https://www.amazon.com/gp/bestsellers/sporting-goods/11443924011/ref=pd_zg_hrsr_sporting-goods
             # Tennisröcke für Damen https://www.amazon.de/bestsellers/sports/3771963031 https://www.amazon.de/gp/bestsellers/sports/3771963031/ref=pd_zg_hrsr_sports
-            # 'url': '/category/Sports-Shorts-Skirts-sc-00862747.html'
+            # 'url': 'https://www.amazon.de/bestsellers/sports/3771963031'
         }
     }
-    Spider.crawl(NAME_SHEIN, spider_args=args)
+    Spider.crawl(NAME_AMAZON, spider_args=args)

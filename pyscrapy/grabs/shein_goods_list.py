@@ -41,6 +41,7 @@ class GoodsList(BasePage):
         print('===========goods_list=====len=' + str(len(goods_list)))
         for ele in goods_list:
             goods_ele = GoodsInList(ele)
+            goods_ele.spider = spider
             goods_ele.page = page
             if not goods_ele.url:
                 print('=====Skip======goods_url ======')
@@ -60,8 +61,6 @@ class GoodsList(BasePage):
 
 
 class GoodsInList(BaseElement):
-
-    BASE_URL = XGoodsList.BASE_URL
 
     page = 1
 
