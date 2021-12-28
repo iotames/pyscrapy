@@ -86,14 +86,21 @@ class AmazonGoodsReviews(BasePage):
             item['sku_text'] = review.sku_text
             item['body'] = review.body
             time_text = review.review_date
-            # April 11, 2021 OR November 5, 2019 ...
-            time_format = "%Y年%m月%d日" if time_text.find("月") > -1 else "%B %d, %Y"
-            timestamp = mktime(strptime(time_text, time_format))
+            time_format = ""
+            if time_text.find("月") > -1:
+                time_format = "%Y年%m月%d日"
+            if time_text.find(", ") > -1:
+                time_format = "%B %d, %Y"  # April 11, 2021 NOT November 5, 2019
+            if time_text.find(". ") > -1:
+                time_format = "%B %d. %Y"  # 17. April 2020
+
+            timestamp = mktime(strptime(time_text, time_format)) if not time_format else 0
             old_time = int(time()) - REVIEWED_TIME_IN
-            if timestamp < old_time:
+            if 0 < timestamp < old_time:
                 is_review_too_old = True
             item['review_time'] = timestamp  # 评论时间戳
-            item['review_date'] = datetime.strptime(time_text, time_format)  # datetime.fromtimestamp(timestamp)
+            if timestamp:
+                item['review_date'] = datetime.strptime(time_text, time_format)  # datetime.fromtimestamp(timestamp)
             item['time_str'] = time_text
             item['url'] = review.url
             item['color'] = review.color
@@ -129,12 +136,13 @@ class GoodsReview(BaseElement):
 
     @property
     def sku_text(self):
+        text = ""
         ele = self.element.xpath(XReviews.xpath_review_sku)
         if ele:
-            elex = ele.xpath('string(.)')
-            if elex:
-                return elex.extract()[0]  # .get()
-        return self.get_text(XReviews.xpath_review_sku)
+            tlist = ele.extract()
+            text = "{}|{}".format(tlist[0], tlist[1]) if len(tlist) == 2 else tlist[0]
+            # elex = ele.xpath('string(.)').extract()[0]
+        return text
 
     @property
     def body(self):
@@ -163,14 +171,16 @@ class GoodsReview(BaseElement):
                 # Reviewed in the United States on April 11, 2021
                 tt = text.split(' on ')
                 return tt[1].strip()
+            if text.find(' vom ') > -1:
+                # Rezension aus Deutschland vom 17. April 2020
+                tt = text.split()
+                return tt[1].strip()
         return ''
 
     @property
     def color(self):
-        sku_text = self.sku_text
-        if sku_text:
-            color = XReviews.get_color_in_sku_text(sku_text)
-            if not color:
-                color = XReviews.get_color_in_sku_text(sku_text, "en")
-        return ''
+        text = ""
+        if self.sku_text:
+            text = XReviews.get_color_in_sku_text(self.sku_text)
+        return text
 

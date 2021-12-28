@@ -16,11 +16,18 @@ class GoodsListInRanking(object):
     # '/bestsellers/fashion/2371062011?language=zh_CN'  # 服装、鞋靴和珠宝饰品 - 网球服 销量排行榜
     # '/new-releases/fashion/2371062011'  # 服装、鞋靴和珠宝饰品 - 网球服 新品排行榜
 
-    xpath_goods_items = '//*[@id="zg-ordered-list"]/li/span/div/span'
-    xpath_url = 'a/@href'
-    xpath_goods_img = 'a/span/div/img/@src'
-    xpath_goods_title = 'a/span/div/img/@alt'
-    xpath_review = "div[@class='a-icon-row a-spacing-none']/a[2]/text()"
+    # xpath_goods_items = '//*[@id="zg-ordered-list"]/li/span/div/span'
+    # xpath_url = 'a/@href'
+    # xpath_goods_img = 'a/span/div/img/@src'
+    # xpath_goods_title = 'a/span/div/img/@alt'
+    # xpath_review = "div[@class='a-icon-row a-spacing-none']/a[2]/text()"
+
+    # 2021-12-28
+    xpath_goods_items = '//*[@id="gridItemRoot"]/div/div[2]/div'
+    xpath_url = 'a[1]/@href'
+    xpath_goods_img = 'a[1]/div/img/@src'
+    xpath_goods_title = 'a[2]/span/div/text()'
+    xpath_review = "div[1]/div/a/span/text()"
 
 
 class GoodsDetail(object):
@@ -138,12 +145,12 @@ class GoodsReviews(object):
 
     xpath_reviews_items = '//div[@class="a-section review aok-relative"]'
     xpath_review_id = '@id'
-    xpath_review_sku = 'div/div/div[3]/a'
+    xpath_review_sku = 'div/div/div[3]/a/text()'
     xpath_review_rating = 'div/div/div[2]/a[1]/@title'
     xpath_review_title = 'div/div/div[2]/a[2]/span/text()'
     xpath_review_url = 'div/div/div[2]/a[2]/@href'
     xpath_review_title_no_a = 'div/div/div[2]/span[2]/span[1]/text()'
-    xpath_review_body = 'div/div/div[@class="a-row a-spacing-small review-data"]/span/span/text()'
+    xpath_review_body = 'div//span[@data-hook="review-body"]/span/text()'
     xpath_review_date = 'div//span[@class="a-size-base a-color-secondary review-date"]/text()'
 
     @classmethod
@@ -168,32 +175,17 @@ class GoodsReviews(object):
         return url
 
     @classmethod
-    def get_color_in_sku_text(cls, sku, lang='cn'):
-        lang_color = '颜色:'
-        lang_size = '尺寸:'
-        if lang == 'en':
-            lang_color = 'Color:'
-            lang_size = 'Size:'
-        color_index = sku.find(lang_color)
-        color = ''
-        if color_index < 0:
-            # 没有出现颜色
-            return ''
-        if color_index > 0:
-            # 颜色不在起始位
-            colors = sku.split(lang_color)
-            color = colors[1].strip()
-        if color_index == 0:
-            # 颜色在起始位
-            if sku.find(lang_size) < 0:
-                colors = sku.split(lang_color)
-                color = colors[1].strip()
-            if sku.find(lang_size) > 0:
-                colors = sku.split(lang_size)
-                sku = colors[0].strip()
-                colors = sku.split(lang_color)
-                color = colors[1].strip()
-        return color
+    def get_color_in_sku_text(cls, sku: str):
+        sku_list = sku.split("|")
+        text = ""
+        color_labels = ["颜色:", "Color:", "Farbe:"]
+        for etext in sku_list:
+            for color_label in color_labels:
+                if etext.find(color_label) > -1:
+                    color_info = etext.split(color_label)
+                    text = color_info[1]
+                    break
+        return text
 
 
 class GoodsListInStore(object):

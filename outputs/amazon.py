@@ -46,8 +46,6 @@ class AmazonOutput(BaseOutput):
             if not review.color:
                 print(sku)
                 color_text = XReviews.get_color_in_sku_text(sku)
-                if not color_text:
-                    color_text = XReviews.get_color_in_sku_text(sku, "en")
             row_detail = (review.time_str, product_title, review_title, review.body, color_text, rating, sku, url, 0)
             print(row_detail)
             detail_rows.append(row_detail)
