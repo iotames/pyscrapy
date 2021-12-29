@@ -8,6 +8,7 @@ from sqlalchemy import and_, or_
 import time
 from pyscrapy.spiders.basespider import BaseSpider
 from Config import Config
+from urllib.parse import urlencode
 
 
 class CottononSpider(BaseSpider):
@@ -15,13 +16,14 @@ class CottononSpider(BaseSpider):
     name = 'cottonon'
 
     base_url = "https://cottonon.com"
+    product_api_url = "https://api.bazaarvoice.com/data/display/0.2alpha/product/summary"
 
     categories_list = [
         {"name": "men", "url": "https://cottonon.com/AU/men/"},
-        # {"name": "women", "url": "https://cottonon.com/AU/women/"},
+        {"name": "women", "url": "https://cottonon.com/AU/women/"},
     ]
     limit = 24
-    categories_page = {}  # start = 0 sz = 24
+    categories_info = {}  # start = 0 sz = 24
 
     custom_settings = {
         # 'DOWNLOAD_DELAY': 3,
@@ -35,24 +37,30 @@ class CottononSpider(BaseSpider):
     def __init__(self, name=None, **kwargs):
         super(CottononSpider, self).__init__(name=name, **kwargs)
         self.base_url = "https://" + self.domain
+        self.allowed_domains.append("api.bazaarvoice.com")
+
+    def get_product_summary(self, productid: str):
+        url_args = {
+            "PassKey": "caVdVFPwoIgM0aZNRHGOU6fEFYKO0FqO5BSuRQCMLKy94",
+            "productid": productid,
+            "contentType": "reviews,questions",
+            "reviewDistribution": "primaryRating,recommended",
+            "rev": 0,
+            "contentlocale": "en*,en_AU"
+        }
+        return self.product_api_url + "?" + urlencode(url_args)
 
     def start_requests(self):
         if self.spider_child == self.CHILD_GOODS_LIST:
-            headers = None
             for category in self.categories_list:
                 name = category.get("name")
-
-                # TODO
-                if name in self.categories_page:
-                    self.categories_page[name]["start"] += self.limit
-                else:
-                    self.categories_page[name] = dict(start=0, sz=self.limit)
-                    headers = dict(referer=self.base_url)
-                # TODO
+                self.categories_info[name] = dict(start=0)
+                headers = dict(referer=self.base_url)
                 yield Request(
                     category.get("url"),
                     callback=self.parse_goods_list,
-                    headers=headers
+                    headers=headers,
+                    meta=dict(category_name=name)
                 )
         if self.spider_child == self.CHILD_GOODS_DETAIL:
             # 2小时内的采集过的商品不会再更新
@@ -68,116 +76,115 @@ class CottononSpider(BaseSpider):
             print('=======goods_list_len============ : {}'.format(str(goods_list_len)))
             if goods_list_len > 0:
                 for model in self.goods_model_list:
-                    yield Request(self.get_site_url(model.url), headers={'referer': self.base_url},
+                    yield Request(self.get_site_url(model.url), headers={'referer': self.base_url + "/AU/"},
                                   callback=self.parse_goods_detail, meta=dict(model=model))
             else:
                 raise RuntimeError('待更新的商品数量为0, 退出运行')
 
     goods_list_count = 0
 
+    def is_last_page(self, start: int, product_total: int) -> bool:
+        if (product_total - start) <= self.limit:
+            return True
+        return False
+
     def parse_goods_list(self, response: TextResponse):
+        meta = response.meta
+        category_name = meta["category_name"]
+        start = self.categories_info[category_name]["start"]
+        print('========================start======{}=={}==='.format(category_name, str(start)))
+        if start == 0:
+            product_total = int(response.xpath('//span[@class="total-product-count"]/text()').extract()[0])
+            self.categories_info[category_name]["product_total"] = product_total
+        else:
+            product_total = self.categories_info[category_name]["product_total"]
+
         xpath = '//li[@class="grid-tile columns"]/div[@class="product-tile"]'
         eles = response.xpath(xpath)
         for ele in eles:
-            data = ele.xpath("@data-bvproduct").extract()[0]
-            print('==============data str=======')
-            print(data)
-            json_data = json.loads(data)
-            print('==============json=========')
-            print(json_data)
-        # goods_list_len = len(goods_items)  # 43
-        # print('=========total goods =======' + str(goods_list_len))
-        # for goods in goods_items:
-        #     print(goods)
-        #     goods_item = BaseGoodsItem()
-        #     goods_item['spider_name'] = self.name
-        #     goods_item['title'] = goods['name']
-        #     goods_item['url'] = goods['url']
-        #     yield goods_item
+            # data = ele.xpath("@data-bvproduct").extract()[0]
+            # json_data = json.loads(data)
+            url = ele.xpath('div[@class="product-image"]/a/@href').extract()[0]
+            if not url:
+                self.mylogger.debug("==============empty==url===in===={}".format(str(start)))
+                continue
+            image = ele.xpath('div[@class="product-image"]/a/img/@src').extract()[0]
+            title = ele.xpath('div[@class="product-name"]/a/text()').extract()[0].strip()
+            color_num_text = ele.xpath('div[@class="product-colors row"]/div/@aria-label').get()
+            print(color_num_text)
+            color_num = int(color_num_text.split(" ")[0])
+            price_text = ele.xpath('div[@class="product-pricing "]/span/@aria-label').get()
+            print(price_text)
+            price_text = price_text.split("Price ")[1] if price_text else ""
+            price = price_text.split(" ")[1] if price_text else 0
+            code = url.split("/")[-1].split(".html")[0]  # json_data["productId"]
+            spu = code.split("-")[0]
+            goods_item = BaseGoodsItem()
+            goods_item['spider_name'] = self.name
+            goods_item['url'] = url
+            goods_item['code'] = code
+            goods_item['asin'] = spu
+            goods_item['price'] = price
+            goods_item['price_text'] = price_text
+            goods_item['title'] = title
+            goods_item['image'] = image
+            goods_item['image_urls'] = [image]
+            goods_item['category_name'] = category_name
+            goods_item['details'] = {'color_num': color_num}
+            yield goods_item
 
-    statuses = {
-        'InStock': Goods.STATUS_AVAILABLE,
-        'SoldOut': Goods.STATUS_SOLD_OUT,
-        'OutOfStock': Goods.STATUS_SOLD_OUT,
-        'Discontinued': Goods.STATUS_UNAVAILABLE
-    }
+        if not self.is_last_page(start, product_total):
+            self.categories_info[category_name]["start"] += self.limit
+            next_start = self.categories_info[category_name]["start"]
+            url = response.url
+            if start == 0:
+                url_args = dict(start=next_start, sz=self.limit)
+                url += "?" + urlencode(url_args)
+            else:
+                url = url.replace("start=" + str(start), "start=" + str(next_start))
+            yield Request(
+                url,
+                callback=self.parse_goods_list,
+                meta=dict(category_name=category_name),
+                dont_filter=True
+            )
 
     def parse_goods_detail(self, response: TextResponse):
         meta = response.meta
         model = meta['model']
-        re_rule0 = r"\"Viewed Product\",(.+?)\);"
-        re_info0 = re.findall(re_rule0, response.text)
-        info0 = json.loads(re_info0[0])
-        code = info0['productId']
-        price = info0['price']
-        currency = info0['currency']
-        price_text = price + currency
-        category_name = info0['category']
-        print('====parse_goods_detail====goods_id={}===='.format(str(model.id)))
-        re_rule = r"productVariants=(.+?);"
-        re_info = re.findall(re_rule, response.text)
-        text = re_info[0]
-        product_variants = json.loads(text)
-        print(product_variants)
-        quantity = 0
-        sku_list = []
-        for product in product_variants:
-            sku_inventory = product['inventory_quantity']
-            sku_info = {'title': product['title'], 'sku': product['sku'], 'name': product['name'], 'quantity': sku_inventory}
-            sku_list.append(sku_info)
-            quantity += sku_inventory
+        features_list = []
+        features_eles = response.xpath('//ul[@class="product-tab-list"]/li')
+        for feature_ele in features_eles:
+            features_list.append(feature_ele.xpath("text()").get().strip())
 
-        details = {
-            'sku_list': sku_list
-        }
-
-        xpath_json = '//script[@type="application/ld+json"]/text()'
-        json_product_text = response.xpath(xpath_json)[1].get()
-        print('======json_product_text===========')
-        print(json_product_text)
-        p_info = json.loads(json_product_text, strict=False)
-        print(p_info)
-        title = p_info['name']
-        url = p_info['url']
-        # sku_code = p_info['sku']  # 140003-011
-        desc = p_info['description']
-        image_text: str = p_info['image'][0]
-        image_text = image_text.split('?')[0]
-        last_str = image_text.split('_')[-1]
-        img_ext = last_str.split('.')[-1]  # jpg gif
-        image = image_text.replace(last_str, '200x.' + img_ext)
-        status = Goods.STATUS_UNAVAILABLE
-        offers = p_info['offers']
-
-        for sku in offers:
-            """
-            {
-                "@type" : "Offer","sku": "140003-011","availability" : "http://schema.org/InStock",
-                "price" : "68.0", "priceCurrency" : "USD",
-                "url" : "https://shefit.com/products/boss-leggings-conquer?variant=38474305700009"
-            }
-            """
-            # price = sku['price']
-            # price_text = price + sku['priceCurrency']
-            status_text = sku['availability'].split('/')[-1]
-            if status_text == 'InStock':
-                status = self.statuses[status_text]
+        composition_ele = response.xpath('//div[@class="product-tab-title"][contains(text(), "Composition")]/parent::div/div[@class="product-tab-value"]/text()')
+        composition_text = composition_ele.get().strip() if composition_ele else ""
 
         goods_item = BaseGoodsItem()
-        goods_item['model'] = model
         goods_item['spider_name'] = self.name
-        goods_item['category_name'] = category_name
-        goods_item['image'] = image
-        goods_item['code'] = code
-        goods_item['title'] = title
-        goods_item['image_urls'] = [image]
+        goods_item['model'] = model
         goods_item['url'] = response.url
-        goods_item['price'] = price
-        goods_item['price_text'] = price_text
-        # goods_item['reviews_num'] = reviews_num
-        goods_item['status'] = status
+        details = json.loads(model.details)
+        details["features_list"] = features_list
+        details["composition"] = composition_text
         goods_item['details'] = details
-        goods_item['quantity'] = quantity
-        yield goods_item
+        yield Request(self.get_product_summary(model.code), callback=self.parse_goods_summary,
+                      headers={'referer': self.base_url + "/"},
+                      meta=dict(goods_item=goods_item), dont_filter=True)
 
+    def parse_goods_summary(self, response: TextResponse):
+        meta = response.meta
+        goods_item = meta['goods_item']
+        details = goods_item["details"]
+        json_data = response.json()
+        review_summary = json_data["reviewSummary"]
+        reviews_num = review_summary["numReviews"]
+        primary_rating = review_summary["primaryRating"]
+        recommended = review_summary["recommended"]
+        details["recommended_distribution_list"] = recommended["distribution"]  # {count: 211, key: true}
+        rating_value = primary_rating["average"]
+        goods_item["reviews_num"] = reviews_num
+        details["rating_value"] = rating_value
+        details["rating_distribution_list"] = primary_rating["distribution"]  # {key: 5, count: 161}
+        yield goods_item
 
