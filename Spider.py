@@ -45,6 +45,7 @@ class Spider:
 
 if __name__ == '__main__':
     # Spider.create_all_tables()
+
     dirpath = Config.get_logs_dir()
     args = {
         'logs_dir': dirpath,
@@ -61,4 +62,4 @@ if __name__ == '__main__':
             # 'url': 'https://www.amazon.de/bestsellers/sports/3771963031'
         }
     }
-    Spider.crawl(NAME_COTTONON, spider_args=args)
+    Spider.crawl(NAME_SHEFIT, spider_args=args)

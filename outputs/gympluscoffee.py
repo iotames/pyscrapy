@@ -183,6 +183,6 @@ class GympluscoffeeOutput(BaseOutput):
 
 if __name__ == '__main__':
     gc = GympluscoffeeOutput()
-    gc.inventory_cols_len = 9
-    gc.origin_file = gc.output_dir + '/gympluscoffee_2021-12-14_15_07.xlsx'
+    gc.inventory_cols_len = 10
+    gc.origin_file = gc.output_dir + '/gympluscoffee_2021-12-24_13_50.xlsx'
     gc.output_to_excel()

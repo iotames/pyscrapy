@@ -49,6 +49,8 @@ class StrongerlabelOutput(BaseOutput):
         self.copy_to_download_path(self.output_file)
 
 
-# if __name__ == '__main__':
-#     sl = StrongerlabelOutput()
-#     sl.output()
+if __name__ == '__main__':
+    db_session = SpiderRunLog.get_db_session()
+    log = SpiderRunLog.get_model(db_session, {'id': 182})
+    sl = StrongerlabelOutput(log)
+    sl.output()

@@ -26,7 +26,7 @@ class ShefitOutput(BaseOutput):
             time_str = self.timestamp_to_str(goods.updated_at, "%Y-%m-%d %H:%M")
             # 商品信息元组
             image = self.get_image_info(goods.local_image) if goods.local_image else ''
-            details = json.loads(goods.details)
+            details = json.loads(goods.details) if goods.details else {"sku_list": []}
 
             goods_url = goods.url
             sku_text = ''
