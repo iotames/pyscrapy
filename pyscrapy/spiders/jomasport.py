@@ -1,4 +1,3 @@
-import re
 from scrapy.http import TextResponse
 from scrapy import Request
 from pyscrapy.items import BaseGoodsItem
@@ -8,9 +7,8 @@ from sqlalchemy import and_, or_
 import time
 from pyscrapy.spiders.basespider import BaseSpider
 from Config import Config
-from urllib.parse import urlencode
 import base64
-import html
+from scrapy.selector import Selector
 
 
 class JomasportSpider(BaseSpider):
@@ -25,7 +23,6 @@ class JomasportSpider(BaseSpider):
         {"name": "clothes-man", "url": "https://www.joma-sport.com/en/clothes-man"},
         {"name": "clothes-woman", "url": "https://www.joma-sport.com/en/clothes-woman"},
     ]
-    api_key = "0VJCRZMBZ1ISBYJOFFHO8Z3XZ6O60KBY"
 
     categories_info = {}  # start = 0 sz = 24
     # b'{0:"products",1:"en/clothes-woman",2:"",3:"/en/clothes-woman",4:"M56DUKTUDBHDGRVP8RR8N98Z4GXXG1M5",5:4}'
@@ -66,11 +63,9 @@ class JomasportSpider(BaseSpider):
         cookies = self.categories_info[category_name]['cookies']
         data = {0: "products", 1: f"en/{category_name}", 2: "", 3: f"/en/{category_name}", 4: data_cache, 5: page}
         json_data_str = json.dumps(data, separators=(',', ':'))
-        print(json_data_str)
         token = str(base64.encodebytes(json_data_str.encode('utf8')), 'utf-8').replace('\n', '')
-        print(token)
         post_data = "p=" + token
-        print(post_data)
+
         return Request(
             self.api_url,
             method="POST",
@@ -111,13 +106,27 @@ class JomasportSpider(BaseSpider):
         return False
 
     def parse_goods_list(self, response: TextResponse):
+        # https://zhuanlan.zhihu.com/p/87963596
+        xpath_goods_list = '//div[contains(@class, "product")]'
         meta = response.meta
         category_name = meta["category_name"]
         page = meta['page']
         print(page)
         print(category_name)
-        if page == 1:
-            data_cache = response.xpath('//div[@id="pagination_trigger"]/@data-cache').get()
+        xpath_data_cache = '//div[@id="pagination_trigger"]/@data-cache'
+        eles = []
+        if page > 1:
+            html_text = response.text.replace("\\t", ' ').replace("\\n", ' ').replace("\\", '').strip("\"")
+            selector = Selector(text=html_text)
+            data_cache = selector.xpath(xpath_data_cache).get()
+            print('============page==={}===cache=={}'.format(str(page), data_cache))
+            print(data_cache)
+            print('===========body=======begin')
+            # print(html_text)
+            print('===========body==========end')
+            eles = selector.xpath(xpath_goods_list)
+        else:
+            data_cache = response.xpath(xpath_data_cache).get()
             print(data_cache)
             self.categories_info[category_name]['data_cache'] = data_cache
             self.categories_info[category_name]['cookies'] = {}
@@ -125,63 +134,90 @@ class JomasportSpider(BaseSpider):
             print(cookie_str)
             for cookie_pair in cookie_str.split(';'):
                 ck = cookie_pair.strip().split('=')
-                # self.cookies[ck[0]] = ck[1]
                 self.categories_info[category_name]['cookies'][ck[0]] = ck[1]
+            eles = response.xpath(xpath_goods_list)
+
         print('=======cookies===and===data_cache====')
         print(self.categories_info[category_name])
 
-        if page > 1:
-            # html_text = html.unescape(response.text)
-            print(response.text.replace("\\t", '').replace("\\n", '').replace("\\", ''))
-        # start = self.categories_info[category_name]["start"]
-        # print('========================start======{}=={}==='.format(category_name, str(start)))
-        # if start == 0:
-        #     product_total = int(response.xpath('//span[@class="total-product-count"]/text()').extract()[0])
-        #     self.categories_info[category_name]["product_total"] = product_total
-        # else:
-        #     product_total = self.categories_info[category_name]["product_total"]
+        count_goods = 0
+        for goods_ele in eles:
+            url = goods_ele.xpath('a/@href').get()
+            if not url:
+                continue
+            print(url)
+            code = goods_ele.xpath('a/@data-product').get()
+            print(code)
+            image = goods_ele.xpath('a/img[1]/@data-src').get()
+            print(image)
+            title = goods_ele.xpath('div[@class="datasheet"]//h2/text()').get()
+            print(title)
+            price_text = goods_ele.xpath('div[@class="datasheet"]//div[@class="price"]/span/text()').get()
+            print(price_text)
+            price = price_text.split(' ')[0] if price_text else 0
 
-        # xpath = '//li[@class="grid-tile columns"]/div[@class="product-tile"]'
-        # eles = response.xpath(xpath)
-        # for ele in eles:
-        #     goods_item = BaseGoodsItem()
-        #     goods_item['spider_name'] = self.name
-        #     goods_item['url'] = url
-        #     goods_item['code'] = code
-        #     goods_item['asin'] = spu
-        #     goods_item['price'] = price
-        #     goods_item['price_text'] = price_text
-        #     goods_item['title'] = title
-        #     goods_item['image'] = image
-        #     goods_item['image_urls'] = [image]
-        #     goods_item['category_name'] = category_name
-        #     goods_item['details'] = {'color_num': color_num}
-        #     yield goods_item
+            goods_colors_ele = goods_ele.xpath('div[@class="datasheet"]//div[@class="slides"]/button')
+            colors_num = len(goods_colors_ele)
+            colors_list = []
+            for color_ele in goods_colors_ele:
+                color_url = color_ele.xpath('@data-href').get()
+                color_code = color_ele.xpath('@data-product').get()
+                color_image = color_ele.xpath('@data-main').get()
+                colors_list.append({'url': color_url, 'code': color_code, 'image': color_image})
+            details = {'colors_num': colors_num, 'colors_list': colors_list}
+            goods_item = BaseGoodsItem()
+            goods_item['spider_name'] = self.name
+            goods_item['url'] = url
+            goods_item['code'] = code
+            # goods_item['asin'] = spu
+            goods_item['price'] = price
+            goods_item['price_text'] = price_text
+            goods_item['title'] = title
+            goods_item['image'] = image
+            goods_item['image_urls'] = [image]
+            goods_item['category_name'] = category_name
+            goods_item['details'] = details
+            yield goods_item
 
-        # if not self.is_last_page(start, product_total):
-        if page < 3:
-            print('==========next==' + str(page+1))
-            yield self.request_goods_list(category_name, page+1)
+            count_goods += 1
+
+        if "product_total" in self.categories_info[category_name]:
+            self.categories_info[category_name]["product_total"] += count_goods
+        else:
+            self.categories_info[category_name]["product_total"] = count_goods
+
+        print('=================count-----total-------{}==={}'.format(category_name, str(self.categories_info[category_name]["product_total"])))
+        print('current----page-----{}---{}'.format(category_name, str(page)))
+        if response.text:
+            res_len = len(response.text)
+            print(res_len)
+            if res_len > 500:
+                yield self.request_goods_list(category_name, page+1)
 
     def parse_goods_detail(self, response: TextResponse):
         meta = response.meta
         model = meta['model']
-        features_list = []
-        features_eles = response.xpath('//ul[@class="product-tab-list"]/li')
-        for feature_ele in features_eles:
-            features_list.append(feature_ele.xpath("text()").get().strip())
 
-        composition_ele = response.xpath('//div[@class="product-tab-title"][contains(text(), "Composition")]/parent::div/div[@class="product-tab-value"]/text()')
-        composition_text = composition_ele.get().strip() if composition_ele else ""
+        composition_eles = response.xpath('//div[@class="composition"]/ul/li')
+        composition_list = []
+        for composition_ele in composition_eles:
+            composition_text = composition_ele.xpath('text()').get().strip() if composition_ele else ""
+            composition_info = composition_text.split(' ') if composition_text else []
+            if composition_info:
+                composition_list.append({'co_key': composition_info[0], 'co_value': composition_info[1]})
 
+        desc_text = response.xpath('//div[@class="description"]/div/div/p/text()').get()
+        ucode = response.xpath('//*[@id="product_code"]/text()').get()
+        spu = ucode.split('.')[0]
         goods_item = BaseGoodsItem()
         goods_item['spider_name'] = self.name
         goods_item['model'] = model
-        goods_item['url'] = response.url
         details = json.loads(model.details)
-        details["features_list"] = features_list
-        details["composition"] = composition_text
+        details["composition_list"] = composition_list
+        details["desc_text"] = desc_text
+        details["spu"] = spu
         goods_item['details'] = details
+        goods_item['asin'] = spu
         yield goods_item
 
 

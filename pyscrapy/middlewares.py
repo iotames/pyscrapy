@@ -122,7 +122,7 @@ class PyscrapyDownloaderMiddleware:
             proxy_addr = self.http_proxy.choice_one_from_items()
             request.meta['http_proxy_component'] = self.http_proxy
 
-            if not spider.SPLASH_ENABLED:
+            if hasattr(spider, "SPLASH_ENABLED") and not spider.SPLASH_ENABLED:
                 # request.meta['splash']['args']['proxy'] = proxy_addr 会出现本地IP代理池接口服务请求也走代理
                 print('==========proxy=' + proxy_addr)
                 request.meta['proxy'] = proxy_addr
@@ -189,5 +189,5 @@ class SeleniumMiddleware:
     @classmethod
     def from_crawler(cls, crawler):
         spider = crawler.spider
-        enabled = spider.SELENIUM_ENABLED
+        enabled = spider.SELENIUM_ENABLED if hasattr(spider, "SELENIUM_ENABLED") else False
         return cls(selenium=Selenium(), enabled=enabled)

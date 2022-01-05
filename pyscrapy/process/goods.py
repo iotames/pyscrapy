@@ -197,8 +197,10 @@ class GoodsBase(Base):
         db_session = self.db_session
         not_update = ['image_urls', 'image_paths', 'model', 'spider_name']
         attrs = {'site_id': spider.site_id}
-
+        save_quantity = False
         for key, value in item.items():
+            if key == 'quantity':
+                save_quantity = True
             if key in not_update:
                 if key == 'image_paths' and value:
                     attrs['local_image'] = value[0]
@@ -222,6 +224,8 @@ class GoodsBase(Base):
             opt_str = 'SUCCESS ADD '
             model = Goods(**attrs)
             db_session.add(model)
+        if save_quantity:
+            add_or_update_goods_quantity_log(model, spider.log_id, db_session)
         db_session.commit()
         print(opt_str + ' GOODS : ' + json.dumps(attrs))
 
