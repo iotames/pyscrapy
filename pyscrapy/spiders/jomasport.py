@@ -9,11 +9,12 @@ from pyscrapy.spiders.basespider import BaseSpider
 from Config import Config
 import base64
 from scrapy.selector import Selector
+from pyscrapy.enum.spider import *
 
 
 class JomasportSpider(BaseSpider):
 
-    name = 'joma-sport'
+    name = NAME_JOMASPORT
 
     base_url = "https://www.joma-sport.com"
 
@@ -95,15 +96,10 @@ class JomasportSpider(BaseSpider):
             print('=======goods_list_len============ : {}'.format(str(goods_list_len)))
             if goods_list_len > 0:
                 for model in self.goods_model_list:
-                    yield Request(self.get_site_url(model.url), headers={'referer': self.base_url + "/AU/"},
+                    yield Request(self.get_site_url(model.url), headers={'referer': self.base_url + "/en"},
                                   callback=self.parse_goods_detail, meta=dict(model=model))
             else:
                 raise RuntimeError('待更新的商品数量为0, 退出运行')
-
-    goods_list_count = 0
-
-    def is_last_page(self, start: int, product_total: int) -> bool:
-        return False
 
     def parse_goods_list(self, response: TextResponse):
         # https://zhuanlan.zhihu.com/p/87963596
@@ -121,9 +117,6 @@ class JomasportSpider(BaseSpider):
             data_cache = selector.xpath(xpath_data_cache).get()
             print('============page==={}===cache=={}'.format(str(page), data_cache))
             print(data_cache)
-            print('===========body=======begin')
-            # print(html_text)
-            print('===========body==========end')
             eles = selector.xpath(xpath_goods_list)
         else:
             data_cache = response.xpath(xpath_data_cache).get()
@@ -137,7 +130,6 @@ class JomasportSpider(BaseSpider):
                 self.categories_info[category_name]['cookies'][ck[0]] = ck[1]
             eles = response.xpath(xpath_goods_list)
 
-        print('=======cookies===and===data_cache====')
         print(self.categories_info[category_name])
 
         count_goods = 0
@@ -169,7 +161,6 @@ class JomasportSpider(BaseSpider):
             goods_item['spider_name'] = self.name
             goods_item['url'] = url
             goods_item['code'] = code
-            # goods_item['asin'] = spu
             goods_item['price'] = price
             goods_item['price_text'] = price_text
             goods_item['title'] = title
