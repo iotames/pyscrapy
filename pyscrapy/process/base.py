@@ -17,16 +17,22 @@ class Base(Singleton):
         db.ROOT_PATH = Config.ROOT_PATH
         self.db_session = db.get_db_session()
 
-    def get_real_model(self, attrs: dict, model: Goods, spider: BaseSpider):
+    def get_real_model_by_url(self, url: str, spider: BaseSpider):
         # 剔除重复的URL, 防止重复采集
+        model = self.db_session.query(Goods).filter(
+            Goods.url == url, Goods.site_id == spider.site_id
+        ).first()
         if model:
-            return model
-        if 'url' in attrs:
-            model = self.db_session.query(Goods).filter(
-                Goods.url == attrs["url"], Goods.site_id == spider.site_id
-            ).first()
-            if model:
-                print('===Waring!!!====URL EXISTS===Skip=URL==: ' + attrs['url'])
+            print('===Waring!!!====URL EXISTS===Skip=URL==: ' + url)
+        return model
+
+    def get_real_model_by_code(self, code: str, spider: BaseSpider):
+        # 剔除重复的商品code, 防止重复采集
+        model = self.db_session.query(Goods).filter(
+            Goods.code == code, Goods.site_id == spider.site_id
+        ).first()
+        if model:
+            print(f"===Waring!!!====Goods code EXISTS===Skip=code={code}")
         return model
 
     @staticmethod

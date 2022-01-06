@@ -37,11 +37,18 @@ class AmazonSpider(BaseSpider):
         "language": 'zh_CN'
     }
 
-    stores_urls = [
+    stores_pages = [
         {
-            'store_name': 'Smallshow',
-            'urls': [
-                # '/stores/page/7420E66C-9249-44EB-801D-F05D099D35BF',  # Maternity clothes 18
+            'store_name': 'Baleaf',
+            'urls_groups': [
+                {'url': 'https://www.amazon.com/stores/page/F7EF2EE6-2F83-4189-98C7-FEB28E89B86C',
+                 'category_name': 'Women_Tops'},
+                {'url': 'https://www.amazon.com/stores/page/FFBE7943-44B0-4051-805D-46D16FABD55C',
+                 'category_name': 'Women_Leggings'},
+                {'url': 'https://www.amazon.com/stores/page/4C152E1B-3A9F-40A3-A966-317CECE56E18',
+                 'category_name': 'Women_Shorts'},
+                {'url': 'https://www.amazon.com/stores/page/5D1F0C72-1A7A-46D7-994C-0294839D5E3F',
+                 'category_name': 'Women_Skirts'},
             ]
         }
     ]
@@ -65,8 +72,7 @@ class AmazonSpider(BaseSpider):
 
     def start_requests(self):
         if self.spider_child == CHILD_GOODS_LIST_STORE_PAGE:
-            category_name = 'Nursing'  # Nursing Maternity
-            for store in self.stores_urls:
+            for store in self.stores_pages:
                 store_name = store['store_name']
                 store_find = {'name': store_name, 'site_id': self.site_id}
                 print(store_find)
@@ -75,9 +81,11 @@ class AmazonSpider(BaseSpider):
                     store_model = SiteMerchant(**store_find)
                     self.db_session.add(store_model)
                     self.db_session.commit()
-                for url in store['urls']:
+                for group in store['urls_groups']:
+                    category_name = group["category_name"]
+                    page_url = self.get_site_url(group["url"])
                     yield Request(
-                        self.get_site_url(url),
+                        page_url,
                         callback=GoodsListInStore.parse,
                         meta=dict(merchant_id=store_model.id, category_name=category_name)
                     )
