@@ -13,3 +13,5 @@ from .Translator import Translator
 from .SiteMerchant import SiteMerchant
 from .RankingGoods import RankingGoods
 from .RankingLog import RankingLog
+from .GroupLog import GroupLog
+from .GroupGoods import GroupGoods

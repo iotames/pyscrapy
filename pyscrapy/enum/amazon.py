@@ -7,4 +7,11 @@ class EnumGoodsRanking(object):
     }
 
 
+class EnumGoodsGroup(object):
+
+    TYPE_STORE_PAGE = 0  # 店铺商品列表页
+
+    title_dic = {
+        TYPE_STORE_PAGE: "店铺商品列表页"
+    }
 
