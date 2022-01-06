@@ -7,7 +7,7 @@ from pyscrapy.grabs.amazon_goods_list import GoodsRankingList, GoodsListInStore
 from pyscrapy.grabs.amazon_goods import AmazonGoodsDetail
 from pyscrapy.grabs.amazon_goods_reviews import AmazonGoodsReviews
 from pyscrapy.extracts.amazon import Common as XAmazon, GoodsReviews as XGoodsReviews
-from pyscrapy.models import SiteMerchant, Goods, RankingGoods
+from pyscrapy.models import SiteMerchant, Goods, RankingGoods, GroupGoods
 from pyscrapy.items import AmazonGoodsItem
 from pyscrapy.enum.amazon import EnumGoodsRanking
 from pyscrapy.enum.spider import *
@@ -59,7 +59,7 @@ class AmazonSpider(BaseSpider):
     def __init__(self, name=None, **kwargs):
         super(AmazonSpider, self).__init__(name=name, **kwargs)
         self.allowed_domains.append("amazon.de")
-        selenium_children = [CHILD_GOODS_LIST_RANKING, CHILD_GOODS_REVIEWS_BY_RANKING]  #
+        selenium_children = [CHILD_GOODS_LIST_RANKING, CHILD_GOODS_REVIEWS_BY_RANKING, CHILD_GOODS_REVIEWS_BY_GROUP]  #
         if self.spider_child in selenium_children:
             self.SELENIUM_ENABLED = True  # 启用 Selenium 中间件
 
@@ -163,16 +163,16 @@ class AmazonSpider(BaseSpider):
             ranking_goods_list = RankingGoods.get_all_model(self.db_session, {'ranking_log_id': self.ranking_log_id})
             print('==================goods_list_len = ' + str(len(ranking_goods_list)))
             for xgd in ranking_goods_list:
-                model: Goods = Goods.get_model(self.db_session, {'id': xgd.goods_id})
-                self.set_base_url(model.url)
-                x_reviews = XGoodsReviews(self)
-                reviews_url = x_reviews.get_reviews_url_by_asin(model.code)
-                yield Request(
-                    reviews_url,
-                    callback=AmazonGoodsReviews.parse,
-                    headers=dict(referer=model.url),
-                    meta=dict(goods_code=model.code, goods_id=model.id, spider=self)
-                )
+                yield self.get_reviews_request_by_goods_id(xgd.goods_id)
+
+        if self.spider_child == CHILD_GOODS_REVIEWS_BY_GROUP:
+            if 'group_log_id' not in self.input_args:
+                raise RuntimeError("缺少group_log_id参数")
+            self.group_log_id = int(self.input_args['group_log_id'])
+            goods_x_list = GroupGoods.get_all_model(self.db_session, {'group_log_id': self.group_log_id})
+            print('==================goods_list_len = ' + str(len(goods_x_list)))
+            for xgd in goods_x_list:
+                yield self.get_reviews_request_by_goods_id(xgd.goods_id)
 
         if self.spider_child == CHILD_GOODS_LIST_ASIN:
             # store_name = 'Smallshow'
@@ -210,3 +210,16 @@ class AmazonSpider(BaseSpider):
                     url = XAmazon.get_url_by_code(asin, self.url_params)
                     yield Request(url, callback=AmazonGoodsDetail.parse, headers=dict(referer=self.base_url),
                                   meta=dict(spider=self, goods_model=goods_model))
+
+    def get_reviews_request_by_goods_id(self, goods_id: int):
+        model: Goods = Goods.get_model(self.db_session, {'id': goods_id})
+        self.set_base_url(model.url)
+        x_reviews = XGoodsReviews(self)
+        reviews_url = x_reviews.get_reviews_url_by_asin(model.code)
+        return Request(
+            reviews_url,
+            callback=AmazonGoodsReviews.parse,
+            headers=dict(referer=model.url),
+            meta=dict(goods_code=model.code, goods_id=model.id, spider=self)
+        )
+

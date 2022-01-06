@@ -71,6 +71,7 @@ class AmazonGoodsReviews(BasePage):
         eles = page_ele.elements
         db_session = GoodsReviewModel.get_db_session()
         is_review_too_old = False
+        # {'sortBy': 'recent'}
         is_review_exists = False
         for ele in eles:
             review = GoodsReview(ele)
@@ -110,7 +111,8 @@ class AmazonGoodsReviews(BasePage):
 
         print('===============total_page : ' + str(total_page))
         x_reviews = XReviews(spider)
-        if (page < total_page) and (not is_review_too_old):  # and (not is_review_exists):
+        # TODO is_review_exists 条件判断
+        if (page < total_page) and (not is_review_too_old) and (not is_review_exists):
             # 仅取N个月内的评论
             next_page = page + 1
             print('=======current page:  ' + str(page) + '====next page : ' + str(next_page))

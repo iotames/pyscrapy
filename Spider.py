@@ -49,14 +49,14 @@ if __name__ == '__main__':
     dirpath = Config.get_logs_dir()
     args = {
         'logs_dir': dirpath,
-        'spider_child': CHILD_GOODS_LIST_STORE_PAGE,
+        'spider_child': CHILD_GOODS_REVIEWS_BY_GROUP,
         # 'spider_child': CHILD_GOODS_LIST_RANKING,
         'log_id': "",  # "39"
         'input_args': {
-            "store_name": "Baleaf",
-            "code": "Baleaf_Women_Skirts",
-            "url": "https://www.amazon.com/stores/page/5D1F0C72-1A7A-46D7-994C-0294839D5E3F",
-            # "group_log_id": 1
+            # "store_name": "Baleaf",
+            # "code": "Baleaf_Women_Skirts",
+            # "url": "https://www.amazon.com/stores/page/5D1F0C72-1A7A-46D7-994C-0294839D5E3F",
+            "group_log_id": 1
             # "code": "Baleaf_Women"
             # "ranking_log_id": 20,
             # 'category_name': "Tennisröcke für Damen",
