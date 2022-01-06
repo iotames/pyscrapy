@@ -23,7 +23,8 @@ class DB:
 
     def get_db_engine(self):
         if self.__db_engine is None:
-            self.__db_engine = create_engine(self.get_db_engine_uri())
+            self.__db_engine = create_engine(self.get_db_engine_uri(), pool_size=25, pool_recycle=60)
+
         return self.__db_engine
 
     def get_db_session(self):

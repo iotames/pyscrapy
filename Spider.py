@@ -56,7 +56,7 @@ if __name__ == '__main__':
             # "store_name": "Baleaf",
             # "code": "Baleaf_Women_Skirts",
             # "url": "https://www.amazon.com/stores/page/5D1F0C72-1A7A-46D7-994C-0294839D5E3F",
-            "group_log_id": 1
+            "group_log_id": 3
             # "code": "Baleaf_Women"
             # "ranking_log_id": 20,
             # 'category_name': "Tennisröcke für Damen",
