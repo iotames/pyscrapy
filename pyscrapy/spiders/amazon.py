@@ -37,8 +37,8 @@ class AmazonSpider(BaseSpider):
         "language": 'zh_CN'
     }
 
-    stores_pages = [
-        {
+    """
+    store_page = {
             'store_name': 'Baleaf',
             'urls_groups': [
                 {'url': 'https://www.amazon.com/stores/page/F7EF2EE6-2F83-4189-98C7-FEB28E89B86C',
@@ -51,7 +51,7 @@ class AmazonSpider(BaseSpider):
                  'category_name': 'Women_Skirts'},
             ]
         }
-    ]
+    """
 
     asin_list = []
     goods_model_list: list
@@ -72,23 +72,25 @@ class AmazonSpider(BaseSpider):
 
     def start_requests(self):
         if self.spider_child == CHILD_GOODS_LIST_STORE_PAGE:
-            for store in self.stores_pages:
-                store_name = store['store_name']
-                store_find = {'name': store_name, 'site_id': self.site_id}
-                print(store_find)
-                store_model = self.db_session.query(SiteMerchant).filter_by(**store_find).first()
-                if not store_model:
-                    store_model = SiteMerchant(**store_find)
-                    self.db_session.add(store_model)
-                    self.db_session.commit()
-                for group in store['urls_groups']:
-                    category_name = group["category_name"]
-                    page_url = self.get_site_url(group["url"])
-                    yield Request(
-                        page_url,
-                        callback=GoodsListInStore.parse,
-                        meta=dict(merchant_id=store_model.id, category_name=category_name)
-                    )
+            store_name = self.input_args["store_name"]
+            store_find = {'name': store_name, 'site_id': self.site_id}
+
+            store_model = self.db_session.query(SiteMerchant).filter_by(**store_find).first()
+            if not store_model:
+                store_model = SiteMerchant(**store_find)
+                self.db_session.add(store_model)
+                self.db_session.commit()
+
+            code = self.input_args["code"]
+            self.group_log_id = int(self.input_args['group_log_id']) if 'group_log_id' in self.input_args else 0
+            if self.group_log_id == 0:
+                self.create_group_log(code)
+
+            url = self.input_args['url']
+            if url.find("http") != 0:
+                raise UsageError("url必须以 http 开头")
+            meta = dict(merchant_id=store_model.id, category_name=code)
+            yield Request(url, callback=GoodsListInStore.parse, meta=meta)
 
         if self.spider_child == CHILD_GOODS_LIST_RANKING:
             # "Women's Sports Dresses"
@@ -98,7 +100,8 @@ class AmazonSpider(BaseSpider):
             if url.find("http") != 0:
                 raise UsageError("url必须以 http 开头")
             self.set_base_url(url)
-            ranking_log_id = int(self.input_args['ranking_log_id']) if 'ranking_log_id' in self.input_args else 0
+
+            self.ranking_log_id = int(self.input_args['ranking_log_id']) if 'ranking_log_id' in self.input_args else 0
 
             rank_type = EnumGoodsRanking.TYPE_BESTSELLERS
             if 'rank_type' in self.input_args:
@@ -106,7 +109,9 @@ class AmazonSpider(BaseSpider):
 
             page = self.input_args['page'] if 'page' in self.input_args else 1  # 第二页采集的时候经常取不到数据
 
-            self.create_ranking_log(category_name, rank_type, log_id=ranking_log_id)
+            if self.ranking_log_id == 0:
+                self.create_ranking_log(category_name, rank_type)
+
             self.url_params['pg'] = str(page)
             referer = self.base_url
             start_url = self.get_site_url("{}?{}".format(url, urlencode(self.url_params)))

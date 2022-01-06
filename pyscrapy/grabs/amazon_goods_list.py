@@ -109,13 +109,18 @@ class GoodsListInStore(BasePage):
         print(len(asin_list))
         if not asin_list:
             print('===================empty asin_list========' + response.url)
+        group_rank_num = 0
         for asin in asin_list:
+            group_rank_num += 1
             item = AmazonGoodsItem()
             item['merchant_id'] = merchant_id
             item['asin'] = asin
             item['code'] = asin
+            item['url'] = XAmazon.get_url_by_code(asin)
+            item['details'] = {'group_rank_num': group_rank_num}
             if category_name:
                 item['category_name'] = category_name
+            # yield item
             yield Request(
                 XAmazon.get_url_by_code(asin, {"language": 'zh_CN'}),
                 # dont_filter=True, 不去掉重复的ASIN

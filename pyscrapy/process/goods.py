@@ -1,6 +1,6 @@
 from pyscrapy.items import StrongerlabelGoodsItem, GympluscoffeeGoodsItem, SweatybettyGoodsItem, AmazonGoodsItem, BaseGoodsItem
 from pyscrapy.spiders import StrongerlabelSpider, GympluscoffeeSpider, SweatybettySpider, AmazonSpider, BaseSpider
-from pyscrapy.models import Goods, GoodsCategory, GoodsCategoryX, GoodsQuantityLog, RankingGoods
+from pyscrapy.models import Goods, GoodsCategory, GoodsCategoryX, GoodsQuantityLog, RankingGoods, GroupGoods
 import datetime
 import time
 import json
@@ -191,6 +191,8 @@ class GoodsAmazon(Base):
         print(opt_str + ' GOODS : ' + json.dumps(attrs))
         if spider.ranking_log_id:
             GoodsBase.save_ranking_goods(model, spider)
+        if spider.group_log_id:
+            GoodsBase.save_group_goods(model, spider)
 
 
 class GoodsBase(Base):
@@ -237,8 +239,10 @@ class GoodsBase(Base):
         print(opt_str + ' GOODS : ' + json.dumps(attrs))
 
         # 添加或更新goods和ranking_log对应关系
-        if spider.ranking_log_id > 0:
+        if spider.ranking_log_id:
             self.save_ranking_goods(model, spider)
+        if spider.group_log_id:
+            self.save_group_goods(model, spider)
 
     @staticmethod
     def save_ranking_goods(model: Goods, spider: BaseSpider):
@@ -266,5 +270,34 @@ class GoodsBase(Base):
             # 添加goods和ranking_log对应关系
             xd_find.update(update_data)
             xgoods = RankingGoods(**xd_find)
+            db_session.add(xgoods)
+        db_session.commit()
+
+    @staticmethod
+    def save_group_goods(model: Goods, spider: BaseSpider):
+        details = json.loads(model.details)
+        rank_num = details['group_rank_num'] if 'group_rank_num' in details else 0  # TODO
+        spu = details['spu'] if 'spu' in details else ''
+        spu = spu if spu else model.asin
+        xd_find = {'site_id': spider.site_id, 'group_log_id': spider.group_log_id, 'goods_id': model.id}
+        print(xd_find)
+        db_session = GroupGoods.get_db_session()
+        xgoods = GroupGoods.get_model(db_session, xd_find)
+        update_data = {
+            'spider_run_log_id': spider.log_id,
+            'goods_code': model.code,
+            'rank_num': rank_num,
+            'goods_spu': spu,
+            'reviews_num': model.reviews_num,
+            'goods_title': model.title,
+            'goods_url': model.url
+        }
+        if xgoods:
+            # 更新goods和ranking_log对应关系
+            GroupGoods.update_model(db_session, update_data, xd_find)
+        else:
+            # 添加goods和ranking_log对应关系
+            xd_find.update(update_data)
+            xgoods = GroupGoods(**xd_find)
             db_session.add(xgoods)
         db_session.commit()

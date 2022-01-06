@@ -49,11 +49,16 @@ if __name__ == '__main__':
     dirpath = Config.get_logs_dir()
     args = {
         'logs_dir': dirpath,
-        'spider_child': CHILD_GOODS_DETAIL,
+        'spider_child': CHILD_GOODS_LIST_STORE_PAGE,
         # 'spider_child': CHILD_GOODS_LIST_RANKING,
         'log_id': "",  # "39"
         'input_args': {
-            "ranking_log_id": 20,
+            "store_name": "Baleaf",
+            "code": "Baleaf_Women_Skirts",
+            "url": "https://www.amazon.com/stores/page/5D1F0C72-1A7A-46D7-994C-0294839D5E3F",
+            # "group_log_id": 1
+            # "code": "Baleaf_Women"
+            # "ranking_log_id": 20,
             # 'category_name': "Tennisröcke für Damen",
             # Women's Running Shorts: https://www.amazon.com/bestsellers/fashion/2371114011
             # Women's Tennis Skorts: https://www.amazon.com/bestsellers/fashion/2371145011 https://www.amazon.com/Best-Sellers-Clothing-Shoes-Jewelry-Skorts/zgbs/fashion/2371145011/ref=zg_bs_nav_fashion_5_2371144011
@@ -62,4 +67,4 @@ if __name__ == '__main__':
             # 'url': 'https://www.amazon.de/bestsellers/sports/3771963031'
         }
     }
-    Spider.crawl(NAME_SHEFIT, spider_args=args)
+    Spider.crawl(NAME_AMAZON, spider_args=args)

@@ -115,7 +115,10 @@ class SheinSpider(BaseSpider):
                 rank_type = self.input_args['rank_type']
 
             # 最终数据管道保存goods_item信息到数据库时，先保存或更新goods, 再存储 goods和ranking_log 的对应关系
-            self.create_ranking_log(category_name, rank_type, log_id=ranking_log_id)
+            if ranking_log_id:
+                self.ranking_log_id = ranking_log_id
+            else:
+                self.create_ranking_log(category_name, rank_type)
 
             page = 1
             url = "{}{}?{}".format(self.base_url, goods_list_url, urlencode({'page': page, 'sort': sort_by}))

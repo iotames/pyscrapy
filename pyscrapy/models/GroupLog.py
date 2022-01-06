@@ -22,11 +22,11 @@ class GroupLog(BaseModel):
     link_id = Column(String(128), comment='连接ID')
 
     @classmethod
-    def get_log(cls, db_session, site_id: int, code: str, rank_type=0):
+    def get_log(cls, db_session, site_id: int, code: str, group_type=0):
         return db_session.query(cls).filter(and_(
             cls.site_id == site_id,
             cls.code == code,
-            cls.rank_type == rank_type
+            cls.group_type == group_type
         )).order_by(cls.created_at.desc()).first()
 
     @classmethod
