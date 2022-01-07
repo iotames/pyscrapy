@@ -4,9 +4,7 @@ import time
 from scrapy.http import TextResponse
 from scrapy import Request
 from urllib.parse import urlencode
-from pyscrapy.database import Database
 from sqlalchemy.orm.session import Session
-from Config import Config
 from pyscrapy.models import Goods, GoodsReview
 import copy
 from pyscrapy.items import GoodsReviewSheinItem, BaseGoodsItem
@@ -72,8 +70,7 @@ class ReviewRequest(object):
         return False
 
     def check_review_exists(self, review_item: GoodsReviewSheinItem):
-        db_session = self.db_session
-        model = GoodsReview.get_model(db_session, {'code': review_item['code'], 'site_id': self.spider.site_id})
+        model = GoodsReview.get_model(self.db_session, {'code': review_item['code'], 'site_id': self.spider.site_id})
         if model:
             review_item['model'] = model
             print('========is_review_exists==goods_id={}============'.format(str(self.goods_model.id)))
@@ -132,9 +129,10 @@ class ReviewRequest(object):
         self.spider = spider
         self.spu = spu
         self.headers = headers
-        db = Database(Config().get_database())
-        db.ROOT_PATH = Config.ROOT_PATH
-        self.db_session = db.get_db_session()
+        self.db_session = GoodsReview.get_db_session()
+        # db = Database(Config().get_database())
+        # db.ROOT_PATH = Config.ROOT_PATH
+        # self.db_session = db.get_db_session()
 
     def get_all(self, meta=None):
         self.filter_type = self.TYPE_ALL

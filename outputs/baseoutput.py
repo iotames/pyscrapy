@@ -32,7 +32,7 @@ class BaseOutput:
     def __init__(self, sheet_title='库存详情', filename='output'):
         self.server_config = ApiServer()
         self.images_dir = BaseSpider.custom_settings.get('IMAGES_STORE')  # get_project_settings().get('IMAGES_STORE')
-        db = DB(Config().get_database())
+        db = DB.get_instance(Config().get_database())
         db.ROOT_PATH = Config.ROOT_PATH
         self.db_session = db.get_db_session()
         # TODO 因文件名故，xlsx文件通常仅走新增路线

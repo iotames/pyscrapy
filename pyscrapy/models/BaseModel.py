@@ -4,7 +4,8 @@ import time
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm.session import Session
 from Config import Config
-from pyscrapy.database import Database
+# from pyscrapy.database import Database
+from service.DB import DB
 
 AlchemyBase = declarative_base()
 
@@ -27,7 +28,8 @@ class BaseModel(AlchemyBase):
 
     @staticmethod
     def get_db_session() -> Session:
-        db = Database(Config().get_database())
+        # db = Database(Config().get_database())
+        db = DB.get_instance(Config().get_database())
         db.ROOT_PATH = Config.ROOT_PATH
         return db.get_db_session()
 

@@ -1,8 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from service.Singleton import Singleton
 
 
-class DB:
+class DB(Singleton):
     __db_session = None
     __db_engine = None
     __sqlite_file = 'sqlite3.db'
@@ -11,6 +12,11 @@ class DB:
 
     def __init__(self, config: dict):
         self.db_config = config
+        super(DB, self).__init__(config=config)
+
+    @classmethod
+    def get_instance(cls, config: dict):
+        return super(DB, cls).get_instance(config=config)
 
     def get_db_engine_uri(self):
         conf = self.db_config

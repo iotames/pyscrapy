@@ -1,4 +1,4 @@
-from pyscrapy.models import Goods, RankingGoods, RankingLog, GoodsReview, SpiderRunLog
+from pyscrapy.models import Goods, RankingGoods, RankingLog, GoodsReview, SpiderRunLog, GroupLog, GroupGoods
 from outputs.baseoutput import BaseOutput
 from pyscrapy.extracts.amazon import Common as XAmazon, GoodsReviews as XReviews
 import json
@@ -6,28 +6,42 @@ from sqlalchemy import and_
 from openpyxl.styles import PatternFill
 from openpyxl import load_workbook
 from time import time
+from pyscrapy.enum.spider import *
 
 
 class AmazonOutput(BaseOutput):
 
-    site_name = 'amazon'
+    site_name = NAME_AMAZON
+    child: str
     cell_fill = PatternFill("solid", fgColor="1874CD")
     goods_id_to_title = {}
     colors_show_times = {}
-    rank_category: str
+    group_name = ""
     ranking_log_model: RankingLog
+    group_log_model: GroupLog
     
     def __init__(self, run_log: SpiderRunLog):
-        ranking_log_id = int(run_log.link_id)
-        self.ranking_log_model = RankingLog.get_model(RankingLog.get_db_session(), {"id": ranking_log_id})
-        self.rank_category = self.ranking_log_model.category_name
-        filename = "{}_{}".format(self.site_name, self.rank_category).replace(' ', '_').replace("'", "-").replace("&", "and")
-        self.download_filename = "{}_{}.xlsx".format(filename, str(self.ranking_log_model.id))
+        self.child = run_log.spider_child
+        link_id = run_log.link_id
+        query_args = {"id": int(link_id)}
+        if self.child == CHILD_GOODS_REVIEWS_BY_GROUP:
+            self.group_log_model = GroupLog.get_model(GroupGoods.get_db_session(), query_args)
+            self.group_name = self.group_log_model.code
+
+        if self.child == CHILD_GOODS_REVIEWS_BY_RANKING:
+            self.ranking_log_model = RankingLog.get_model(RankingLog.get_db_session(), query_args)
+            self.group_name = self.ranking_log_model.category_name
+
+        filename = "{}_{}".format(self.site_name, self.group_name).replace(' ', '_').replace("'", "-").replace("&", "and")
+        self.download_filename = "{}_{}.xlsx".format(filename, link_id)
         super(AmazonOutput, self).__init__('商品信息列表', filename)
 
-    # def get_ranking_log(self, category_name: str):
-    #     db_session = RankingLog.get_db_session()
-    #     return RankingLog.get_log(db_session, self.site_id, category_name)
+    @property
+    def log_model(self):
+        if self.child == CHILD_GOODS_REVIEWS_BY_GROUP:
+            return self.group_log_model
+        if self.child == CHILD_GOODS_REVIEWS_BY_RANKING:
+            return self.ranking_log_model
 
     def set_colors_show_times(self, colorr: str):
         if colorr in self.colors_show_times:
@@ -40,14 +54,15 @@ class AmazonOutput(BaseOutput):
             product_title = self.goods_id_to_title[str(review.goods_id)]
             review_title = review.title
             rating = review.rating_value
-            sku = review.sku_text
+            sku_text = review.sku_text
             url = review.url
-            color_text = ""
-            if not review.color:
-                print(sku)
-                color_text = XReviews.get_color_in_sku_text(sku)
-            row_detail = (review.time_str, product_title, review_title, review.body, color_text, rating, sku, url, 0)
-            print(row_detail)
+            color_text = review.color
+            if sku_text and not review.color:
+                color_text = XReviews.get_color_in_sku_text(sku_text)
+            if not color_text:
+                print(review.sku_text)
+            row_detail = (review.time_str, product_title, review_title, review.body, color_text, rating, sku_text, url, 0)
+            # print(row_detail)
             detail_rows.append(row_detail)
             if not color_text:
                 continue
@@ -64,16 +79,21 @@ class AmazonOutput(BaseOutput):
         if self.is_download_file_exists():
             return True
         sheet = self.work_sheet
-        log = self.ranking_log_model
-        if not log:
+
+        if not self.log_model:
             raise RuntimeError('找不到排行榜数据')
-        if time() - log.created_at > 3600 * 72:
+        if time() - self.log_model.created_at > 3600 * 72:
             raise RuntimeError('最近排行榜数据已超过72小时, 请重新采集')
 
         db_session = self.db_session
-        # db_session.query(cls).filter_by(**args).all()
-        ranking_goods_list = db_session.query(RankingGoods).filter_by(**{'ranking_log_id': log.id}).order_by(
-            RankingGoods.rank_num.asc()).all()
+        x_goods_list = []
+        if self.child == CHILD_GOODS_REVIEWS_BY_RANKING:
+            x_goods_list = db_session.query(RankingGoods).filter_by(**{'ranking_log_id': self.log_model.id}).order_by(
+                RankingGoods.rank_num.asc()).all()
+        if self.child == CHILD_GOODS_REVIEWS_BY_GROUP:
+            x_goods_list = db_session.query(GroupGoods).filter_by(**{'group_log_id': self.log_model.id}).order_by(
+                GroupGoods.rank_num.asc()).all()
+
         current_time = int(time())
         month_in_12 = current_time - 3600 * 24 * 365
         month_in_6 = current_time - 3600 * 24 * 180
@@ -90,30 +110,29 @@ class AmazonOutput(BaseOutput):
             sheet.cell(1, title_col, title)
             title_col += 1
 
-        goods_list = ranking_goods_list
         # goods_list = self.db_session.query(Goods).filter(
         #     Goods.site_id == self.site_id,
         #     # Goods.merchant_id == 1
         # ).all()
-        print(len(goods_list))
+        print(len(x_goods_list))
 
         # ASIN 分组整理 , 并剔除重复的SPU。 START
         asin_list = []
         asin_goods_map = {}
         code_list = []
-        for rgoods in goods_list:
-            goods = Goods.get_model(db_session, {'id': rgoods.goods_id})
-            asin = goods.asin
-            code = XAmazon.get_code_by_goods_url(goods.url)
-            goods.code = code  # 重写 code
+        for xgoods in x_goods_list:
+            goods_model = Goods.get_model(db_session, {'id': xgoods.goods_id})
+            asin = goods_model.asin
+            code = XAmazon.get_code_by_goods_url(goods_model.url)
+            goods_model.code = code  # 重写 code
             if asin not in asin_list:
                 if code not in code_list:  # 剔除重复的SPU
                     asin_list.append(asin)
                     code_list.append(code)
-                    asin_goods_map[asin] = [goods]
+                    asin_goods_map[asin] = [goods_model]
             else:
                 if code not in code_list:  # 剔除重复的SPU
-                    asin_goods_map[asin].append(goods)
+                    asin_goods_map[asin].append(goods_model)
 
         goods_list = []
         for asin, gd_list in asin_goods_map.items():
@@ -122,22 +141,27 @@ class AmazonOutput(BaseOutput):
         # ASIN 分组整理, 并剔除重复的SPU。 END
 
         goods_row_index = 2
-
-        for goods in goods_list:
-            self.goods_id_to_title[str(goods.id)] = goods.title
+        for goods_model in goods_list:
+            self.goods_id_to_title[str(goods_model.id)] = goods_model.title
             goods_col_index = 1
-            time_str = self.timestamp_to_str(goods.updated_at, "%Y-%m-%d %H:%M")
+            time_str = self.timestamp_to_str(goods_model.updated_at, "%Y-%m-%d %H:%M")
             # 商品信息元组
             image = ''
-            if goods.local_image:
-                image = self.get_image_info(goods.local_image)
-            details = json.loads(goods.details)
+            if goods_model.local_image:
+                image = self.get_image_info(goods_model.local_image)
+            details = json.loads(goods_model.details)
 
             sale_at = details['sale_at'] if 'sale_at' in details else ''
             asin = details['asin']
             root_rank = details['root_rank']
-            goods_url = goods.url
-            category_name = goods.category_name if goods.category_name else self.rank_category
+            goods_url = goods_model.url
+
+            has_group_list = [CHILD_GOODS_REVIEWS_BY_GROUP, CHILD_GOODS_REVIEWS_BY_RANKING]
+            if self.child in has_group_list:
+                category_name = self.group_name
+            else:
+                category_name = goods_model.category_name if goods_model.category_name else self.group_name
+
             rank_list = details['rank_list']
             rank_num = details['rank_num'] if 'rank_num' in details else 0
             rank_detail = ''
@@ -148,21 +172,21 @@ class AmazonOutput(BaseOutput):
             for item in details['items']:
                 details_items += item + "\n|"
             reviews_month_12 = db_session.query(GoodsReview).filter(
-                GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_12).count()
+                GoodsReview.goods_id == goods_model.id, GoodsReview.review_time > month_in_12).count()
             reviews_month_6 = db_session.query(GoodsReview).filter(
-                GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_6).count()
+                GoodsReview.goods_id == goods_model.id, GoodsReview.review_time > month_in_6).count()
             reviews_month_3 = db_session.query(GoodsReview).filter(
-                GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_3).count()
+                GoodsReview.goods_id == goods_model.id, GoodsReview.review_time > month_in_3).count()
             reviews_month_2 = db_session.query(GoodsReview).filter(
-                GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_2).count()
+                GoodsReview.goods_id == goods_model.id, GoodsReview.review_time > month_in_2).count()
             reviews_month_1 = db_session.query(GoodsReview).filter(
-                GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_1).count()
+                GoodsReview.goods_id == goods_model.id, GoodsReview.review_time > month_in_1).count()
             reviews_week_1 = db_session.query(GoodsReview).filter(
-                GoodsReview.goods_id == goods.id, GoodsReview.review_time > week_in_1).count()
+                GoodsReview.goods_id == goods_model.id, GoodsReview.review_time > week_in_1).count()
 
             goods_info_list = [
-                goods.id, goods.code, asin, category_name, image, goods.title, goods_url, sale_at, time_str,
-                goods.price, details['price_base'], details['price_save'], goods.reviews_num, reviews_month_12, reviews_month_6,
+                goods_model.id, goods_model.code, asin, category_name, image, goods_model.title, goods_url, sale_at, time_str,
+                goods_model.price, details['price_base'], details['price_save'], goods_model.reviews_num, reviews_month_12, reviews_month_6,
                 reviews_month_3, reviews_month_2, reviews_month_1, reviews_week_1, root_rank, rank_num, details_items,
                 rank_detail
             ]
@@ -185,14 +209,14 @@ class AmazonOutput(BaseOutput):
         sheet_reviews = self.wb.create_sheet(title='评论详情', index=1)
         details_title_row = ('时间', '商品', '评论概要', '评论详情', '颜色', '评分', 'SKU', '评论源地址', '尺码问题')
         detail_rows = [details_title_row]
-        for goods in goods_list:
+        for goods_model in goods_list:
             reviews = self.db_session.query(GoodsReview).filter(
                 and_(
                     GoodsReview.site_id == self.site_id,
-                    GoodsReview.goods_id == goods.id,
+                    GoodsReview.goods_id == goods_model.id,
                     GoodsReview.review_time > month_in_12
                 )).order_by(GoodsReview.review_time.desc()).all()
-            self.set_reviews_colors(reviews, detail_rows)
+            self.set_reviews_colors(reviews, detail_rows, False)
 
         for row in detail_rows:
             # 基础评论数据
@@ -241,11 +265,11 @@ class AmazonOutput(BaseOutput):
         self.wb.save(filepath)
 
     def debug(self):
-        print(self.rank_category)
+        print(self.group_name)
 
 
 if __name__ == '__main__':
     db_session = SpiderRunLog.get_db_session()
-    log = SpiderRunLog.get_model(db_session, {'id': 148})
+    log = SpiderRunLog.get_model(db_session, {'id': 169})  # 164 165 168 169
     ot = AmazonOutput(log)
     ot.output()

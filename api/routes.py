@@ -47,7 +47,7 @@ def database_init():
     from service import DB
     from pyscrapy.models import Table
     config = Config()
-    db = DB(config.get_database())
+    db = DB.get_instance(config.get_database())
     db.ROOT_PATH = config.ROOT_PATH
     engine = db.get_db_engine()
     Table.create_all_tables(engine)

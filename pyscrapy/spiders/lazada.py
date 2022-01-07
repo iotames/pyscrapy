@@ -30,7 +30,9 @@ class LazadaSpider(BaseSpider):
             "q": keyword,
         }
         url = self.api_url + "?" + urlencode(params)
-        return Request(url, self.parse_goods_list, meta=dict(keyword=keyword))
+
+        # return Request(url, self.parse_goods_list, meta=dict(keyword=keyword))
+        return Request(url, callback=self.parse_goods_list, meta=dict(keyword=keyword), dont_filter=True)
 
     custom_settings = {
         # 'DOWNLOAD_DELAY': 3,
@@ -44,6 +46,7 @@ class LazadaSpider(BaseSpider):
 
     def __init__(self, name=None, **kwargs):
         super(LazadaSpider, self).__init__(name=name, **kwargs)
+        self.allowed_domains.append("lazada.com.ph")
 
     def start_requests(self):
         if self.spider_child == self.CHILD_GOODS_LIST:
@@ -73,33 +76,37 @@ class LazadaSpider(BaseSpider):
         meta = response.meta
         keyword = meta['keyword']
         json_res = response.json()
+        if 'mainInfo' not in json_res:
+            print(response.text)
         main_info = json_res['mainInfo']
         page = int(main_info['page'])
-        limit = int(main_info['pageSize'])
+        limit = int(main_info['pageSize'])  # 40
         total = int(main_info['totalResults'])
 
         list_items = json_res['mods']['listItems']
         count_goods = 0
         for item in list_items:
-            status = Goods.STATUS_AVAILABLE if item['isStock'] else Goods.STATUS_SOLD_OUT
+            status = Goods.STATUS_AVAILABLE if item['inStock'] else Goods.STATUS_SOLD_OUT
             code = item['itemId']
             title = item['name']
             price = item['price']
             price_text = item['priceShow']
             url = item['productUrl']
             image = item['image']
-            reviews_num = item['review']
+            reviews_num = int(item['review']) if item['review'] else 0
             spu = item['sellerId']
+            original_price = item['originalPrice'] if 'originalPrice' in item else price
+            discount = item['discount'] if 'discount' in item else "0%"
             details = {
                 'brand': item['brandName'],
-                'original_price': item['originalPrice'],
-                'discount': item['discount'],
+                'original_price': original_price,
+                'discount': discount,
                 'location': item['location'],
                 'rating_score': item['ratingScore']
             }
             goods_item = BaseGoodsItem()
             goods_item['spider_name'] = self.name
-            goods_item['url'] = url
+            goods_item['url'] = "https:" + url
             goods_item['code'] = code
             goods_item['price'] = price
             goods_item['price_text'] = price_text
@@ -113,10 +120,14 @@ class LazadaSpider(BaseSpider):
             yield goods_item
             count_goods += 1
 
+        print(f'===========total page = {str(self.total_page)}====page={str(page)}')
+        print('=====page * limit ========' + str(page * limit))
         if self.total_page > 0 and page < self.total_page:
+            print('======total_page>0======next_page===' + str(page+1))
             yield self.get_goods_list_request(page+1, keyword)
 
         if self.total_page == 0 and (page * limit < total):
+            print('======total_page=0======next_page===' + str(page + 1))
             yield self.get_goods_list_request(page + 1, keyword)
 
     def parse_goods_detail(self, response: TextResponse):

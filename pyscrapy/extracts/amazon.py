@@ -188,7 +188,7 @@ class GoodsReviews(object):
     def get_color_in_sku_text(cls, sku: str):
         sku_list = sku.split("|")
         text = ""
-        color_labels = ["颜色:", "Color:", "Farbe:"]
+        color_labels = ["颜色:", "Color:", "Colour:", "Farbe:"]
         for etext in sku_list:
             for color_label in color_labels:
                 if etext.find(color_label) > -1:
@@ -229,4 +229,10 @@ class GoodsListInStore(object):
         if config:
             return config['content']['ASINList']
         return []
+
+
+if __name__ == '__main__':
+    sku_text = "颜色: A02-标志-蓝色|尺寸: XX-Large"
+    print(GoodsReviews.get_color_in_sku_text(sku_text))
+
 

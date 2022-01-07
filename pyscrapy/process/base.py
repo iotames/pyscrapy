@@ -1,4 +1,5 @@
-from pyscrapy.database import Database
+# from pyscrapy.database import Database
+from service.DB import DB
 from sqlalchemy.orm.session import Session
 from Config import Config
 from service import Singleton
@@ -13,7 +14,8 @@ class Base(Singleton):
 
     def __init__(self):
         super().__init__()
-        db = Database(Config().get_database())
+        # db = Database(Config().get_database())
+        db = DB.get_instance(Config().get_database())
         db.ROOT_PATH = Config.ROOT_PATH
         self.db_session = db.get_db_session()
 

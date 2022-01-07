@@ -2,7 +2,8 @@ from scrapy import Spider
 import time
 from ..helpers import Logger
 from Config import Config
-from ..database import Database
+# from ..database import Database
+from service.DB import DB
 from ..models import Site, SpiderRunLog, RankingLog, GroupLog
 from scrapy.exceptions import UsageError
 import datetime
@@ -62,7 +63,8 @@ class BaseSpider(Spider):
         self.base_url = "https://www." + self.domain
         self.allowed_domains = [self.domain]
 
-        db = Database(Config().get_database())
+        # db = Database(Config().get_database())
+        db = DB.get_instance(config=Config().get_database())
         db.ROOT_PATH = Config.ROOT_PATH
         self.db_session = db.get_db_session()
 
