@@ -270,6 +270,6 @@ class AmazonOutput(BaseOutput):
 
 if __name__ == '__main__':
     db_session = SpiderRunLog.get_db_session()
-    log = SpiderRunLog.get_model(db_session, {'id': 169})  # 164 165 168 169
+    log = SpiderRunLog.get_model(db_session, {'id': 173})  # 164 165 168 169
     ot = AmazonOutput(log)
     ot.output()

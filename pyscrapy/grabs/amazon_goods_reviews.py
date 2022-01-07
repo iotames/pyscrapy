@@ -111,8 +111,16 @@ class AmazonGoodsReviews(BasePage):
 
         print('===============total_page : ' + str(total_page))
         x_reviews = XReviews(spider)
-        # TODO is_review_exists 条件判断
-        if (page < total_page) and (not is_review_too_old) and (not is_review_exists):
+
+        can_next_request = True
+        check_exists = False # TODO is_review_exists 条件判断. 使用配置项。
+        if page == total_page:
+            can_next_request = False
+        if is_review_too_old:
+            can_next_request = False
+        if check_exists and is_review_exists:
+            can_next_request = False
+        if can_next_request:
             # 仅取N个月内的评论
             next_page = page + 1
             print('=======current page:  ' + str(page) + '====next page : ' + str(next_page))
