@@ -15,10 +15,20 @@ class LazadaSpider(BaseSpider):
     name = NAME_LAZADA
 
     base_url = "https://www.lazada.com.ph"
-
     api_url = "https://www.lazada.com.ph/catalog/"
+    total_page = 20
 
-    total_page = 0
+    custom_settings = {
+        'COOKIES_ENABLED': True,
+        'DOWNLOAD_DELAY': 2,
+        'RANDOMIZE_DOWNLOAD_DELAY': True,
+        'DOWNLOAD_TIMEOUT': 30,
+        'RETRY_TIMES': 5,
+        'CONCURRENT_REQUESTS_PER_DOMAIN': 3,  # default 8 recommend 3
+        'CONCURRENT_REQUESTS': 5,  # default 16 recommend 5-8
+        'IMAGES_STORE': Config.ROOT_PATH + "/runtime/images",
+        'COMPONENTS_NAME_LIST_DENY': []  # ["http_proxy", "user_agent"]
+    }
 
     def get_goods_list_request(self, page: int, keyword: str):
         params = {
@@ -31,18 +41,8 @@ class LazadaSpider(BaseSpider):
         }
         url = self.api_url + "?" + urlencode(params)
 
-        # return Request(url, self.parse_goods_list, meta=dict(keyword=keyword))
-        return Request(url, callback=self.parse_goods_list, meta=dict(keyword=keyword), dont_filter=True)
-
-    custom_settings = {
-        # 'DOWNLOAD_DELAY': 3,
-        # 'RANDOMIZE_DOWNLOAD_DELAY': True,
-        # 'CONCURRENT_REQUESTS_PER_DOMAIN': 1,  # default 8
-        # 'CONCURRENT_REQUESTS': 5,  # default 16 recommend 5
-        # 'COOKIES_ENABLED': True,
-        'IMAGES_STORE': Config.ROOT_PATH + "/runtime/images",
-        'COMPONENTS_NAME_LIST_DENY': []
-    }
+        return Request(url, self.parse_goods_list, meta=dict(keyword=keyword, page=page), dont_filter=True)
+        # return Request(url, callback=self.parse_goods_list, meta=dict(keyword=keyword), dont_filter=True)
 
     def __init__(self, name=None, **kwargs):
         super(LazadaSpider, self).__init__(name=name, **kwargs)
@@ -50,7 +50,6 @@ class LazadaSpider(BaseSpider):
 
     def start_requests(self):
         if self.spider_child == self.CHILD_GOODS_LIST:
-            self.total_page = 20
             keyword = "maternity"
             yield self.get_goods_list_request(1, keyword)
         if self.spider_child == self.CHILD_GOODS_DETAIL:
@@ -75,16 +74,24 @@ class LazadaSpider(BaseSpider):
     def parse_goods_list(self, response: TextResponse):
         meta = response.meta
         keyword = meta['keyword']
+        page = meta['page']
         json_res = response.json()
-        if 'mainInfo' not in json_res:
-            print(response.text)
-        main_info = json_res['mainInfo']
-        page = int(main_info['page'])
-        limit = int(main_info['pageSize'])  # 40
-        total = int(main_info['totalResults'])
+        can_next = True
+        list_items = []
+        limit, total = (0, 0)
 
-        list_items = json_res['mods']['listItems']
-        count_goods = 0
+        if 'mainInfo' not in json_res:
+            can_next = False
+            print('===========error==============')
+            yield self.get_goods_list_request(page, keyword)
+            print(response.text)
+        if can_next:
+            main_info = json_res['mainInfo']
+            page = int(main_info['page'])
+            limit = int(main_info['pageSize'])  # 40
+            total = int(main_info['totalResults'])
+            list_items = json_res['mods']['listItems']
+
         for item in list_items:
             status = Goods.STATUS_AVAILABLE if item['inStock'] else Goods.STATUS_SOLD_OUT
             code = item['itemId']
@@ -118,16 +125,18 @@ class LazadaSpider(BaseSpider):
             goods_item['status'] = status
             goods_item['details'] = details
             yield goods_item
-            count_goods += 1
 
-        print(f'===========total page = {str(self.total_page)}====page={str(page)}')
-        print('=====page * limit ========' + str(page * limit))
-        if self.total_page > 0 and page < self.total_page:
-            print('======total_page>0======next_page===' + str(page+1))
-            yield self.get_goods_list_request(page+1, keyword)
+        if can_next:
+            can_next = False
+            if self.total_page > 0 and page < self.total_page:
+                can_next = True
+                print(f"====current_page={str(page)}==next_page={str(page + 1)}==total_page == {str(self.total_page)}")
+            if self.total_page == 0 and (page * limit < total):
+                print(f"====current_page={str(page)}==next_page={str(page + 1)}==total_page == 0")
+                can_next = True
 
-        if self.total_page == 0 and (page * limit < total):
-            print('======total_page=0======next_page===' + str(page + 1))
+        if can_next:
+            print(f"=====page * limit ({str(page)} * {str(limit)} == {str(page * limit)})=====")
             yield self.get_goods_list_request(page + 1, keyword)
 
     def parse_goods_detail(self, response: TextResponse):
