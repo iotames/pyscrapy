@@ -252,8 +252,8 @@ class GoodsBase(Base):
         spu = spu if spu else model.asin
         xd_find = {'site_id': spider.site_id, 'ranking_log_id': spider.ranking_log_id, 'goods_id': model.id}
         print(xd_find)
-        db_session = RankingGoods.get_db_session()
-        xgoods = RankingGoods.get_model(db_session, xd_find)
+
+        xgoods = RankingGoods.get_self(xd_find)
         update_data = {
             'spider_run_log_id': spider.log_id,
             'goods_code': model.code,
@@ -265,13 +265,11 @@ class GoodsBase(Base):
         }
         if xgoods:
             # 更新goods和ranking_log对应关系
-            RankingGoods.update_model(db_session, update_data, xd_find)
+            RankingGoods.save_update(xd_find, update_data)
         else:
             # 添加goods和ranking_log对应关系
             xd_find.update(update_data)
-            xgoods = RankingGoods(**xd_find)
-            db_session.add(xgoods)
-        db_session.commit()
+            RankingGoods.save_create(xd_find)
 
     @staticmethod
     def save_group_goods(model: Goods, spider: BaseSpider):
@@ -281,8 +279,8 @@ class GoodsBase(Base):
         spu = spu if spu else model.asin
         xd_find = {'site_id': spider.site_id, 'group_log_id': spider.group_log_id, 'goods_id': model.id}
         print(xd_find)
-        db_session = GroupGoods.get_db_session()
-        xgoods = GroupGoods.get_model(db_session, xd_find)
+
+        xgoods = GroupGoods.get_self(xd_find)
         update_data = {
             'spider_run_log_id': spider.log_id,
             'goods_code': model.code,
@@ -294,10 +292,8 @@ class GoodsBase(Base):
         }
         if xgoods:
             # 更新goods和ranking_log对应关系
-            GroupGoods.update_model(db_session, update_data, xd_find)
+            GroupGoods.save_update(xd_find, update_data)
         else:
             # 添加goods和ranking_log对应关系
             xd_find.update(update_data)
-            xgoods = GroupGoods(**xd_find)
-            db_session.add(xgoods)
-        db_session.commit()
+            GroupGoods.save_create(xd_find)

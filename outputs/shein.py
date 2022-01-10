@@ -60,17 +60,17 @@ class SheinOutput(BaseOutput):
                     sku_num += len(relation_colors)
 
             reviews_month_12 = db_session.query(GoodsReview).filter(
-                GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_12).count()
+                GoodsReview.goods_spu == goods.asin, GoodsReview.review_time > month_in_12).count()
             reviews_month_6 = db_session.query(GoodsReview).filter(
-                GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_6).count()
+                GoodsReview.goods_spu == goods.asin, GoodsReview.review_time > month_in_6).count()
             reviews_month_3 = db_session.query(GoodsReview).filter(
-                GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_3).count()
+                GoodsReview.goods_spu == goods.asin, GoodsReview.review_time > month_in_3).count()
             reviews_month_2 = db_session.query(GoodsReview).filter(
-                GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_2).count()
+                GoodsReview.goods_spu == goods.asin, GoodsReview.review_time > month_in_2).count()
             reviews_month_1 = db_session.query(GoodsReview).filter(
-                GoodsReview.goods_id == goods.id, GoodsReview.review_time > month_in_1).count()
+                GoodsReview.goods_spu == goods.asin, GoodsReview.review_time > month_in_1).count()
             reviews_week_1 = db_session.query(GoodsReview).filter(
-                GoodsReview.goods_id == goods.id, GoodsReview.review_time > week_in_1).count()
+                GoodsReview.goods_spu == goods.asin, GoodsReview.review_time > week_in_1).count()
 
             goods_col_index = 1
             goods_info_list = [

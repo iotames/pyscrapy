@@ -32,8 +32,7 @@ class GoodsList(BasePage):
                 cate_info = {'code': ele.cat_id, 'name': ele.cat_name, 'parent_code': ele.parent_id, 'site_id': spider.site_id}
                 cmodel = GoodsCategory.get_model(dbs, cate_info)
                 if not cmodel:
-                    GoodsCategory.create_model(dbs, cate_info)
-                dbs.commit()
+                    GoodsCategory.save_create(cate_info)
                 print(cate_info)
             return True
 

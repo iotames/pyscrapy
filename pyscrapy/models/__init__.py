@@ -15,3 +15,5 @@ from .RankingGoods import RankingGoods
 from .RankingLog import RankingLog
 from .GroupLog import GroupLog
 from .GroupGoods import GroupGoods
+from .ReviewsUpdateLog import ReviewsUpdateLog
+

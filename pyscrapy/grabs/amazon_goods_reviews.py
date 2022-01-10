@@ -7,7 +7,7 @@ from datetime import datetime
 from time import strptime, mktime, time
 from scrapy import Request
 from pyscrapy.enum.spider import REVIEWED_TIME_IN
-from pyscrapy.models import GoodsReview as GoodsReviewModel
+from pyscrapy.models import GoodsReview as GoodsReviewModel, ReviewsUpdateLog, Goods
 
 
 class AmazonGoodsReviews(BasePage):
@@ -46,10 +46,14 @@ class AmazonGoodsReviews(BasePage):
     @classmethod
     def parse(cls, response: TextResponse):
         meta = response.meta
-        goods_code = meta['goods_code']
-        page = meta['page'] if 'page' in meta else 1
-        goods_id = meta['goods_id'] if 'goods_id' in meta else 0
+        if 'page' not in meta:
+            meta['page'] = 1
+        page = meta['page']
         spider = meta['spider']
+        goods_model: Goods = meta['goods_model']
+        goods_code = goods_model.code
+        goods_id = goods_model.id
+        goods_spu = goods_model.asin
 
         if 'item' in meta:
             item = response.meta['item']
@@ -78,6 +82,7 @@ class AmazonGoodsReviews(BasePage):
             review.spider = spider
             item['goods_id'] = goods_id
             item['goods_code'] = goods_code
+            item['goods_spu'] = goods_spu
             review_code = review.code
             item['code'] = review_code
             model = GoodsReviewModel.get_model(db_session, {'code': review_code, 'site_id': spider.site_id})
@@ -113,7 +118,7 @@ class AmazonGoodsReviews(BasePage):
         x_reviews = XReviews(spider)
 
         can_next_request = True
-        check_exists = False # TODO is_review_exists 条件判断. 使用配置项。
+        check_exists = True if ReviewsUpdateLog.is_exists_by_spu(spider.site_id, goods_spu) else False
         if page == total_page:
             can_next_request = False
         if is_review_too_old:
@@ -125,11 +130,10 @@ class AmazonGoodsReviews(BasePage):
             next_page = page + 1
             print('=======current page:  ' + str(page) + '====next page : ' + str(next_page))
             next_url = x_reviews.get_reviews_url_by_asin(goods_code, next_page)
-            yield Request(
-                next_url,
-                cls.parse,
-                meta=dict(goods_id=goods_id, goods_code=goods_code, page=next_page, spider=spider, dont_filter=True)
-            )
+            meta['page'] = next_page
+            yield Request(next_url, cls.parse, meta=meta, dont_filter=True)
+        else:
+            ReviewsUpdateLog.add_log(goods_model)
 
 
 class GoodsReview(BaseElement):

@@ -149,6 +149,7 @@ class GoodsDetail(BaseResponse):
         details['brand'] = ele.brand
         details['relation_colors'] = ele.relation_colors
         item['details'] = details
+        # TODO goods_spu_list 排除SPU已在列表中的的商品，避免重复采集同一个SPU商品
         if spu:
             rev = ReviewRequest(spu, spider=meta['spider'], headers={'referer': response.url})
             spider = meta['spider']

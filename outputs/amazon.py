@@ -172,17 +172,17 @@ class AmazonOutput(BaseOutput):
             for item in details['items']:
                 details_items += item + "\n|"
             reviews_month_12 = db_session.query(GoodsReview).filter(
-                GoodsReview.goods_id == goods_model.id, GoodsReview.review_time > month_in_12).count()
+                GoodsReview.goods_spu == goods_model.asin, GoodsReview.review_time > month_in_12).count()
             reviews_month_6 = db_session.query(GoodsReview).filter(
-                GoodsReview.goods_id == goods_model.id, GoodsReview.review_time > month_in_6).count()
+                GoodsReview.goods_spu == goods_model.asin, GoodsReview.review_time > month_in_6).count()
             reviews_month_3 = db_session.query(GoodsReview).filter(
-                GoodsReview.goods_id == goods_model.id, GoodsReview.review_time > month_in_3).count()
+                GoodsReview.goods_spu == goods_model.asin, GoodsReview.review_time > month_in_3).count()
             reviews_month_2 = db_session.query(GoodsReview).filter(
-                GoodsReview.goods_id == goods_model.id, GoodsReview.review_time > month_in_2).count()
+                GoodsReview.goods_spu == goods_model.asin, GoodsReview.review_time > month_in_2).count()
             reviews_month_1 = db_session.query(GoodsReview).filter(
-                GoodsReview.goods_id == goods_model.id, GoodsReview.review_time > month_in_1).count()
+                GoodsReview.goods_spu == goods_model.asin, GoodsReview.review_time > month_in_1).count()
             reviews_week_1 = db_session.query(GoodsReview).filter(
-                GoodsReview.goods_id == goods_model.id, GoodsReview.review_time > week_in_1).count()
+                GoodsReview.goods_spu == goods_model.asin, GoodsReview.review_time > week_in_1).count()
 
             goods_info_list = [
                 goods_model.id, goods_model.code, asin, category_name, image, goods_model.title, goods_url, sale_at, time_str,
@@ -270,6 +270,6 @@ class AmazonOutput(BaseOutput):
 
 if __name__ == '__main__':
     db_session = SpiderRunLog.get_db_session()
-    log = SpiderRunLog.get_model(db_session, {'id': 173})  # 164 165 168 169
+    log = SpiderRunLog.get_model(db_session, {'id': 12})  # 164 165 168 169
     ot = AmazonOutput(log)
     ot.output()

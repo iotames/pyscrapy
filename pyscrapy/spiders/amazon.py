@@ -7,7 +7,7 @@ from pyscrapy.grabs.amazon_goods_list import GoodsRankingList, GoodsListInStore
 from pyscrapy.grabs.amazon_goods import AmazonGoodsDetail
 from pyscrapy.grabs.amazon_goods_reviews import AmazonGoodsReviews
 from pyscrapy.extracts.amazon import Common as XAmazon, GoodsReviews as XGoodsReviews
-from pyscrapy.models import SiteMerchant, Goods, RankingGoods, GroupGoods
+from pyscrapy.models import SiteMerchant, Goods, RankingGoods, GroupGoods, ReviewsUpdateLog
 from pyscrapy.items import AmazonGoodsItem
 from pyscrapy.enum.amazon import EnumGoodsRanking
 from pyscrapy.enum.spider import *
@@ -81,14 +81,16 @@ class AmazonSpider(BaseSpider):
                 self.db_session.add(store_model)
                 self.db_session.commit()
 
-            code = self.input_args["code"]
-            self.group_log_id = int(self.input_args['group_log_id']) if 'group_log_id' in self.input_args else 0
-            if self.group_log_id == 0:
-                self.create_group_log(code)
-
             url = self.input_args['url']
             if url.find("http") != 0:
                 raise UsageError("url必须以 http 开头")
+
+            code = self.input_args["code"]
+            self.group_log_id = int(self.input_args['group_log_id']) if 'group_log_id' in self.input_args else 0
+            if self.group_log_id == 0:
+                group_args = dict(group_type=0, url=url)
+                self.create_group_log(code, group_args)
+
             meta = dict(merchant_id=store_model.id, category_name=code)
             yield Request(url, callback=GoodsListInStore.parse, meta=meta)
 
@@ -133,12 +135,13 @@ class AmazonSpider(BaseSpider):
             goods_model = Goods.get_model(self.db_session, {'code': asin, 'site_id': self.site_id})
             if not goods_model:
                 raise RuntimeError("ASIN {} : 商品不存在， 请先通过ASIN采集商品详情".format(asin))
-            yield Request(
-                reviews_url,
-                callback=AmazonGoodsReviews.parse,
-                headers=dict(referer=goods_url),
-                meta=dict(goods_code=asin, goods_id=goods_model.id, spider=self)
-            )
+            if not ReviewsUpdateLog.is_exists_by_spu(self.site_id, goods_model.asin, 3600*24):
+                yield Request(
+                    reviews_url,
+                    callback=AmazonGoodsReviews.parse,
+                    headers=dict(referer=goods_url),
+                    meta=dict(spider=self, goods_model=goods_model)
+                )
 
         if self.spider_child == CHILD_GOODS_DETAIL_RANKING:
             if 'ranking_log_id' not in self.input_args:
@@ -163,7 +166,9 @@ class AmazonSpider(BaseSpider):
             ranking_goods_list = RankingGoods.get_all_model(self.db_session, {'ranking_log_id': self.ranking_log_id})
             print('==================goods_list_len = ' + str(len(ranking_goods_list)))
             for xgd in ranking_goods_list:
-                yield self.get_reviews_request_by_goods_id(xgd.goods_id)
+                req = self.get_reviews_request_by_goods_id(xgd.goods_id)
+                if req:
+                    yield req
 
         if self.spider_child == CHILD_GOODS_REVIEWS_BY_GROUP:
             if 'group_log_id' not in self.input_args:
@@ -172,7 +177,9 @@ class AmazonSpider(BaseSpider):
             goods_x_list = GroupGoods.get_all_model(self.db_session, {'group_log_id': self.group_log_id})
             print('==================goods_list_len = ' + str(len(goods_x_list)))
             for xgd in goods_x_list:
-                yield self.get_reviews_request_by_goods_id(xgd.goods_id)
+                req = self.get_reviews_request_by_goods_id(xgd.goods_id)
+                if req:
+                    yield req
 
         if self.spider_child == CHILD_GOODS_LIST_ASIN:
             # store_name = 'Smallshow'
@@ -211,15 +218,22 @@ class AmazonSpider(BaseSpider):
                     yield Request(url, callback=AmazonGoodsDetail.parse, headers=dict(referer=self.base_url),
                                   meta=dict(spider=self, goods_model=goods_model))
 
+    goods_spu_list = []
+
     def get_reviews_request_by_goods_id(self, goods_id: int):
         model: Goods = Goods.get_model(self.db_session, {'id': goods_id})
+        if model.asin in self.goods_spu_list:
+            return None
         self.set_base_url(model.url)
         x_reviews = XGoodsReviews(self)
         reviews_url = x_reviews.get_reviews_url_by_asin(model.code)
-        return Request(
-            reviews_url,
-            callback=AmazonGoodsReviews.parse,
-            headers=dict(referer=model.url),
-            meta=dict(goods_code=model.code, goods_id=model.id, spider=self)
-        )
+        if not ReviewsUpdateLog.is_exists_by_spu(self.site_id, model.asin, 3600*24):
+            self.goods_spu_list.append(model.asin)
+            return Request(
+                reviews_url,
+                callback=AmazonGoodsReviews.parse,
+                headers=dict(referer=model.url),
+                meta=dict(spider=self, goods_model=model)
+            )
+        return None
 

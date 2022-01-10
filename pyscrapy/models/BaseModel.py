@@ -39,13 +39,22 @@ class BaseModel(AlchemyBase):
         return model
 
     @classmethod
-    def update_model(cls, db_session: Session, update_data: dict, find_by: dict):
-        db_session.query(cls).filter_by(**find_by).update(update_data)
+    def get_self(cls, args: dict):
+        return cls.get_db_session().query(cls).filter_by(**args).first()
 
     @classmethod
-    def create_model(cls, db_session: Session, args: dict):
-        model = cls(**args)
+    def save_create(cls, attr: dict):
+        db_session = cls.get_db_session()
+        model = cls(**attr)
         db_session.add(model)
+        db_session.commit()
+        return model
+
+    @classmethod
+    def save_update(cls, find_by: dict, update_data: dict):
+        db_session = cls.get_db_session()
+        db_session.query(cls).filter_by(**find_by).update(update_data)
+        db_session.commit()
 
     @classmethod
     def get_all_model(cls, db_session: Session, args=None) -> list:

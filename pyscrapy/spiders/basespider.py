@@ -2,7 +2,6 @@ from scrapy import Spider
 import time
 from ..helpers import Logger
 from Config import Config
-# from ..database import Database
 from service.DB import DB
 from ..models import Site, SpiderRunLog, RankingLog, GroupLog
 from scrapy.exceptions import UsageError
@@ -156,9 +155,9 @@ class BaseSpider(Spider):
             db_session.commit()
             self.ranking_log_id = ranking_log.id
 
-    def create_group_log(self, code: str, group_type=0):
+    def create_group_log(self, code: str, args: dict):
         db_session = self.db_session
-        log = GroupLog.get_log(db_session, self.site_id, code, group_type)
+        log = GroupLog.get_log(db_session, self.site_id, code, args['group_type'])
         if log:
             self.group_log_id = log.id
             # 判断 created_at 来确定是否新建 group_log
@@ -169,9 +168,9 @@ class BaseSpider(Spider):
             attrs = {
                 'site_id': self.site_id,
                 'code': code,
-                'group_type': group_type,
                 'log_date': now_date
             }
+            attrs.update(args)
             log = GroupLog(**attrs)
             db_session.add(log)
             db_session.commit()

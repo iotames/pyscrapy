@@ -5,7 +5,7 @@ from scrapy.http import TextResponse
 from scrapy import Request
 from urllib.parse import urlencode
 from sqlalchemy.orm.session import Session
-from pyscrapy.models import Goods, GoodsReview
+from pyscrapy.models import Goods, GoodsReview, ReviewsUpdateLog
 import copy
 from pyscrapy.items import GoodsReviewSheinItem, BaseGoodsItem
 from pyscrapy.enum.spider import REVIEWED_TIME_IN
@@ -99,26 +99,36 @@ class ReviewRequest(object):
         return params
 
     def set_from_meta(self, meta):
-        goods_model = meta['goods_model'] if 'goods_model' in meta else None
-        if not goods_model:
-            goods_model = self.db_session.query(Goods).filter(Goods.asin == self.spu).first()
-        if not goods_model:
-            raise RuntimeError('spu商品不存在')
+        goods_model: Goods = meta['goods_model']  # if 'goods_model' in meta else None
+        if goods_model.asin != self.spu:
+            raise RuntimeError('商品spu不正确')
         self.goods_model = goods_model
-        goods_item = meta['goods_item'] if 'goods_item' in meta else BaseGoodsItem()
+        goods_item = meta['goods_item']  # if 'goods_item' in meta else BaseGoodsItem()
         self.goods_item = goods_item
 
-    def get_schema(self, meta=None):
-        self.filter_type = self.TYPE_SCHEMA
-        self.set_from_meta(meta)
-        self.limit = 3
-        return Request(self.request_url, callback=self.parse, headers=self.headers, dont_filter=True)
+    # def get_schema(self, meta=None):
+    #     self.filter_type = self.TYPE_SCHEMA
+    #     self.set_from_meta(meta)
+    #     self.limit = 3
+    #     return Request(self.request_url, callback=self.parse, headers=self.headers, dont_filter=True)
 
-    def get_simple(self, meta=None):
+    def get_simple(self, meta: dict):
         self.filter_type = self.TYPE_SIMPLE
         self.set_from_meta(meta)
         self.limit = 3
         self.sort = self.SORT_ASC
+        return Request(self.request_url, callback=self.parse, headers=self.headers, dont_filter=True)
+
+    def get_all(self, meta: dict):
+        self.filter_type = self.TYPE_ALL
+        self.set_from_meta(meta)
+        self.limit = 20
+        self.sort = self.SORT_DESC
+        review_item = GoodsReviewSheinItem()
+        review_item['goods_id'] = self.goods_model.id
+        review_item['goods_code'] = self.goods_model.code
+        review_item['goods_spu'] = self.goods_model.asin
+        self.review_item = review_item
         return Request(self.request_url, callback=self.parse, headers=self.headers, dont_filter=True)
 
     @property
@@ -133,17 +143,6 @@ class ReviewRequest(object):
         # db = Database(Config().get_database())
         # db.ROOT_PATH = Config.ROOT_PATH
         # self.db_session = db.get_db_session()
-
-    def get_all(self, meta=None):
-        self.filter_type = self.TYPE_ALL
-        self.set_from_meta(meta)
-        self.limit = 20
-        self.sort = self.SORT_DESC
-        review_item = GoodsReviewSheinItem()
-        review_item['goods_id'] = self.goods_model.id
-        review_item['goods_code'] = self.goods_model.code
-        self.review_item = review_item
-        return Request(self.request_url, callback=self.parse, headers=self.headers, dont_filter=True)
 
     def get_review_item(self, review: dict, review_base: GoodsReviewSheinItem) -> GoodsReviewSheinItem:
         review_item = copy.copy(review_base)
@@ -198,6 +197,14 @@ class ReviewRequest(object):
             return True
         return False
 
+    def can_next_page(self) -> bool:
+        if self.is_last_page() or self.is_review_too_old:
+            return False
+        check_exists = True if ReviewsUpdateLog.is_exists_by_spu(self.spider.site_id, self.goods_model.asin) else False
+        if check_exists and self.is_review_exists:
+            return False
+        return True
+
     def parse(self, response: TextResponse):
         print('reviews_parse=====================')
         if response.text == 'null':
@@ -230,13 +237,14 @@ class ReviewRequest(object):
             for review in data['items']:
                 yield self.get_review_item(review, self.review_item)
 
-            if self.is_last_page() or self.is_review_exists or self.is_review_too_old:
-                # 切换请求方式。 获取首次评论的时间。 yield self.goods_item
-                print('========get all views end=======' + str(self.goods_model.id))
-                yield self.get_simple(meta=dict(goods_model=self.goods_model, goods_item=self.goods_item))
-            else:
+            if self.can_next_page():
                 self.page += 1
                 yield Request(url=self.request_url, callback=self.parse, headers=self.headers, dont_filter=True)
+            else:
+                # 切换请求方式。 获取首次评论的时间。 yield self.goods_item
+                print('========get all views end=======' + str(self.goods_model.id))
+                ReviewsUpdateLog.add_log(self.goods_model)
+                yield self.get_simple(meta=dict(goods_model=self.goods_model, goods_item=self.goods_item))
 
         if self.filter_type == self.TYPE_SCHEMA:
             # TODO 似乎陷入了死循环

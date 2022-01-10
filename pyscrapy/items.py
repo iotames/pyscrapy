@@ -122,6 +122,7 @@ class GoodsReviewItem(Item):
     code = Field()
     goods_id = Field()
     goods_code = Field()
+    goods_spu = Field()
     rating_value = Field()
     title = Field()
     sku_text = Field()
