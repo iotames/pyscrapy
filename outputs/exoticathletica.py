@@ -7,9 +7,6 @@ class ExoticathleticaOutput(StrongerlabelOutput):
 
     site_name = NAME_EXOTICATHLETICA
 
-    quantity_map = {}
-    run_log: SpiderRunLog
-
     def __init__(self, run_log: SpiderRunLog):
         super(ExoticathleticaOutput, self).__init__(run_log)
 

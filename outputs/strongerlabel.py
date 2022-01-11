@@ -23,7 +23,7 @@ class StrongerlabelOutput(BaseOutput):
         sheet = self.work_sheet
         # sheet.sheet_format.defaultRowHeight = 30
         dtime: datetime = self.run_log.datetime
-        title_row = ('商品ID', '图片', '分类名', '商品名', '商品链接', '商品状态', '更新时间', '价格', '库存' + dtime.strftime("%Y_%m_%d"))
+        title_row = ('商品ID', 'CODE', '图片', '分类名', '商品名', '商品链接', '商品状态', '更新时间', '价格', '库存' + dtime.strftime("%Y_%m_%d"))
         title_col = 1
         for title in title_row:
             sheet.cell(1, title_col, title)
@@ -40,8 +40,8 @@ class StrongerlabelOutput(BaseOutput):
                 image = self.get_image_info(goods.local_image)
             status_text = Goods.statuses_map[goods.status]
             log_quantity = self.quantity_map[str(goods.id)] if str(goods.id) in self.quantity_map else 0
-            goods_info_list = [goods.id, image, goods.category_name, goods.title, goods.url, status_text, time_str,
-                               goods.price, log_quantity]
+            goods_info_list = [goods.id, goods.code, image, goods.category_name, goods.title, goods.url, status_text,
+                               time_str, goods.price, log_quantity]
             # 返回商品信息递增列 next col index
             self.set_values_to_row(sheet, goods_info_list, goods_row_index, goods_col_index)
             goods_row_index += 1

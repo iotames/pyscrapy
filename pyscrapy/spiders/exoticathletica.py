@@ -29,6 +29,8 @@ class ExoticathleticaSpider(BaseSpider):
         # 'accessories', 'all', 'clearance'
     ]
 
+    goods_code_list = []
+
     def __init__(self, name=None, **kwargs):
         super(ExoticathleticaSpider, self).__init__(name=name, **kwargs)
 
@@ -55,8 +57,9 @@ class ExoticathleticaSpider(BaseSpider):
             print('=======goods_list_len============ : {}'.format(str(goods_list_len)))
             if goods_list_len > 0:
                 for model in self.goods_model_list:
-                    # https://www.exoticathletica.com/products/phenomenal-performance-scoop-neck-comfort-crop-top.js
-                    url = self.get_site_url(model.url + ".json")
+                    # url = model.url + ".json"
+                    handle = model.url.split('/')[-1]
+                    url = self.get_site_url(f"/products/{handle}.js")
                     yield Request(url, headers={'referer': self.base_url},
                                   callback=self.parse_goods_detail, meta=dict(model=model))
             else:
@@ -73,9 +76,17 @@ class ExoticathleticaSpider(BaseSpider):
         products_eles = response.xpath('//div[@class="grid-product__content"]')
         for product_ele in products_eles:
             url_ele = product_ele.xpath('a/@href')  # [@class="grid-product__link"]
-            url = self.get_site_url(url_ele.get())
+            url_text = url_ele.get() if url_ele else ""
+            if not url_text:
+                continue
+            code = product_ele.xpath('parent::div/@data-product-id').get()
+            if code in self.goods_code_list:
+                # 剔除不同分类中的重复商品
+                continue
+            self.goods_code_list.append(code)
+            url = self.get_site_url(url_text)
             title_ele = product_ele.xpath('a//div[@class="grid-product__title grid-product__title--body"]/text()')
-            title = title_ele.get() if title_ele else ""
+            title = title_ele.get().strip() if title_ele else ""
             price_ele = product_ele.xpath('a//span[@class="money"]/text()')
             price_text = price_ele.get() if price_ele else ""
             img_ele = product_ele.xpath('a//div[@class="image-wrap"]/img/@data-src')
@@ -84,6 +95,7 @@ class ExoticathleticaSpider(BaseSpider):
 
             goods_item = BaseGoodsItem()
             goods_item['spider_name'] = self.name
+            goods_item['code'] = code
             goods_item['category_name'] = category
             goods_item['title'] = title
             goods_item['url'] = url
@@ -103,17 +115,21 @@ class ExoticathleticaSpider(BaseSpider):
         # USE https://www.exoticathletica.com/collections/fashion-tops/products/black-rib-knit-twist-front-cropped-tank.json
         # https://www.exoticathletica.com/products/black-rib-knit-twist-front-cropped-tank.js
         meta = response.meta
-        model = meta['model']
+        model: Goods = meta['model']
         json_data = response.json()
-        product = json_data['product']
+        # product = json_data['product']
+        product = json_data
         code = str(product['id'])
+        if code != model.code:
+            raise ValueError("goods code error")
         title = product['title']
         variants = product['variants']
         quantity = 0
         sku_list = []
-        price = 0
+        price = product['price'] / 100
+        status = Goods.STATUS_AVAILABLE if product['available'] else 0
         for sku_info in variants:
-            price = sku_info['price']
+            # price = sku_info['price']
             sku_inventory = sku_info['inventory_quantity']
             sku_detail = {
                 'title': sku_info['title'],
@@ -128,6 +144,7 @@ class ExoticathleticaSpider(BaseSpider):
         goods_item['model'] = model
         goods_item['spider_name'] = self.name
         goods_item['code'] = code
+        goods_item['status'] = status
         goods_item['price'] = price
         goods_item['title'] = title
         goods_item['details'] = details
