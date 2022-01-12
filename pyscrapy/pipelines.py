@@ -78,9 +78,6 @@ class ImagePipeline(ImagesPipeline):
         # return [Request(u) for u in urls]
         for image_url in urls:
             meta = None
-            if spider.name == 'strongerlabel':
-                meta = {'referer': 'https://www.strongerlabel.com/sg/all-products'}
-                image_url = 'https://www.strongerlabel.com/imgproxy/preset:sharp/resize:fit:320/gravity:nowe/quality:70/plain/' + image_url
             print(image_url)
             file_path = self.get_local_file_path_by_url(image_url, spider)
             if os.path.isfile(file_path):

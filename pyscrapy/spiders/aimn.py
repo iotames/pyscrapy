@@ -5,21 +5,26 @@ from .basespider import BaseSpider
 from pyscrapy.items import BaseGoodsItem
 import json
 from pyscrapy.models.Goods import Goods
+from Config import Config
+from pyscrapy.enum.spider import *
 
 
 class AimnSpider(BaseSpider):
 
-    name = 'aimn'
+    name = NAME_AIMN
 
     USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36'
 
     custom_settings = {
         'USER_AGENT': USER_AGENT,
         'COMPONENTS_NAME_LIST_DENY': ['user_agent'],
+        'IMAGES_STORE': Config.ROOT_PATH + "/runtime/images",
     }
 
     API_URL = "https://api-v3.findify.io/v3/smart-collection/collections/all-products"
     limit = 24
+    filters = []
+    slot = "collections/all-products"
     api_key = "8f97d0d5-c808-47aa-8499-8aee6533989e"
     uid = "plPzSHFe7SmxqbaS"
     sid = "DbezUFAuq8rKu68J"
@@ -28,8 +33,15 @@ class AimnSpider(BaseSpider):
         super(AimnSpider, self).__init__(name=name, **kwargs)
         self.domain = "aimn.co.nz"
         self.base_url = f"https://www.{self.domain}"
+        self.image_referer = self.base_url + "/"
         self.allowed_domains.append('api-v3.findify.io')
-        # self.allowed_domains.append('baidu.com') 启动URL的域名不需要加入
+
+    @staticmethod
+    def get_image_url(url: str, size=720) -> str:
+        original = '_large.jpg'
+        if url.find(original) > -1:
+            url = url.replace(original, f"_{str(size)}x.jpg")
+        return url
 
     def request_goods_list(self, page: int):
         offset = (page - 1) * self.limit
@@ -48,10 +60,10 @@ class AimnSpider(BaseSpider):
         }
         user = {'uid': self.uid, 'sid': self.sid, 'exist': True, 'persist': False}
         request_body = {
-            "filters": [],
+            "filters": self.filters,
             'key': self.api_key,
             'limit': self.limit,
-            'slot': "collections/all-products",
+            'slot': self.slot,
             't_client': t_client,
             'user': user
         }
@@ -62,7 +74,6 @@ class AimnSpider(BaseSpider):
                        meta=dict(page=page))
 
     def start_requests(self):
-        print('start_requests----------------------')
         yield self.request_goods_list(page=1)
 
     def parse(self, response: TextResponse, **kwargs):
@@ -74,7 +85,8 @@ class AimnSpider(BaseSpider):
         items_list = json_response['items']
         goods_item = BaseGoodsItem()
         for item in items_list:
-
+            if 'product_url' not in item:
+                continue
             # categories = []
             # if 'category' in item:
             #     for categoryl in item['category']:
@@ -92,8 +104,7 @@ class AimnSpider(BaseSpider):
                         # TODO stickers 包含多个标签 待发现
                         self.mylogger.debug('stickers has =============== ' + stkey)
 
-            image = item['image_url']
-            # colors_list = item['color']
+            image = self.get_image_url(item['image_url'])
             price = item['price'][0]
             goods_item['status'] = status
             goods_item['spider_name'] = self.name
@@ -102,11 +113,10 @@ class AimnSpider(BaseSpider):
             goods_item['image_urls'] = [image]
             goods_item['code'] = item['id']
             goods_item['title'] = item['title']
-            # url = self.get_site_url(item['product_url']) if 'product_url' in item else ''
             goods_item['url'] = self.get_site_url(item['product_url'])
             goods_item['quantity'] = item['quantity']
             yield goods_item
-        print('page {} SUCCESS. response status {} '.format(str(page), str(response.status)))
+        print(f"===current_page===item_len===status==={str(page)}==={str(len(items_list))}==={str(response.status)}==")
 
         if response.status == 200 and items_list:
             yield self.request_goods_list(page+1)

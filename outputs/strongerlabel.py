@@ -1,11 +1,12 @@
 from pyscrapy.models import Goods, GoodsQuantityLog, SpiderRunLog
 from outputs.baseoutput import BaseOutput
 from datetime import datetime
+from pyscrapy.enum.spider import *
 
 
 class StrongerlabelOutput(BaseOutput):
 
-    site_name = 'strongerlabel'
+    site_name = NAME_STRONGERLABEL
 
     quantity_map = {}
     run_log: SpiderRunLog

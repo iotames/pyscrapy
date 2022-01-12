@@ -5,6 +5,7 @@ from .basespider import BaseSpider
 from ..items import StrongerlabelGoodsItem
 import json
 from pyscrapy.models.Goods import Goods
+from Config import Config
 
 
 class StrongerlabelSpider(BaseSpider):
@@ -13,11 +14,8 @@ class StrongerlabelSpider(BaseSpider):
 
     custom_settings = {
         'USER_AGENT': USER_AGENT,
-        # 'DOWNLOAD_DELAY': 3,
-        # 'RANDOMIZE_DOWNLOAD_DELAY': True,
-        # 'CONCURRENT_REQUESTS_PER_DOMAIN': 1,
-        # 'CONCURRENT_REQUESTS': 1,
         'COMPONENTS_NAME_LIST_DENY': ['user_agent'],
+        'IMAGES_STORE': Config.ROOT_PATH + "/runtime/images",
     }
 
     name: str = 'strongerlabel'
@@ -31,6 +29,7 @@ class StrongerlabelSpider(BaseSpider):
     def __init__(self, name=None, **kwargs):
         print('init---------------------------------------')
         super(StrongerlabelSpider, self).__init__(name=name, **kwargs)
+        self.image_referer = self.base_url + "/"
         print('after super-------------------------')
         print(self.mylogger)
         print(self.log_id)
@@ -40,6 +39,11 @@ class StrongerlabelSpider(BaseSpider):
         self.sl_uid = "7294d35d-e23f-4406-98ed-7ea9ee6c099b"
         self.sl_sid = 'b35f55f7-6ba2-482a-b0f1-bf5f5864e78d'
         self.sl_key = '16d7a766-26a5-4394-9fac-846d0404f434'
+
+    @staticmethod
+    def get_image_url(url: str) -> str:
+        pre_url = 'https://www.strongerlabel.com/imgproxy/preset:sharp/resize:fit:320/gravity:nowe/quality:70/plain/'
+        return pre_url + url
 
     def start_requests(self):
         print('start_requests----------------------')
@@ -113,9 +117,10 @@ class StrongerlabelSpider(BaseSpider):
                         self.mylogger.debug('stickers!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TRUE ' + stkey)
 
             price = item['price'][0]
+            image = self.get_image_url(item['image_url'])
             goods_item['status'] = status
             goods_item['price'] = price
-            goods_item['image'] = item['image_url']
+            goods_item['image'] = image
             goods_item['code'] = item['id']
             goods_item['title'] = item['title']
             url = item['product_url'] if 'product_url' in item else ''
@@ -123,7 +128,7 @@ class StrongerlabelSpider(BaseSpider):
             # print(item['title'] + " : " + url)
             quantity = item['quantity']
             goods_item['quantity'] = quantity
-            goods_item['image_urls'] = [goods_item['image']]
+            goods_item['image_urls'] = [image]
             yield goods_item
 
         offset = response.meta['offset']

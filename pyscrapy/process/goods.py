@@ -210,8 +210,13 @@ class GoodsBase(Base):
 
         model: Goods = item['model'] if 'model' in item else None
         # 剔除重复的URL, 防止重复采集
-        if (model is None) and ('url' in attrs):
-            model = self.get_real_model_by_url(attrs['url'], spider)
+        if model is None:
+            if 'code' in attrs:
+                model = self.get_real_model_by_code(attrs['code'], spider)
+            else:
+                if 'url' in attrs:
+                    model = self.get_real_model_by_url(attrs['url'], spider)
+
         if model:
             self.update_details(attrs, model)
             opt_str = 'SUCCESS UPDATE id = {} : '.format(str(model.id))
