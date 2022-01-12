@@ -4,6 +4,7 @@ from scrapy.http import TextResponse, Request
 from .basespider import BaseSpider
 from ..items import StrongerlabelGoodsItem
 import json
+from pyscrapy.models.Goods import Goods
 
 
 class StrongerlabelSpider(BaseSpider):
@@ -97,15 +98,22 @@ class StrongerlabelSpider(BaseSpider):
                 for categoryl in item['category']:
                     categories.append(categoryl['category1'])
             goods_item['categories'] = categories
-            created_at = int(item['created_at']/1000)
-            goods_item['created_at'] = created_at
+
+            # created_at = int(item['created_at']/1000)
+            # goods_item['created_at'] = created_at
+
+            status = Goods.STATUS_AVAILABLE
             if 'stickers' in item:
-                goods_item['stickers'] = item['stickers']  # stickers: { in-stock: true, out-of-stock: false}
+                # stickers: { in-stock: true, out-of-stock: false}
+                if ('out-of-stock' in item['stickers']) and (item['stickers']['out-of-stock'] is True):
+                    status = Goods.STATUS_SOLD_OUT
                 for stkey, stkvalue in item['stickers'].items():
                     if stkvalue and stkey != 'in-stock':
+                        # TODO stickers 包含多个标签 待发现
                         self.mylogger.debug('stickers!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TRUE ' + stkey)
 
             price = item['price'][0]
+            goods_item['status'] = status
             goods_item['price'] = price
             goods_item['image'] = item['image_url']
             goods_item['code'] = item['id']

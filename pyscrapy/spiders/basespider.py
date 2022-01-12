@@ -48,13 +48,12 @@ class BaseSpider(Spider):
     goods_model_list: list
     spider_child = CHILD_GOODS_DETAIL
 
-    @classmethod
-    def get_site_url(cls, url: str) -> str:
+    def get_site_url(self, url: str) -> str:
         if url.startswith('http'):
             return url
         if url.startswith('/'):
-            return cls.base_url + url
-        return cls.base_url + '/' + url
+            return self.base_url + url
+        return self.base_url + '/' + url
 
     def __init__(self, name=None, **kwargs):
         super(BaseSpider, self).__init__(name=name, **kwargs)

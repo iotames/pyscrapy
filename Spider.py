@@ -67,4 +67,4 @@ if __name__ == '__main__':
             # 'url': 'https://www.amazon.de/bestsellers/sports/3771963031'
         }
     }
-    Spider.crawl(NAME_EXOTICATHLETICA, spider_args=args)
+    Spider.crawl("aimn", spider_args=args)

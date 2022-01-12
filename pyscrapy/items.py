@@ -7,7 +7,6 @@ from scrapy import Item, Field
 
 class BaseGoodsItem(Item):
     image_urls = Field()
-    # images = Field()
     image_paths = Field()
     model = Field()
 
@@ -39,7 +38,6 @@ class GympluscoffeeCategoryItem(Item):
 
 class GympluscoffeeGoodsItem(Item):
     image_urls = Field()
-    images = Field()
     image_paths = Field()
     model = Field()
 
@@ -57,7 +55,6 @@ class GympluscoffeeGoodsItem(Item):
 
 class GympluscoffeeGoodsSkuItem(Item):
     image_urls = Field()
-    images = Field()
     image_paths = Field()
     model = Field()
 
@@ -75,31 +72,20 @@ class GympluscoffeeGoodsSkuItem(Item):
     image = Field()
 
 
-class StrongerlabelGoodsItem(Item):
-    image_urls = Field()
-    images = Field()
-    image_paths = Field()
+class StrongerlabelGoodsItem(BaseGoodsItem):
 
-    code = Field()  # id
-    title = Field()
-    url = Field()
-    quantity = Field()  # quantity inventory_quantity
     categories = Field()
-    created_at = Field()
+    # created_at = Field()
     stickers = Field()  # { in-stock: true, out-of-stock: false}
-    price = Field()
-    image = Field()
 
 
 class HelloItem(Item):
     image_urls = Field()
-    images = Field()
     image_paths = Field()
 
 
 class SweatybettyGoodsItem(Item):
     image_urls = Field()
-    images = Field()
     image_paths = Field()
     model = Field()
 

@@ -42,11 +42,6 @@ class GoodsStrongerlabel(Base):
             category_name = categories[0].name
             category_id = categories[0].id
 
-        # { in-stock: true, out-of-stock: false}
-        status = Goods.STATUS_AVAILABLE
-        # TODO stickers 包含多个标签 待发现
-        if ('out-of-stock' in item['stickers']) and (item['stickers']['out-of-stock'] is True):
-            status = Goods.STATUS_SOLD_OUT
         # 替换 findify.bogus 域名
         url: str = item['url']
         if url.startswith('https://findify.bogus'):
@@ -61,7 +56,7 @@ class GoodsStrongerlabel(Base):
             'image': item['image'],
             'category_id': category_id,
             'category_name': category_name,
-            'status': status
+            'status': item['status']
         }
         if 'image_paths' in item and item['image_paths']:
             attrs['local_image'] = item['image_paths'][0]
@@ -206,10 +201,7 @@ class GoodsBase(Base):
         db_session = self.db_session
         not_update = ['image_urls', 'image_paths', 'model', 'spider_name']
         attrs = {'site_id': spider.site_id}
-        save_quantity = False
         for key, value in item.items():
-            if key == 'quantity':
-                save_quantity = True
             if key in not_update:
                 if key == 'image_paths' and value:
                     attrs['local_image'] = value[0]
@@ -233,7 +225,7 @@ class GoodsBase(Base):
             opt_str = 'SUCCESS ADD '
             model = Goods(**attrs)
             db_session.add(model)
-        if save_quantity:
+        if 'quantity' in attrs:
             add_or_update_goods_quantity_log(model, spider.log_id, db_session)
         db_session.commit()
         print(opt_str + ' GOODS : ' + json.dumps(attrs))
