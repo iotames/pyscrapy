@@ -10,19 +10,23 @@ import time
 from .basespider import BaseSpider
 from pyscrapy.enum.spider import *
 # from translate import Translator
+from Config import Config
 
 
 class GympluscoffeeSpider(BaseSpider):
 
-    name = 'gympluscoffee'
+    name = NAME_GYMPLUSCOFFEE
 
-    # custom_settings = {
-    #     # 'DOWNLOAD_DELAY': 3,
-    #     # 'RANDOMIZE_DOWNLOAD_DELAY': True,
-    #     # 'CONCURRENT_REQUESTS_PER_DOMAIN': 1,
-    #     # 'CONCURRENT_REQUESTS': 32,  # default 16
-    #     # 'COMPONENTS_NAME_LIST_DENY': ['user_agent'],
-    # }
+    # TODO POST https://api-v3.findify.io/v3/smart-collection/collections/all
+    # {"user":{"uid":"43vleHy1gvMLx39i","sid":"fCFPjZZsb7SHWOoH","persist":true,"exist":true},"t_client":1641979818801,"key":"ac020bc1-a0e6-4c90-9fe5-5f4d187825aa","filters":[],"limit":24,"offset":0,"slot":"collections/all"}
+
+    USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36'
+
+    custom_settings = {
+        'USER_AGENT': USER_AGENT,
+        'COMPONENTS_NAME_LIST_DENY': ['user_agent'],
+        'IMAGES_STORE': Config.ROOT_PATH + "/runtime/images",
+    }
 
     goods_model_list: list
     start_categories = ['merch', 'mens', 'womens']
