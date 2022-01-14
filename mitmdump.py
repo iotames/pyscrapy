@@ -45,10 +45,9 @@ def response(flow: HTTPFlow):
             asin_list = GoodsListInStore.get_asin_list(response.text)
             logger.debug(urlmsg + os.linesep + json.dumps(asin_list))
 
-    if response.text.find('2034') > -1:
-        urlmsg = "SUCCESS =============================" + request.url
+    if response.text.find('Sublime® Hands-Free Pumping & Nursing Bra') > -1:
+        urlmsg = "SUCCESS==========request_url=" + request.url
         logger.debug(urlmsg + os.linesep + request.text)
-        logger.debug(response.text)
 
     # response.text = response.text.replace('百度', '摆渡')
     # # 实例化输出类

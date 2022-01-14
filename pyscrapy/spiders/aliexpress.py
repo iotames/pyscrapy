@@ -32,7 +32,7 @@ class AliexpressSpider(BaseSpider):
         'COMPONENTS_NAME_LIST_DENY': []  # ["http_proxy", "user_agent"]
     }
 
-    max_page = 20  # 20*60=1200
+    max_page = 15  # 15*60=900
     SORT_BY_DEFAULT = "default"
     SORT_BY_SALES = "total_tranpro_desc"
     sort_by = SORT_BY_SALES
