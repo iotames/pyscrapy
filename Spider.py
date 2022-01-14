@@ -56,7 +56,7 @@ if __name__ == '__main__':
             # "store_name": "Baleaf",
             # "code": "Baleaf_Yoga_Women_s_Tops",
             # "url": "https://www.amazon.com/stores/page/E056317A-063C-4669-AF0B-964CD6C4A06F",
-            "group_log_id": 5
+            # "group_log_id": 5
             # "code": "Baleaf_Women"
             # "ranking_log_id": 20,
             # 'category_name': "Tennisröcke für Damen",

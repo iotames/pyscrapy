@@ -233,7 +233,8 @@ class GoodsBase(Base):
         if 'quantity' in attrs:
             add_or_update_goods_quantity_log(model, spider.log_id, db_session)
         db_session.commit()
-        print(opt_str + ' GOODS : ' + json.dumps(attrs))
+        print(opt_str + ' GOODS :================SAVE SUCCESS=================')
+        print(attrs)
 
         # 添加或更新goods和ranking_log对应关系
         if spider.ranking_log_id:

@@ -99,13 +99,11 @@ class ImagePipeline(ImagesPipeline):
             if not image_paths:
                 image_paths = []
                 for url in item[urls_field]:
-                    if info.spider.name == 'strongerlabel':
-                        url = 'https://www.strongerlabel.com/imgproxy/preset:sharp/resize:fit:320/gravity:nowe/quality:70/plain/' + url
                     file_path = self.get_local_file_path_by_url(url, info.spider)
                     if os.path.isfile(file_path):
                         image_paths.append(info.spider.name + os.path.sep + self.get_guid_by_url(url) + '.jpg')
             adapter['image_paths'] = image_paths
         # if not image_paths:
         #     raise DropItem("Item contains no images")
-        print(item)
+        # print(item)
         return item

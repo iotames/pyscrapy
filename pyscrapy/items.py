@@ -24,6 +24,7 @@ class BaseGoodsItem(Item):
     image = Field()
     details = Field()
     reviews_num = Field()
+    sales_num = Field()
     quantity = Field()
 
 
