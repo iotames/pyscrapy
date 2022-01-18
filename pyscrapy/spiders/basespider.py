@@ -8,6 +8,9 @@ from scrapy.exceptions import UsageError
 import datetime
 from config.spider import Spider as SpiderConfig
 from pyscrapy.helpers import JsonFile
+from pyscrapy.models.Goods import Goods
+from sqlalchemy import and_, or_
+from scrapy import Request
 
 
 class BaseSpider(Spider):
@@ -59,6 +62,7 @@ class BaseSpider(Spider):
         super(BaseSpider, self).__init__(name=name, **kwargs)
         self.domain = self.name + '.com'
         self.base_url = "https://www." + self.domain
+        self.image_referer = self.base_url + "/"
         self.allowed_domains = [self.domain]
 
         # db = Database(Config().get_database())
@@ -105,6 +109,32 @@ class BaseSpider(Spider):
             msg = 'lost param spider_child'
             raise UsageError(msg)
         self.spider_child = kwargs['spider_child']
+
+    def request_list_goods_detail(self, get_request=None) -> list:
+        if self.spider_child == self.CHILD_GOODS_DETAIL:
+            before_time = time.time()
+            if self.app_env == self.spider_config.ENV_PRODUCTION:
+                # 2小时内的采集过的商品不会再更新
+                before_time = time.time() - (2 * 3600)
+            self.goods_model_list = self.db_session.query(Goods).filter(and_(
+                Goods.site_id == self.site_id, or_(
+                    Goods.status == Goods.STATUS_UNKNOWN,
+                    Goods.updated_at < before_time)
+            )).all()
+            goods_list_len = len(self.goods_model_list)
+            print(f"=======goods_list_len============ : {str(goods_list_len)}")
+            if goods_list_len > 0:
+                request_list = []
+                for model in self.goods_model_list:
+                    url = model.url
+                    if get_request:
+                        url = get_request(model)
+                    headers = {'referer': self.image_referer}
+                    q = Request(url, self.parse_goods_detail, headers=headers, meta=dict(goods_model=model))
+                    request_list.append(q)
+                return request_list
+            else:
+                raise RuntimeError('待更新的商品数量为0, 退出运行')
 
     def set_base_url(self, url: str):
         url_ele_list = url.split("/")
