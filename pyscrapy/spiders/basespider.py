@@ -38,6 +38,7 @@ class BaseSpider(Spider):
     ranking_log_id = 0
     group_log_id = 0
     input_args = {}
+    log_status = SpiderRunLog.STATUS_DONE
 
     # 该属性cls静态调用 无法继承覆盖。 必须在继承的类中重写
     custom_settings = {
@@ -114,8 +115,7 @@ class BaseSpider(Spider):
         if self.spider_child == self.CHILD_GOODS_DETAIL:
             before_time = time.time()
             if self.app_env == self.spider_config.ENV_PRODUCTION:
-                # 2小时内的采集过的商品不会再更新
-                before_time = time.time() - (2 * 3600)
+                before_time = time.time() - (2 * 3600)  # 2小时内的采集过的商品不会再更新
             self.goods_model_list = self.db_session.query(Goods).filter(and_(
                 Goods.site_id == self.site_id, or_(
                     Goods.status == Goods.STATUS_UNKNOWN,
@@ -134,6 +134,7 @@ class BaseSpider(Spider):
                     request_list.append(q)
                 return request_list
             else:
+                self.log_status = SpiderRunLog.STATUS_FAIL
                 raise RuntimeError('待更新的商品数量为0, 退出运行')
 
     def set_base_url(self, url: str):
@@ -212,7 +213,7 @@ class BaseSpider(Spider):
         if self.app_env == SpiderConfig.ENV_DEVELOPMENT:
             return True
         log_cls = SpiderRunLog
-        update_data = {"status": log_cls.STATUS_DONE}
+        update_data = {"status": self.log_status}
         if self.ranking_log_id > 0:
             update_data["link_id"] = self.ranking_log_id
         if self.group_log_id > 0:

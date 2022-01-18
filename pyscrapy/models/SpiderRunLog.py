@@ -11,12 +11,14 @@ class SpiderRunLog(BaseModel):
     STATUS_RUNNING = 1
     STATUS_PAUSE = 2
     STATUS_DONE = 3
+    STATUS_FAIL = 4
     STATUS_MAP = {
         None: "未知",
         STATUS_READY: "待命中",
         STATUS_RUNNING: "运行中",
         STATUS_PAUSE: "已暂停",
-        STATUS_DONE: "已完成"
+        STATUS_DONE: "已完成",
+        STATUS_FAIL: "失败"
     }
 
     spider_name = Column(String(64), comment='爬虫名')

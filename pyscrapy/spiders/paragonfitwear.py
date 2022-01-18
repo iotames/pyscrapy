@@ -17,18 +17,11 @@ class ParagonfitwearSpider(BaseSpider):
 
     def __init__(self, name=None, **kwargs):
         super(ParagonfitwearSpider, self).__init__(name=name, **kwargs)
-
-    # @staticmethod
-    # def get_image_url(url: str, size=720) -> str:
-    #     original = '_large.jpg'
-    #     if url.find(original) > -1:
-    #         url = url.replace(original, f"_{str(size)}x.jpg")
-    #     return url
     
     def request_goods_list(self, page: int) -> Request:
         url = self.get_site_url("/collections/all")
         if page > 1:
-            url += f"{url}?page={str(page)}"
+            url += f"?page={str(page)}"
         return Request(url, self.parse_goods_list, meta=dict(page=page))
 
     def start_requests(self):
@@ -42,7 +35,8 @@ class ParagonfitwearSpider(BaseSpider):
                 yield req
     
     def parse_goods_list(self, response: TextResponse):
-        
+        meta = response.meta
+        page = meta.get("page")
         json_data_ele = response.xpath("//script[@type=\"application/ld+json\"]/text()")
         if len(json_data_ele) == 2:
             json_data_text = json_data_ele.extract()[1].strip()
@@ -55,9 +49,9 @@ class ParagonfitwearSpider(BaseSpider):
                 goods_item['title'] = goods['name']
                 goods_item['url'] = goods['url']
                 yield goods_item
+            list_len = len(item_list)
+            print(f"===current_page====goods len===={str(list_len)}==={str(page)}==")
             if len(item_list) == 100:
-                meta = response.meta
-                page = meta.get("page")
                 yield self.request_goods_list(page+1)
     
     def parse_goods_detail(self, response: TextResponse):

@@ -2,6 +2,7 @@ from pyscrapy.models import Goods, GoodsQuantityLog, SpiderRunLog
 from outputs.baseoutput import BaseOutput
 from datetime import datetime
 from pyscrapy.enum.spider import *
+# from sqlalchemy import and_, or_
 
 
 class StrongerlabelOutput(BaseOutput):
@@ -13,6 +14,7 @@ class StrongerlabelOutput(BaseOutput):
     
     def __init__(self, run_log: SpiderRunLog):
         self.run_log = run_log
+        # TODO BUG GoodsQuantityLog 商品不完整
         quantity_logs = GoodsQuantityLog.get_all_model(GoodsQuantityLog.get_db_session(), {'log_id': run_log.id})
         for quantity_log in quantity_logs:
             self.quantity_map[str(quantity_log.goods_id)] = quantity_log.quantity
