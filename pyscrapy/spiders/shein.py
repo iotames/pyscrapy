@@ -70,8 +70,7 @@ class SheinSpider(BaseSpider):
         )
 
     def get_request_goods_detail(self, model: Goods):
-        return Request(model.url, callback=GoodsDetail.parse, headers=dict(referer=self.base_url),
-                       meta=dict(spider=self, categories_map=self.categories_map, goods_model=model))
+        return
 
     def start_requests(self):
         if self.spider_child == CHILD_GOODS_LIST:
@@ -98,7 +97,13 @@ class SheinSpider(BaseSpider):
             self.goods_model_list = Goods.get_all_model(db_session, {'site_id': self.site_id})
             print('===============total : = ' + str(len(self.goods_model_list)))
             for model in self.goods_model_list:
-                yield self.get_request_goods_detail(model)
+                yield Request(model.url, callback=GoodsDetail.parse, headers=dict(referer=self.base_url),
+                              meta=dict(spider=self, categories_map=self.categories_map, goods_model=model))
+
+        if self.spider_child == CHILD_GOODS_REVIEWS:
+            url = self.input_args.get('url')  # https://shefit.com/products/leggings-boss
+            yield Request(url, callback=GoodsDetail.parse, headers=dict(referer=self.base_url),
+                          meta=dict(spider=self, categories_map=self.categories_map))
 
         if self.spider_child == CHILD_GOODS_LIST_RANKING:
             category_name = self.input_args["category_name"]  # 'Women Sports Tees & Tanks'
@@ -134,7 +139,8 @@ class SheinSpider(BaseSpider):
             print('==================goods_list_len = ' + str(len(ranking_goods_list)))
             for xgd in ranking_goods_list:
                 model = Goods.get_model(self.db_session, {'id': xgd.goods_id})
-                yield self.get_request_goods_detail(model)
+                yield Request(model.url, callback=GoodsDetail.parse, headers=dict(referer=self.base_url),
+                              meta=dict(spider=self, categories_map=self.categories_map, goods_model=model))
 
     def get_categories_map(self):
         db_session = GoodsCategory.get_db_session()

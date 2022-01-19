@@ -4,10 +4,11 @@ from scrapy import Request
 from pyscrapy.items import BaseGoodsItem
 from pyscrapy.models import Goods
 import json
-from sqlalchemy import and_, or_
-import time
 from pyscrapy.spiders.basespider import BaseSpider
 from Config import Config
+from pyscrapy.enum.spider import *
+from urllib.parse import urlencode
+from scrapy.selector import Selector, SelectorList
 
 
 class ShefitSpider(BaseSpider):
@@ -28,33 +29,24 @@ class ShefitSpider(BaseSpider):
     def __init__(self, name=None, **kwargs):
         super(ShefitSpider, self).__init__(name=name, **kwargs)
         self.base_url = "https://" + self.domain
+        self.image_referer = self.base_url + "/"
+        self.allowed_domains.append("staticw2.yotpo.com")
 
     def start_requests(self):
-        if self.spider_child == self.CHILD_GOODS_LIST:
+        if self.spider_child == CHILD_GOODS_LIST:
             url = self.get_site_url('/collections/shefit')
             yield Request(
                 url,
                 callback=self.parse_goods_list,
                 headers=dict(referer=self.base_url)
             )
-        if self.spider_child == self.CHILD_GOODS_DETAIL:
-            # 2小时内的采集过的商品不会再更新
-            before_time = time.time()
-            if self.app_env == self.spider_config.ENV_PRODUCTION:
-                before_time = time.time() - (2 * 3600)
-            self.goods_model_list = self.db_session.query(Goods).filter(and_(
-                Goods.site_id == self.site_id, or_(
-                    Goods.status == Goods.STATUS_UNKNOWN,
-                    Goods.updated_at < before_time)
-            )).all()
-            goods_list_len = len(self.goods_model_list)
-            print('=======goods_list_len============ : {}'.format(str(goods_list_len)))
-            if goods_list_len > 0:
-                for model in self.goods_model_list:
-                    yield Request(self.get_site_url(model.url), headers={'referer': self.base_url},
-                                  callback=self.parse_goods_detail, meta=dict(model=model))
-            else:
-                raise RuntimeError('待更新的商品数量为0, 退出运行')
+        if self.spider_child == CHILD_GOODS_DETAIL:
+            request_list = self.request_list_goods_detail()
+            for req in request_list:
+                yield req
+        if self.spider_child == CHILD_GOODS_REVIEWS:
+            url = self.input_args.get('url')
+            yield Request(url, callback=self.parse_goods_detail, headers=dict(referer=self.image_referer))
 
     goods_list_count = 0
 
@@ -83,7 +75,7 @@ class ShefitSpider(BaseSpider):
 
     def parse_goods_detail(self, response: TextResponse):
         meta = response.meta
-        model = meta['model']
+        goods_model = meta['goods_model'] if 'goods_model' in meta else None
         re_rule0 = r"\"Viewed Product\",(.+?)\);"
         re_info0 = re.findall(re_rule0, response.text)
         info0 = json.loads(re_info0[0])
@@ -92,7 +84,7 @@ class ShefitSpider(BaseSpider):
         currency = info0['currency']
         price_text = price + currency
         category_name = info0['category']
-        print('====parse_goods_detail====goods_id={}===='.format(str(model.id)))
+
         re_rule = r"productVariants=(.+?);"
         re_info = re.findall(re_rule, response.text)
         text = re_info[0]
@@ -112,8 +104,8 @@ class ShefitSpider(BaseSpider):
 
         xpath_json = '//script[@type="application/ld+json"]/text()'
         json_product_text = response.xpath(xpath_json)[1].get()
-        print('======json_product_text===========')
-        print(json_product_text)
+        # print('======json_product_text===========')
+        # print(json_product_text)
         p_info = json.loads(json_product_text, strict=False)
         print(p_info)
         title = p_info['name']
@@ -143,7 +135,7 @@ class ShefitSpider(BaseSpider):
                 status = self.statuses[status_text]
 
         goods_item = BaseGoodsItem()
-        goods_item['model'] = model
+        goods_item['model'] = goods_model
         goods_item['spider_name'] = self.name
         goods_item['category_name'] = category_name
         goods_item['image'] = image
@@ -158,5 +150,69 @@ class ShefitSpider(BaseSpider):
         goods_item['details'] = details
         goods_item['quantity'] = quantity
         yield goods_item
+        if self.spider_child == CHILD_GOODS_REVIEWS:
+            meta = dict(goods_item=goods_item, page=1)
+            yield self.request_goods_reviews(1, meta)
 
+    def get_review_fields(self, eles):
+        for ele in eles:
+            xpath_header = 'div[@class="yotpo-header yotpo-verified-buyer "]/div[@class="yotpo-header-element "]'
+            xpath_stars = xpath_header + '/div[@class="yotpo-review-stars "]'
+
+            star_text_ele = ele.xpath(xpath_stars + '/span[@class="sr-only"]/text()')
+            star_text = star_text_ele.get() if star_text_ele else ""
+            print(star_text)
+            print("=====user_fields_eles=========")
+            user_fields_eles = ele.xpath(
+                xpath_stars + '/div[@class="yotpo-user-related-fields"]/div[@class="yotpo-user-field"]')
+            for user_field_ele in user_fields_eles:
+                value_ele = user_field_ele.xpath('span[@class="yotpo-user-field-answer text-s"]/text()')
+                value_text = value_ele.get() if value_ele else ""
+                print(value_text)
+
+    def parse_goods_reviews(self, response: TextResponse):
+        meta = response.meta
+        page = meta['page']
+        html = response.json()[0]['result']
+        print(html)
+
+        select = Selector(text=html)
+        # <div class="yotpo-review yotpo-regular-box yotpo-regular-box-filters-padding " data-review-id="306840408">
+        reviews_eles = select.xpath('//div[@class="yotpo-review yotpo-regular-box  "]')
+        reviews_eles_first = select.xpath('//div[@class="yotpo-review yotpo-regular-box yotpo-regular-box-filters-padding "]')
+
+        self.get_review_fields(reviews_eles)
+        self.get_review_fields(reviews_eles_first)
+
+        meta['page'] = page + 1
+        # yield self.request_goods_reviews(page, meta)
+
+    def request_goods_reviews(self, page: int, meta: dict) -> Request:
+        reviews_url = "https://staticw2.yotpo.com/batch/app_key/dqbG40YNTpcZQTZ7u680Wus6Gn2HzVmK7219GsNM/domain_key/2263121592374/widget/reviews"
+        # [{"method":"reviews","params":{"pid":"2263121592374","order_metadata_fields":{},"widget_product_id":"2263121592374",
+        # "data_source":"default","page":1,"host-widget":"main_widget","is_mobile":false,"pictures_per_review":10}}]
+        methods = [{
+            "method": "reviews",
+            "params": {"pid": "2263121592374", "order_metadata_fields": {},
+                       "widget_product_id": "2263121592374", "data_source": "default", "page": page,
+                       "host-widget": "main_widget", "is_mobile": False, "pictures_per_review": 10
+                       }
+        }]
+        post_data = {
+            "methods": json.dumps(methods, separators=(',', ':')),
+            "app_key": "dqbG40YNTpcZQTZ7u680Wus6Gn2HzVmK7219GsNM",
+            "is_mobile": False,
+            "widget_version": "2022-01-12_12-39-56"
+        }
+        print(post_data)
+        body = urlencode(post_data)
+        print(body)
+        headers = {
+            "accept": "application/json",
+            "content-type": "application/x-www-form-urlencoded",
+            "referer": self.image_referer
+        }
+        print(headers)
+        return Request(url=reviews_url, method='POST', callback=self.parse_goods_reviews, meta=meta,
+                       body=body, headers=headers)
 

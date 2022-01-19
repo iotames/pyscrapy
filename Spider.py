@@ -50,12 +50,12 @@ if __name__ == '__main__':
     args = {
         'logs_dir': dirpath,
         # 'spider_child': CHILD_GOODS_LIST_STORE_PAGE,
-        'spider_child': CHILD_GOODS_DETAIL,
+        'spider_child': CHILD_GOODS_REVIEWS,
         'log_id': "",  # "39"
         'input_args': {
             # "store_name": "Baleaf",
             # "code": "Baleaf_Yoga_Women_s_Tops",
-            # "url": "https://www.amazon.com/stores/page/E056317A-063C-4669-AF0B-964CD6C4A06F",
+            "url": "https://shefit.com/products/leggings-boss",
             # "group_log_id": 5
             # "code": "Baleaf_Women"
             # "ranking_log_id": 20,
@@ -67,4 +67,4 @@ if __name__ == '__main__':
             # 'url': 'https://www.amazon.de/bestsellers/sports/3771963031'
         }
     }
-    Spider.crawl(NAME_PARAGONFITWEAR, spider_args=args)
+    Spider.crawl(NAME_SHEFIT, spider_args=args)

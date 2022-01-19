@@ -70,8 +70,7 @@ if __name__ == '__main__':
         print(time.time())
 
     now = time.time()
-    # start = now + 3
-    start = now
+    start = now + 3
     end = start + 10
     print(start)
     print(end)
