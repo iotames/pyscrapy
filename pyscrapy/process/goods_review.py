@@ -1,4 +1,4 @@
-from pyscrapy.items import GoodsReviewAmazonItem, GoodsReviewSheinItem
+from pyscrapy.items import GoodsReviewAmazonItem, GoodsReviewSheinItem, GoodsReviewShefitItem
 from pyscrapy.spiders import AmazonSpider, SheinSpider, BaseSpider
 from pyscrapy.models import GoodsReview
 from .base import Base
@@ -45,6 +45,12 @@ class ReviewShein(BaseReview):
 
     def process_item(self, item: GoodsReviewSheinItem, spider: SheinSpider):
         super(ReviewShein, self).process_item(item, spider)
+
+
+class ReviewShefit(BaseReview):
+
+    def process_item(self, item: GoodsReviewShefitItem, spider: SheinSpider):
+        super(ReviewShefit, self).process_item(item, spider)
 
 
 

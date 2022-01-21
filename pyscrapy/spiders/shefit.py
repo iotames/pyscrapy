@@ -9,6 +9,9 @@ from Config import Config
 from pyscrapy.enum.spider import *
 from urllib.parse import urlencode
 from scrapy.selector import Selector, SelectorList
+from time import strptime, mktime, time
+from datetime import datetime
+from pyscrapy.items import GoodsReviewShefitItem
 
 
 class ShefitSpider(BaseSpider):
@@ -40,13 +43,23 @@ class ShefitSpider(BaseSpider):
                 callback=self.parse_goods_list,
                 headers=dict(referer=self.base_url)
             )
+
         if self.spider_child == CHILD_GOODS_DETAIL:
-            request_list = self.request_list_goods_detail()
-            for req in request_list:
-                yield req
+            url = self.input_args.get('url', None)
+            if url:
+                headers = {'referer': self.image_referer}
+                goods_model = self.db_session.query(Goods).filter(Goods.site_id == self.site_id, Goods.url == url).first()
+                yield Request(url, self.parse_goods_detail, headers=headers, meta=dict(goods_model=goods_model))
+            else:
+                request_list = self.request_list_goods_detail()
+                for req in request_list:
+                    yield req
+
         if self.spider_child == CHILD_GOODS_REVIEWS:
-            url = self.input_args.get('url')
-            yield Request(url, callback=self.parse_goods_detail, headers=dict(referer=self.image_referer))
+            url = "https://shefit.com/products/leggings-boss"  # self.input_args.get('url')
+            goods_model = self.db_session.query(Goods).filter(Goods.site_id == self.site_id, Goods.url == url).first()
+            meta = dict(goods_model=goods_model)
+            yield self.request_goods_reviews(1, meta)
 
     def request_goods_reviews(self, page: int, meta: dict) -> Request:
         reviews_url = "https://staticw2.yotpo.com/batch/app_key/dqbG40YNTpcZQTZ7u680Wus6Gn2HzVmK7219GsNM/domain_key/2263121592374/widget/reviews"
@@ -65,15 +78,16 @@ class ShefitSpider(BaseSpider):
             "is_mobile": False,
             "widget_version": "2022-01-12_12-39-56"
         }
-        print(post_data)
+        # print(post_data)
         body = urlencode(post_data)
-        print(body)
+        # print(body)
         headers = {
             "accept": "application/json",
             "content-type": "application/x-www-form-urlencoded",
             "referer": self.image_referer
         }
-        print(headers)
+        # print(headers)
+        meta['page'] = page
         return Request(url=reviews_url, method='POST', callback=self.parse_goods_reviews, meta=meta,
                        body=body, headers=headers)
 
@@ -179,38 +193,71 @@ class ShefitSpider(BaseSpider):
         goods_item['details'] = details
         goods_item['quantity'] = quantity
         yield goods_item
-        if self.spider_child == CHILD_GOODS_REVIEWS:
-            meta = dict(goods_item=goods_item, page=1)
-            yield self.request_goods_reviews(1, meta)
 
-    def get_review_fields(self, eles):
+    def get_review_fields(self, eles) -> list:
+        item_list = []
         for ele in eles:
+            code = ele.xpath("@data-review-id").get()
+            review_time = 0
+            review_date = None
             print("==============review=====user_fields_eles===============")
-            xpath_header = 'div[@class="yotpo-header yotpo-verified-buyer "]/div[@class="yotpo-header-element "]'
+            xpath_header = 'div[@class="yotpo-header yotpo-verified-buyer "]'
+            xpath_date = xpath_header + '/div[@class="yotpo-header-element yotpo-header-actions "]/span/text()'
+            ele_date = ele.xpath(xpath_date)
+            time_text = ele_date.get() if ele_date else ""
+
+            if time_text:
+                dt = time_text.split('/')
+                date_fixed = f"20{dt[2]}-{dt[0]}-{dt[1]}"
+                time_format = "%Y-%m-%d"
+                review_time = mktime(strptime(date_fixed, time_format))
+                review_date = datetime.strptime(date_fixed, time_format)
             xpath_title = 'div[@class="yotpo-main "]//div[@class="content-title yotpo-font-bold"]/text()'
             xpath_body = 'div[@class="yotpo-main "]//div[@class="content-review"]/text()'
             ele_title = ele.xpath(xpath_title)
             ele_body = ele.xpath(xpath_body)
             title = ele_title.get() if ele_title else ""
             body = ele_body.get() if ele_body else ""
-            print(f"=====title==and==body===\n{title}\n{body}")
-            xpath_stars = xpath_header + '/div[@class="yotpo-review-stars "]'
+            # print(f"=====title==and==body===\n{title}\n{body}")
+            xpath_stars = xpath_header + '/div[@class="yotpo-header-element "]/div[@class="yotpo-review-stars "]'
             xpath_rating = xpath_stars + '/span[@class="sr-only"]/text()'
             star_text_ele = ele.xpath(xpath_rating)
             star_text = star_text_ele.get() if star_text_ele else ""
-            print(f"==rating_value=={star_text}===")
+            rating_value = star_text.split(" ")[0] if star_text else 0
+            # print(f"==rating_value=={star_text}===")
             xpath_user_field = xpath_stars + '/div[@class="yotpo-user-related-fields"]/div[@class="yotpo-user-field"]'
             user_fields_eles = ele.xpath(xpath_user_field)
+            age, activity, body_type = ("", "", "")
             for user_field_ele in user_fields_eles:
                 key_ele = user_field_ele.xpath('span[@class="yotpo-user-field-description text-s"]/text()')
-                key_text = key_ele.get() if key_ele else ""
+                key_text = key_ele.get().replace(":", "") if key_ele else ""
                 value_ele = user_field_ele.xpath('span[@class="yotpo-user-field-answer text-s"]/text()')
                 value_text = value_ele.get() if value_ele else ""
-                print(f"=={key_text}==={value_text}===")
+                if key_text == "Age":
+                    age = value_text
+                if key_text == "Activity":
+                    activity = value_text
+                if key_text == "BODY TYPE":
+                    body_type = value_text
+                # print(f"=={key_text}==={value_text}===")
+            item = GoodsReviewShefitItem()
+            item['code'] = code
+            item['age'] = age
+            item['activity'] = activity
+            item['body_type'] = body_type
+            item['title'] = title
+            item['body'] = body
+            item['rating_value'] = rating_value
+            item['review_time'] = review_time
+            item['review_date'] = review_date
+            item['time_str'] = time_text
+            item_list.append(item)
+        return item_list
 
     def parse_goods_reviews(self, response: TextResponse):
         meta = response.meta
         page = meta['page']
+        goods_model = meta['goods_model']
         print(f"===============page={str(page)}=========")
         html = response.json()[0]['result']
 
@@ -219,13 +266,19 @@ class ShefitSpider(BaseSpider):
         reviews_eles = select.xpath('//div[@class="yotpo-review yotpo-regular-box  "]')
         reviews_eles_first = select.xpath('//div[@class="yotpo-review yotpo-regular-box yotpo-regular-box-filters-padding "]')
 
-        self.get_review_fields(reviews_eles_first)
+        for itemfirst in self.get_review_fields(reviews_eles_first):
+            itemfirst['goods_id'] = goods_model.id
+            itemfirst['goods_code'] = goods_model.code
+            yield itemfirst
         print("==========first===end=============================================================")
-        self.get_review_fields(reviews_eles)
+        for item in self.get_review_fields(reviews_eles):
+            item['goods_id'] = goods_model.id
+            item['goods_code'] = goods_model.code
+            yield item
 
-        if page < 3:
-            next_page = page + 1
-            meta['page'] = next_page
+        next_page = page + 1
+        ele_next_page = select.xpath(f"//a[@role=\"menuitem\"][@data-page=\"{str(next_page)}\"]")
+        if ele_next_page:
             yield self.request_goods_reviews(next_page, meta)
 
 

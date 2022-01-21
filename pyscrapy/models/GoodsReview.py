@@ -20,3 +20,8 @@ class GoodsReview(BaseModel):
     review_time = Column(Integer, comment='评论时间戳')
     time_str = Column(String(64), comment='评论时间')
     body = Column(Text, comment='评论内容')
+
+    age = Column(String(32), comment='年龄')
+    body_type = Column(String(255), comment='体型')
+    activity = Column(String(255), comment="activity")
+

@@ -133,6 +133,15 @@ class GoodsReviewSheinItem(GoodsReviewItem):
     """
 
 
+class GoodsReviewShefitItem(GoodsReviewItem):
+    """
+    shefit.com
+    """
+    age = Field()
+    activity = Field()
+    body_type = Field()
+
+
 class PyscrapyItem(Item):
     # print('========start==PyscrapyItem===process_item===')
     # define the fields for your item here like:
