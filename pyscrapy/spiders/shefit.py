@@ -48,6 +48,35 @@ class ShefitSpider(BaseSpider):
             url = self.input_args.get('url')
             yield Request(url, callback=self.parse_goods_detail, headers=dict(referer=self.image_referer))
 
+    def request_goods_reviews(self, page: int, meta: dict) -> Request:
+        reviews_url = "https://staticw2.yotpo.com/batch/app_key/dqbG40YNTpcZQTZ7u680Wus6Gn2HzVmK7219GsNM/domain_key/2263121592374/widget/reviews"
+        # [{"method":"reviews","params":{"pid":"2263121592374","order_metadata_fields":{},"widget_product_id":"2263121592374",
+        # "data_source":"default","page":1,"host-widget":"main_widget","is_mobile":false,"pictures_per_review":10}}]
+        methods = [{
+            "method": "reviews",
+            "params": {"pid": "2263121592374", "order_metadata_fields": {},
+                       "widget_product_id": "2263121592374", "data_source": "default", "page": page,
+                       "host-widget": "main_widget", "is_mobile": False, "pictures_per_review": 10
+                       }
+        }]
+        post_data = {
+            "methods": json.dumps(methods, separators=(',', ':')),
+            "app_key": "dqbG40YNTpcZQTZ7u680Wus6Gn2HzVmK7219GsNM",
+            "is_mobile": False,
+            "widget_version": "2022-01-12_12-39-56"
+        }
+        print(post_data)
+        body = urlencode(post_data)
+        print(body)
+        headers = {
+            "accept": "application/json",
+            "content-type": "application/x-www-form-urlencoded",
+            "referer": self.image_referer
+        }
+        print(headers)
+        return Request(url=reviews_url, method='POST', callback=self.parse_goods_reviews, meta=meta,
+                       body=body, headers=headers)
+
     goods_list_count = 0
 
     def parse_goods_list(self, response: TextResponse):
@@ -156,63 +185,47 @@ class ShefitSpider(BaseSpider):
 
     def get_review_fields(self, eles):
         for ele in eles:
+            print("==============review=====user_fields_eles===============")
             xpath_header = 'div[@class="yotpo-header yotpo-verified-buyer "]/div[@class="yotpo-header-element "]'
+            xpath_title = 'div[@class="yotpo-main "]//div[@class="content-title yotpo-font-bold"]/text()'
+            xpath_body = 'div[@class="yotpo-main "]//div[@class="content-review"]/text()'
+            ele_title = ele.xpath(xpath_title)
+            ele_body = ele.xpath(xpath_body)
+            title = ele_title.get() if ele_title else ""
+            body = ele_body.get() if ele_body else ""
+            print(f"=====title==and==body===\n{title}\n{body}")
             xpath_stars = xpath_header + '/div[@class="yotpo-review-stars "]'
-
-            star_text_ele = ele.xpath(xpath_stars + '/span[@class="sr-only"]/text()')
+            xpath_rating = xpath_stars + '/span[@class="sr-only"]/text()'
+            star_text_ele = ele.xpath(xpath_rating)
             star_text = star_text_ele.get() if star_text_ele else ""
-            print(star_text)
-            print("=====user_fields_eles=========")
-            user_fields_eles = ele.xpath(
-                xpath_stars + '/div[@class="yotpo-user-related-fields"]/div[@class="yotpo-user-field"]')
+            print(f"==rating_value=={star_text}===")
+            xpath_user_field = xpath_stars + '/div[@class="yotpo-user-related-fields"]/div[@class="yotpo-user-field"]'
+            user_fields_eles = ele.xpath(xpath_user_field)
             for user_field_ele in user_fields_eles:
+                key_ele = user_field_ele.xpath('span[@class="yotpo-user-field-description text-s"]/text()')
+                key_text = key_ele.get() if key_ele else ""
                 value_ele = user_field_ele.xpath('span[@class="yotpo-user-field-answer text-s"]/text()')
                 value_text = value_ele.get() if value_ele else ""
-                print(value_text)
+                print(f"=={key_text}==={value_text}===")
 
     def parse_goods_reviews(self, response: TextResponse):
         meta = response.meta
         page = meta['page']
+        print(f"===============page={str(page)}=========")
         html = response.json()[0]['result']
-        print(html)
 
         select = Selector(text=html)
         # <div class="yotpo-review yotpo-regular-box yotpo-regular-box-filters-padding " data-review-id="306840408">
         reviews_eles = select.xpath('//div[@class="yotpo-review yotpo-regular-box  "]')
         reviews_eles_first = select.xpath('//div[@class="yotpo-review yotpo-regular-box yotpo-regular-box-filters-padding "]')
 
-        self.get_review_fields(reviews_eles)
         self.get_review_fields(reviews_eles_first)
+        print("==========first===end=============================================================")
+        self.get_review_fields(reviews_eles)
 
-        meta['page'] = page + 1
-        # yield self.request_goods_reviews(page, meta)
+        if page < 3:
+            next_page = page + 1
+            meta['page'] = next_page
+            yield self.request_goods_reviews(next_page, meta)
 
-    def request_goods_reviews(self, page: int, meta: dict) -> Request:
-        reviews_url = "https://staticw2.yotpo.com/batch/app_key/dqbG40YNTpcZQTZ7u680Wus6Gn2HzVmK7219GsNM/domain_key/2263121592374/widget/reviews"
-        # [{"method":"reviews","params":{"pid":"2263121592374","order_metadata_fields":{},"widget_product_id":"2263121592374",
-        # "data_source":"default","page":1,"host-widget":"main_widget","is_mobile":false,"pictures_per_review":10}}]
-        methods = [{
-            "method": "reviews",
-            "params": {"pid": "2263121592374", "order_metadata_fields": {},
-                       "widget_product_id": "2263121592374", "data_source": "default", "page": page,
-                       "host-widget": "main_widget", "is_mobile": False, "pictures_per_review": 10
-                       }
-        }]
-        post_data = {
-            "methods": json.dumps(methods, separators=(',', ':')),
-            "app_key": "dqbG40YNTpcZQTZ7u680Wus6Gn2HzVmK7219GsNM",
-            "is_mobile": False,
-            "widget_version": "2022-01-12_12-39-56"
-        }
-        print(post_data)
-        body = urlencode(post_data)
-        print(body)
-        headers = {
-            "accept": "application/json",
-            "content-type": "application/x-www-form-urlencoded",
-            "referer": self.image_referer
-        }
-        print(headers)
-        return Request(url=reviews_url, method='POST', callback=self.parse_goods_reviews, meta=meta,
-                       body=body, headers=headers)
 
