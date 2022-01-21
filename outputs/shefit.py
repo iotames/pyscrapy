@@ -1,14 +1,21 @@
-from pyscrapy.models import Goods
+from pyscrapy.models import Goods, GoodsReview
 from outputs.baseoutput import BaseOutput
 import json
+from translate import Translator
 
 
 class ShefitOutput(BaseOutput):
 
     site_name = 'shefit'
 
+    translator: Translator
+
     def __init__(self):
         super(ShefitOutput, self).__init__('商品信息列表', self.site_name)
+        self.translator = Translator(to_lang='chinese', provider='mymemory')  # , proxies={'http': '127.0.0.1:1080'}
+
+    def to_chinese(self, content: str):
+        return self.translator.translate(content)
 
     def output(self):
         sheet = self.work_sheet
@@ -42,7 +49,32 @@ class ShefitOutput(BaseOutput):
             goods_row_index += 1
         self.wb.save(self.output_file)
 
+    def test(self):
+        reviews = self.db_session.query(GoodsReview).filter(Goods.site_id == self.site_id).all()
+        trans_map = {}
+        times = 0
+        for review in reviews:
+            if times > 0:
+                break
+
+            code = review.code
+            body = review.body
+            title = review.title
+            body_type = review.body_type
+            activity = review.activity
+            age = review.age
+
+            if code not in trans_map:
+                trans_map[code] = dict(title=title, body=body, activity=activity, body_type=body_type)
+        print(trans_map)
+        # ak = json.dumps(trans_map)
+        # sk = self.to_chinese(ak)
+        # print(sk)
+        # print(json.loads(sk))
+
 
 if __name__ == '__main__':
     ot = ShefitOutput()
-    ot.output()
+    # ot.output()
+    ot.test()
+
