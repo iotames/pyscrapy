@@ -3,13 +3,13 @@ from outputs.baseoutput import BaseOutput
 import json
 
 
-
 class ShefitOutput(BaseOutput):
 
     site_name = 'shefit'
 
     def __init__(self):
         super(ShefitOutput, self).__init__('商品信息列表', self.site_name)
+        self.get_trans_dic_all()
 
     def output(self):
         sheet = self.work_sheet
@@ -22,7 +22,7 @@ class ShefitOutput(BaseOutput):
         goods_list = self.db_session.query(Goods).filter(Goods.site_id == self.site_id).all()
         goods_row_index = 2
         sheet_reviews = self.wb.create_sheet(title='评论详情', index=1)
-        details_title_row = ('时间', '星级', '体型', '年龄', 'activity', '标题', '详情')
+        details_title_row = ('时间', '星级', '款式', '体型', '年龄', 'activity', '标题', '详情')
         sheet_reviews.append(details_title_row)
 
         for goods in goods_list:
@@ -43,7 +43,7 @@ class ShefitOutput(BaseOutput):
             print(goods_info_list)
             # 返回商品信息递增列 next col index
             self.set_values_to_row(sheet, goods_info_list, goods_row_index, goods_col_index)
-            self.output_reviews(sheet_reviews, goods['id'])
+            self.output_reviews(sheet_reviews, goods.id)
             goods_row_index += 1
 
         self.wb.save(self.output_file)
@@ -82,6 +82,7 @@ class ShefitOutput(BaseOutput):
             body = review.body
             body_type = review.body_type
             activity = review.activity
+            sku_text = review.sku_text
 
             # title = self.to_chinese(title, False)
             # review.title = title
@@ -96,7 +97,7 @@ class ShefitOutput(BaseOutput):
             # review.body = body
             # self.db_session.commit()
 
-            review_row = (time_text, rating, body_type, age, activity, title, body)
+            review_row = (time_text, rating, sku_text, body_type, age, activity, title, body)
             sheet_reviews.append(review_row)
 
             """

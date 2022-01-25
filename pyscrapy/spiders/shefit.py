@@ -201,10 +201,13 @@ class ShefitSpider(BaseSpider):
             review_time = 0
             review_date = None
             print("==============review=====user_fields_eles===============")
+            xpath_sku = 'div[@class="yotpo-footer "]//a[@class="grouping-reference-link"]/text()'
             xpath_header = 'div[@class="yotpo-header yotpo-verified-buyer "]'
             xpath_date = xpath_header + '/div[@class="yotpo-header-element yotpo-header-actions "]/span/text()'
             ele_date = ele.xpath(xpath_date)
             time_text = ele_date.get() if ele_date else ""
+            ele_sku = ele.xpath(xpath_sku)
+            sku_text = ele_sku.get() if ele_sku else ""
 
             if time_text:
                 dt = time_text.split('/')
@@ -247,6 +250,7 @@ class ShefitSpider(BaseSpider):
             item['body_type'] = body_type
             item['title'] = title
             item['body'] = body
+            item['sku_text'] = sku_text
             item['rating_value'] = rating_value
             item['review_time'] = review_time
             item['review_date'] = review_date

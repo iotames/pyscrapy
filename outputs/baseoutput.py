@@ -36,7 +36,6 @@ class BaseOutput:
     def __init__(self, sheet_title='库存详情', filename='output'):
 
         self.translator = TranslatorService()  # Translator(to_lang='chinese', provider='mymemory')  # , proxies={'http': '127.0.0.1:1080'}
-        self.get_trans_dic_all()
 
         self.server_config = ApiServer()
         self.images_dir = BaseSpider.custom_settings.get('IMAGES_STORE')  # get_project_settings().get('IMAGES_STORE')
