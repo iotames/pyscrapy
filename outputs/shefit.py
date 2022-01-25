@@ -1,26 +1,15 @@
 from pyscrapy.models import Goods, GoodsReview
 from outputs.baseoutput import BaseOutput
 import json
-from translate import Translator
-import requests
+
 
 
 class ShefitOutput(BaseOutput):
 
     site_name = 'shefit'
 
-    translator: Translator
-
     def __init__(self):
         super(ShefitOutput, self).__init__('商品信息列表', self.site_name)
-        self.translator = Translator(to_lang='chinese', provider='mymemory')  # , proxies={'http': '127.0.0.1:1080'}
-
-    def to_chinese(self, content: str):
-        # return self.translator.translate(content)
-        url = f"http://fanyi.youdao.com/translate?&doctype=json&type=AUTO&i={content}"
-        response = requests.get(url)
-        json_data = response.json()
-        return json_data["translateResult"][0][0]["tgt"]
 
     def output(self):
         sheet = self.work_sheet
@@ -32,6 +21,9 @@ class ShefitOutput(BaseOutput):
             title_col += 1
         goods_list = self.db_session.query(Goods).filter(Goods.site_id == self.site_id).all()
         goods_row_index = 2
+        sheet_reviews = self.wb.create_sheet(title='评论详情', index=1)
+        details_title_row = ('时间', '星级', '体型', '年龄', 'activity', '标题', '详情')
+        sheet_reviews.append(details_title_row)
 
         for goods in goods_list:
             goods_col_index = 1
@@ -51,47 +43,72 @@ class ShefitOutput(BaseOutput):
             print(goods_info_list)
             # 返回商品信息递增列 next col index
             self.set_values_to_row(sheet, goods_info_list, goods_row_index, goods_col_index)
+            self.output_reviews(sheet_reviews, goods['id'])
             goods_row_index += 1
-        self.save_reviews()
+
         self.wb.save(self.output_file)
 
-    def update_reviews_rows(self, reviews_rows_per: list, reviews_rows: list):
+    def update_reviews_rows(self, reviews_rows_per: list, reviews_rows: list, reviews_list: list):
+        # 多行数据批量转字符串
         reviews_rows_per_str = json.dumps(reviews_rows_per)
-        reviews_rows_per_str_cn = self.to_chinese(reviews_rows_per_str)
+        reviews_rows_per_str_cn = self.to_chinese(reviews_rows_per_str, False)  # 多行数据批量翻译
         print(reviews_rows_per_str_cn)
-        reviews_rows_per = json.loads(reviews_rows_per_str_cn)
+        reviews_rows_per = json.loads(reviews_rows_per_str_cn)  # 多行数据字符串序列化为数组
+        i = 0
         for review_row in reviews_rows_per:
+            model = reviews_list[i]
+            model.body_type = review_row["body_type"]
+            model.activity = review_row["activity"]
+            model.title = review_row['title']
+            model.body = review_row['body']
+            self.db_session.commit()
+            i += 1
             reviews_rows.append(review_row)
 
-    def save_reviews(self):
-        sheet_reviews = self.wb.create_sheet(title='评论详情', index=1)
-        details_title_row = ('时间', '星级', '体型', '年龄', 'activity', '标题', '详情')
-        sheet_reviews.append(details_title_row)
-        reviews = self.db_session.query(GoodsReview).filter(GoodsReview.site_id == self.site_id).all()
+    def output_reviews(self, sheet_reviews, goods_id):
+        reviews = self.db_session.query(GoodsReview).filter(
+            GoodsReview.site_id == self.site_id, GoodsReview.goods_id == goods_id).all()
         reviews_rows = []
-        reviews_rows_per = []
+        # reviews_rows_per = []
+        # reviews_list_per = []
         times = 0
         for review in reviews:
             times += 1
             # code = review.code
-            body = review.body
-            title = review.title
-            # title = self.to_chinese(title)
-            review.title = title
-            body_type = review.body_type
-            activity = review.activity
             rating = review.rating_value
             age = review.age
             time_text = review.time_str
-            review_row = (time_text, rating, body_type, age, activity, title, body)
-            # sheet_reviews.append(review_row)
+            title = review.title
+            body = review.body
+            body_type = review.body_type
+            activity = review.activity
+
+            # title = self.to_chinese(title, False)
+            # review.title = title
+            #
+            # body_type = self.to_chinese(body_type)
+            # review.body_type = body_type
+            #
+            # activity = self.to_chinese(activity)
+            # review.activity = activity
+            #
+            # body = self.to_chinese(body, False)
+            # review.body = body
             # self.db_session.commit()
+
+            review_row = (time_text, rating, body_type, age, activity, title, body)
+            sheet_reviews.append(review_row)
+
+            """
             reviews_rows_per.append(review_row)
+            reviews_list_per.append(review)
             if times % 10 == 0:
-                self.update_reviews_rows(reviews_rows_per, reviews_rows)
+                self.update_reviews_rows(reviews_rows_per, reviews_rows, reviews_list_per)
                 reviews_rows_per = []
+                reviews_list_per = []
             if times == len(reviews):
-                self.update_reviews_rows(reviews_rows_per, reviews_rows)
+                self.update_reviews_rows(reviews_rows_per, reviews_rows, reviews_list_per)
+            """
 
         for review_row in reviews_rows:
             sheet_reviews.append(review_row)

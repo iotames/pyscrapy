@@ -3,7 +3,7 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.worksheet.worksheet import Worksheet
 from Config import Config
 from service.DB import DB
-from pyscrapy.models import Site
+from pyscrapy.models import Site, Translator
 import os
 import shutil
 from config.api_server import ApiServer
@@ -13,6 +13,8 @@ from sqlalchemy.orm.session import Session
 from openpyxl.drawing.image import Image
 from openpyxl.utils import get_column_letter
 from pyscrapy.spiders.basespider import BaseSpider
+# from translate import Translator
+from service.Translator import Translator as TranslatorService
 
 
 class BaseOutput:
@@ -28,8 +30,14 @@ class BaseOutput:
     downloads_dirname = "downloads"
     download_filename = None
     server_config: ApiServer
+    trans_dic_en_zh = {}
+    translator: TranslatorService
 
     def __init__(self, sheet_title='库存详情', filename='output'):
+
+        self.translator = TranslatorService()  # Translator(to_lang='chinese', provider='mymemory')  # , proxies={'http': '127.0.0.1:1080'}
+        self.get_trans_dic_all()
+
         self.server_config = ApiServer()
         self.images_dir = BaseSpider.custom_settings.get('IMAGES_STORE')  # get_project_settings().get('IMAGES_STORE')
         db = DB.get_instance(Config().get_database())
@@ -47,6 +55,38 @@ class BaseOutput:
         if not site:
             raise RuntimeError(self.site_name + " 在数据库中不存在")
         self.site_id = site.id
+
+    def to_chinese(self, content: str, check_local_dict=True) -> str:
+        # return self.translator.translate(content)
+        # must use self.get_trans_dic_all() before
+        if len(content) < 5:
+            return content
+        if check_local_dict and content in self.trans_dic_en_zh:
+            return self.trans_dic_en_zh[content]
+        cn_content = self.translator.to_chinese(content)
+        if check_local_dict:
+            self.add_trans_dict(content, cn_content)
+        return cn_content
+
+    def get_trans_dic_all(self):
+        dict_list = self.db_session.query(Translator).filter(Translator.trans_type == 0).all()
+        if len(dict_list) > 0:
+            for dt in dict_list:
+                self.trans_dic_en_zh[dt.from_lang] = dt.to_lang
+
+    def add_trans_dict(self, fro: str, to: str, trans_type=0):
+        if trans_type > 0:
+            raise ValueError("trans_type value must == 0")
+        self.trans_dic_en_zh[fro] = to
+        self.db_session.add(Translator(from_lang=fro, to_lang=to, trans_type=trans_type))
+        self.db_session.commit()
+
+    def get_trans_value(self, fro: str, trans_type=0):
+        if trans_type > 0:
+            raise ValueError("trans_type value must == 0")
+        if fro in self.trans_dic_en_zh:
+            return self.trans_dic_en_zh[fro]
+        return None
 
     def get_image_info(self, path: str) -> dict:
         if not path.startswith('/'):
