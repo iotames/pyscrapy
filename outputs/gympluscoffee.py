@@ -14,15 +14,12 @@ class GympluscoffeeOutput(BaseOutput):
     categories: list
     goods_model_list: list
     origin_file = ''
-    inventory_cols_len = 1
+    inventory_cols_len = 1  # 新生成的文件库存栏数量
 
     def __init__(self):
         super(GympluscoffeeOutput, self).__init__('SKU库存详情', self.site_name)
         self.categories = self.db_session.query(GoodsCategory).all()
         self.translator = Translator(to_lang='chinese', provider='mymemory')
-
-    def to_chinese(self, content: str):
-        return self.translator.translate(content)
 
     def get_parent_by_category_id(self, category_id: int):
         parent_id = 0
@@ -183,6 +180,6 @@ class GympluscoffeeOutput(BaseOutput):
 
 if __name__ == '__main__':
     gc = GympluscoffeeOutput()
-    gc.inventory_cols_len = 11
-    gc.origin_file = gc.output_dir + '/gympluscoffee_2022-01-04_08_41.xlsx'
+    gc.inventory_cols_len = 13  # 新的文件库存栏数量
+    gc.origin_file = gc.output_dir + '/gympluscoffee_2022-01-14_15_58.xlsx'
     gc.output_to_excel()
