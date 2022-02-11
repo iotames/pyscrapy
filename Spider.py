@@ -55,7 +55,7 @@ if __name__ == '__main__':
         'input_args': {
             # "store_name": "Baleaf",
             # "code": "Baleaf_Yoga_Women_s_Tops",
-            "url": "https://shefit.com/products/leggings-boss",
+            # "url": "https://shefit.com/products/leggings-boss",
             # "group_log_id": 5
             # "code": "Baleaf_Women"
             # "ranking_log_id": 20,
@@ -67,4 +67,4 @@ if __name__ == '__main__':
             # 'url': 'https://www.amazon.de/bestsellers/sports/3771963031'
         }
     }
-    Spider.crawl(NAME_GYMPLUSCOFFEE, spider_args=args)
+    Spider.crawl(NAME_SHEFIT, spider_args=args)

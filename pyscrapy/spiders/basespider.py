@@ -114,8 +114,8 @@ class BaseSpider(Spider):
     def request_list_goods_detail(self, get_request=None) -> list:
         if self.spider_child == self.CHILD_GOODS_DETAIL:
             before_time = time.time()
-            if self.app_env == self.spider_config.ENV_PRODUCTION:
-                before_time = time.time() - (2 * 3600)  # 2小时内的采集过的商品不会再更新
+            # if self.app_env == self.spider_config.ENV_PRODUCTION:
+            #     before_time = time.time() - (2 * 3600)  # 2小时内的采集过的商品不会再更新
             self.goods_model_list = self.db_session.query(Goods).filter(and_(
                 Goods.site_id == self.site_id, or_(
                     Goods.status == Goods.STATUS_UNKNOWN,

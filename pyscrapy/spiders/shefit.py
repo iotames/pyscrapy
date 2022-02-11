@@ -62,13 +62,14 @@ class ShefitSpider(BaseSpider):
             yield self.request_goods_reviews(1, meta)
 
     def request_goods_reviews(self, page: int, meta: dict) -> Request:
-        reviews_url = "https://staticw2.yotpo.com/batch/app_key/dqbG40YNTpcZQTZ7u680Wus6Gn2HzVmK7219GsNM/domain_key/2263121592374/widget/reviews"
+        productId = "2263121592374"
+        reviews_url = f"https://staticw2.yotpo.com/batch/app_key/dqbG40YNTpcZQTZ7u680Wus6Gn2HzVmK7219GsNM/domain_key/{productId}/widget/reviews"
         # [{"method":"reviews","params":{"pid":"2263121592374","order_metadata_fields":{},"widget_product_id":"2263121592374",
         # "data_source":"default","page":1,"host-widget":"main_widget","is_mobile":false,"pictures_per_review":10}}]
         methods = [{
             "method": "reviews",
-            "params": {"pid": "2263121592374", "order_metadata_fields": {},
-                       "widget_product_id": "2263121592374", "data_source": "default", "page": page,
+            "params": {"pid": productId, "order_metadata_fields": {},
+                       "widget_product_id": productId, "data_source": "default", "page": page,
                        "host-widget": "main_widget", "is_mobile": False, "pictures_per_review": 10
                        }
         }]
