@@ -5,6 +5,7 @@ import datetime
 import time
 import json
 from .base import Base
+from pyscrapy.enum.spider import *
 # from service.Singleton import Singleton
 
 
@@ -244,6 +245,8 @@ class GoodsBase(Base):
 
     @staticmethod
     def save_ranking_goods(model: Goods, spider: BaseSpider):
+        if spider.spider_child == CHILD_GOODS_LIST_ALL_COLORS:
+            return False
         details = json.loads(model.details)
         rank_num = details['rank_num'] if 'rank_num' in details else 0
         spu = details['spu'] if 'spu' in details else ''
@@ -253,7 +256,7 @@ class GoodsBase(Base):
 
         xgoods = RankingGoods.get_self(xd_find)
         update_data = {
-            'spider_run_log_id': spider.log_id,
+            # 'spider_run_log_id': spider.log_id,
             'goods_code': model.code,
             'rank_num': rank_num,
             'goods_spu': spu,
@@ -271,6 +274,8 @@ class GoodsBase(Base):
 
     @staticmethod
     def save_group_goods(model: Goods, spider: BaseSpider):
+        if spider.spider_child == CHILD_GOODS_LIST_ALL_COLORS:
+            return False
         details = json.loads(model.details)
         rank_num = details['group_rank_num'] if 'group_rank_num' in details else 0  # TODO
         spu = details['spu'] if 'spu' in details else ''
@@ -280,7 +285,7 @@ class GoodsBase(Base):
 
         xgoods = GroupGoods.get_self(xd_find)
         update_data = {
-            'spider_run_log_id': spider.log_id,
+            # 'spider_run_log_id': spider.log_id,
             'goods_code': model.code,
             'rank_num': rank_num,
             'goods_spu': spu,
@@ -289,9 +294,9 @@ class GoodsBase(Base):
             'goods_url': model.url
         }
         if xgoods:
-            # 更新goods和ranking_log对应关系
+            # 更新goods和group_log对应关系
             GroupGoods.save_update(xd_find, update_data)
         else:
-            # 添加goods和ranking_log对应关系
+            # 添加goods和group_log对应关系
             xd_find.update(update_data)
             GroupGoods.save_create(xd_find)

@@ -19,12 +19,16 @@ class AmazonOutput(BaseOutput):
     group_name = ""
     ranking_log_model: RankingLog
     group_log_model: GroupLog
+    # run_log_model: SpiderRunLog
+
+    group_log_children = [CHILD_GOODS_REVIEWS_BY_GROUP, CHILD_GOODS_LIST_STORE_PAGE, CHILD_GOODS_LIST_ALL_COLORS]
     
     def __init__(self, run_log: SpiderRunLog):
+        # self.run_log_model = run_log
         self.child = run_log.spider_child
         link_id = run_log.link_id
         query_args = {"id": int(link_id)}
-        if self.child == CHILD_GOODS_REVIEWS_BY_GROUP:
+        if self.child in self.group_log_children:
             self.group_log_model = GroupLog.get_model(GroupGoods.get_db_session(), query_args)
             self.group_name = self.group_log_model.code
 
@@ -38,7 +42,7 @@ class AmazonOutput(BaseOutput):
 
     @property
     def log_model(self):
-        if self.child == CHILD_GOODS_REVIEWS_BY_GROUP:
+        if self.child in self.group_log_children:
             return self.group_log_model
         if self.child == CHILD_GOODS_REVIEWS_BY_RANKING:
             return self.ranking_log_model
@@ -81,19 +85,21 @@ class AmazonOutput(BaseOutput):
         sheet = self.work_sheet
 
         if not self.log_model:
-            raise RuntimeError('找不到排行榜数据')
-        if time() - self.log_model.created_at > 3600 * 72:
-            raise RuntimeError('最近排行榜数据已超过72小时, 请重新采集')
+            raise RuntimeError('找不到商品快照: log_model')
+        # if time() - self.log_model.created_at > 3600 * 72:
+        #     raise RuntimeError('数据已超过72小时, 请重新采集')
 
         db_session = self.db_session
         x_goods_list = []
+        condition = None
         if self.child == CHILD_GOODS_REVIEWS_BY_RANKING:
-            x_goods_list = db_session.query(RankingGoods).filter_by(**{'ranking_log_id': self.log_model.id}).order_by(
-                RankingGoods.rank_num.asc()).all()
-        if self.child == CHILD_GOODS_REVIEWS_BY_GROUP:
-            x_goods_list = db_session.query(GroupGoods).filter_by(**{'group_log_id': self.log_model.id}).order_by(
+            condition = {'ranking_log_id': self.log_model.id}  # "spider_run_log_id": self.run_log_model.id
+            x_goods_list = db_session.query(RankingGoods).filter_by(**condition).order_by(RankingGoods.rank_num.asc()).all()
+        if self.child in self.group_log_children:
+            condition = {'group_log_id': self.log_model.id}  # "spider_run_log_id": self.run_log_model.id
+            x_goods_list = db_session.query(GroupGoods).filter_by(**condition).order_by(
                 GroupGoods.rank_num.asc()).all()
-
+        print(condition)
         current_time = int(time())
         month_in_12 = current_time - 3600 * 24 * 365
         month_in_6 = current_time - 3600 * 24 * 180
@@ -120,19 +126,36 @@ class AmazonOutput(BaseOutput):
         asin_list = []
         asin_goods_map = {}
         code_list = []
+        code_len = 0
         for xgoods in x_goods_list:
             goods_model = Goods.get_model(db_session, {'id': xgoods.goods_id})
             asin = goods_model.asin
             code = XAmazon.get_code_by_goods_url(goods_model.url)
             goods_model.code = code  # 重写 code
             if asin not in asin_list:
-                if code not in code_list:  # 剔除重复的SPU
-                    asin_list.append(asin)
-                    code_list.append(code)
-                    asin_goods_map[asin] = [goods_model]
+
+                asin_list.append(asin)
+                code_list.append(code)
+                asin_goods_map[asin] = [goods_model]
+
+                if self.child == CHILD_GOODS_LIST_ALL_COLORS:
+                    spu_models = Goods.get_all_model(db_session, {'asin': asin})
+                    spu_len = 0
+                    for spu_model in spu_models:
+                        spu_len += 1
+                        code_len += 1
+                        if spu_model.code not in code_list:
+                            asin_goods_map[asin].append(spu_model)
+                            code_list.append(spu_model.code)
+                    print(f"=====spu=={asin}==len={str(spu_len)}====")
             else:
                 if code not in code_list:  # 剔除重复的SPU
                     asin_goods_map[asin].append(goods_model)
+                    code_list.append(code)
+        # print(len(asin_list))
+        # print(len(code_list))
+        # print(code_len)
+        # exit()
 
         goods_list = []
         for asin, gd_list in asin_goods_map.items():
@@ -156,8 +179,9 @@ class AmazonOutput(BaseOutput):
             root_rank = details['root_rank']
             goods_url = goods_model.url
 
-            has_group_list = [CHILD_GOODS_REVIEWS_BY_GROUP, CHILD_GOODS_REVIEWS_BY_RANKING]
-            if self.child in has_group_list:
+            # has_group_list = [CHILD_GOODS_REVIEWS_BY_GROUP, CHILD_GOODS_REVIEWS_BY_RANKING]
+            # if self.child in has_group_list:
+            if self.child:
                 category_name = self.group_name
             else:
                 category_name = goods_model.category_name if goods_model.category_name else self.group_name
@@ -270,6 +294,6 @@ class AmazonOutput(BaseOutput):
 
 if __name__ == '__main__':
     db_session = SpiderRunLog.get_db_session()
-    log = SpiderRunLog.get_model(db_session, {'id': 16})  # 164 165 168 169
+    log = SpiderRunLog.get_model(db_session, {'id': 36})  # 164 165 168 169
     ot = AmazonOutput(log)
     ot.output()

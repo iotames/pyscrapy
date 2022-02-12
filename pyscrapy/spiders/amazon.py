@@ -208,10 +208,15 @@ class AmazonSpider(BaseSpider):
                     )
 
         if self.spider_child == CHILD_GOODS_LIST_ALL_COLORS:
-            self.goods_model_list = Goods.get_all_model(self.db_session, {'site_id': self.site_id})
+            if 'group_log_id' not in self.input_args:
+                raise RuntimeError("缺少group_log_id参数")
+            self.group_log_id = int(self.input_args['group_log_id'])
+            goods_x_list = GroupGoods.get_all_model(self.db_session, {'group_log_id': self.group_log_id})
+            print('==================goods_list_len = ' + str(len(goods_x_list)))
             asin_list = []
-            for goods_model in self.goods_model_list:
-                asin = goods_model.asin
+            for xgd in goods_x_list:
+                asin = xgd.goods_spu  # amazon ASIN
+                goods_model = Goods.get_model(self.db_session, {"id": xgd.goods_id})
                 if asin not in asin_list:
                     asin_list.append(asin)
                     url = XAmazon.get_url_by_code(asin, self.url_params)

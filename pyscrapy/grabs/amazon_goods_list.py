@@ -123,7 +123,7 @@ class GoodsListInStore(BasePage):
             # yield item
             yield Request(
                 XAmazon.get_url_by_code(asin, {"language": 'zh_CN'}),
-                # dont_filter=True, 不去掉重复的ASIN
+                # dont_filter=True,  # 不去掉重复的ASIN
                 callback=AmazonGoodsDetail.parse,
                 meta=dict(item=item)
             )
