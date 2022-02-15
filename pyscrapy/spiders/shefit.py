@@ -59,7 +59,8 @@ class ShefitSpider(BaseSpider):
             url = "https://shefit.com/products/ultimate-sports-bra-black"  # self.input_args.get('url')
             goods_model = self.db_session.query(Goods).filter(Goods.site_id == self.site_id, Goods.url == url).first()
             meta = dict(goods_model=goods_model)
-            yield self.request_goods_reviews(1, meta)
+            page = self.input_args["page"] if "page" in self.input_args else 1
+            yield self.request_goods_reviews(page, meta)
 
     def request_goods_reviews(self, page: int, meta: dict) -> Request:
         goods_model = meta['goods_model']

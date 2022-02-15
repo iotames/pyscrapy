@@ -22,6 +22,7 @@ class AmazonOutput(BaseOutput):
     # run_log_model: SpiderRunLog
 
     group_log_children = [CHILD_GOODS_REVIEWS_BY_GROUP, CHILD_GOODS_LIST_STORE_PAGE, CHILD_GOODS_LIST_ALL_COLORS]
+    ranking_log_children = [CHILD_GOODS_REVIEWS_BY_RANKING, CHILD_GOODS_LIST_RANKING, CHILD_GOODS_DETAIL_RANKING]
     
     def __init__(self, run_log: SpiderRunLog):
         # self.run_log_model = run_log
@@ -32,7 +33,7 @@ class AmazonOutput(BaseOutput):
             self.group_log_model = GroupLog.get_model(GroupGoods.get_db_session(), query_args)
             self.group_name = self.group_log_model.code
 
-        if self.child == CHILD_GOODS_REVIEWS_BY_RANKING:
+        if self.child in self.ranking_log_children:
             self.ranking_log_model = RankingLog.get_model(RankingLog.get_db_session(), query_args)
             self.group_name = self.ranking_log_model.category_name
 
@@ -44,7 +45,7 @@ class AmazonOutput(BaseOutput):
     def log_model(self):
         if self.child in self.group_log_children:
             return self.group_log_model
-        if self.child == CHILD_GOODS_REVIEWS_BY_RANKING:
+        if self.child in self.ranking_log_children:
             return self.ranking_log_model
 
     def set_colors_show_times(self, colorr: str):
@@ -92,7 +93,7 @@ class AmazonOutput(BaseOutput):
         db_session = self.db_session
         x_goods_list = []
         condition = None
-        if self.child == CHILD_GOODS_REVIEWS_BY_RANKING:
+        if self.child in self.ranking_log_children:
             condition = {'ranking_log_id': self.log_model.id}  # "spider_run_log_id": self.run_log_model.id
             x_goods_list = db_session.query(RankingGoods).filter_by(**condition).order_by(RankingGoods.rank_num.asc()).all()
         if self.child in self.group_log_children:
@@ -175,7 +176,7 @@ class AmazonOutput(BaseOutput):
             details = json.loads(goods_model.details)
 
             sale_at = details['sale_at'] if 'sale_at' in details else ''
-            asin = details['asin']
+            asin = goods_model.asin
             root_rank = details['root_rank']
             goods_url = goods_model.url
 
@@ -294,6 +295,6 @@ class AmazonOutput(BaseOutput):
 
 if __name__ == '__main__':
     db_session = SpiderRunLog.get_db_session()
-    log = SpiderRunLog.get_model(db_session, {'id': 36})  # 164 165 168 169
+    log = SpiderRunLog.get_model(db_session, {'id': 53})  # 164 165 168 169
     ot = AmazonOutput(log)
     ot.output()
