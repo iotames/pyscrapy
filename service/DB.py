@@ -22,7 +22,12 @@ class DB(Singleton):
     def get_db_engine_uri(self):
         conf = self.db_config
         self.__db_type = conf['db_type']
-        uri = f"{conf['db_type']}+{conf['db_driver']}://{conf['username']}:{conf['password']}@{conf['host']}:{conf['port']}/{conf['db_name']}"
+        drivers_map = {
+            "mysql": "pymysql",
+            "sqlite": ""
+        }
+        db_driver = drivers_map[self.__db_type]
+        uri = f"{self.__db_type}+{db_driver}://{conf['username']}:{conf['password']}@{conf['host']}:{conf['port']}/{conf['db_name']}"
         if conf['db_type'] == 'sqlite':
             uri = 'sqlite:///' + self.ROOT_PATH + '/' + self.__sqlite_file
             if self.__sqlite_file.startswith('/'):

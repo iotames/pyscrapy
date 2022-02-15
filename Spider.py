@@ -49,14 +49,14 @@ if __name__ == '__main__':
     dirpath = Config.get_logs_dir()
     args = {
         'logs_dir': dirpath,
-        'spider_child': CHILD_GOODS_LIST_ALL_COLORS,
+        'spider_child': CHILD_GOODS_REVIEWS,
         # 'spider_child': CHILD_GOODS_DETAIL,
         'log_id': "",  # "39"
         'input_args': {
-            "store_name": "Foucome",
-            "code": "New_Arrivals",
-            "url": "https://www.amazon.com/stores/page/AC36A493-A17D-4DA6-BA15-F04C8BB54EA3",
-            "group_log_id": 10
+            # "store_name": "Foucome",
+            # "code": "Maternity_Pants",
+            # "url": "https://www.amazon.com/stores/page/96335988-4912-4060-B083-7385BAD285F7",
+            # "group_log_id": 12
             # "code": "Baleaf_Women"
             # "ranking_log_id": 20,
             # 'category_name': "Tennisröcke für Damen",
@@ -67,4 +67,4 @@ if __name__ == '__main__':
             # 'url': 'https://www.amazon.de/bestsellers/sports/3771963031'
         }
     }
-    Spider.crawl(NAME_AMAZON, spider_args=args)
+    Spider.crawl(NAME_SHEFIT, spider_args=args)

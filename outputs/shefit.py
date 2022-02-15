@@ -65,10 +65,18 @@ class ShefitOutput(BaseOutput):
             i += 1
             reviews_rows.append(review_row)
 
+    def output_reviews_only(self, goods_id: int):
+        self.work_sheet.title = "评论详情"
+        sheet_reviews = self.work_sheet
+        details_title_row = ('时间', '星级', '款式', '体型', '年龄', 'activity', '标题', '详情')
+        sheet_reviews.append(details_title_row)
+        self.output_reviews(sheet_reviews, goods_id)
+        self.wb.save(self.output_file)
+
     def output_reviews(self, sheet_reviews, goods_id):
         reviews = self.db_session.query(GoodsReview).filter(
             GoodsReview.site_id == self.site_id, GoodsReview.goods_id == goods_id).all()
-        reviews_rows = []
+        # reviews_rows = []
         # reviews_rows_per = []
         # reviews_list_per = []
         times = 0
@@ -111,11 +119,12 @@ class ShefitOutput(BaseOutput):
                 self.update_reviews_rows(reviews_rows_per, reviews_rows, reviews_list_per)
             """
 
-        for review_row in reviews_rows:
-            sheet_reviews.append(review_row)
+        # for review_row in reviews_rows:
+        #     sheet_reviews.append(review_row)
 
 
 if __name__ == '__main__':
     ot = ShefitOutput()
     ot.output()
+    # ot.output_reviews_only(2)
     # print(ot.to_chinese("Running/walking/hiking, HIIT/Weightlifting/Gym, Yoga/Low intensity , Everyday Use, Other"))

@@ -54,6 +54,6 @@ class StrongerlabelOutput(BaseOutput):
 
 if __name__ == '__main__':
     db_session = SpiderRunLog.get_db_session()
-    log = SpiderRunLog.get_model(db_session, {'id': 195})
+    log = SpiderRunLog.get_model(db_session, {'id': 197})
     sl = StrongerlabelOutput(log)
     sl.output()

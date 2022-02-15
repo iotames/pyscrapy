@@ -56,13 +56,14 @@ class ShefitSpider(BaseSpider):
                     yield req
 
         if self.spider_child == CHILD_GOODS_REVIEWS:
-            url = "https://shefit.com/products/leggings-boss"  # self.input_args.get('url')
+            url = "https://shefit.com/products/ultimate-sports-bra-black"  # self.input_args.get('url')
             goods_model = self.db_session.query(Goods).filter(Goods.site_id == self.site_id, Goods.url == url).first()
             meta = dict(goods_model=goods_model)
             yield self.request_goods_reviews(1, meta)
 
     def request_goods_reviews(self, page: int, meta: dict) -> Request:
-        productId = "2263121592374"
+        goods_model = meta['goods_model']
+        productId = goods_model.code
         reviews_url = f"https://staticw2.yotpo.com/batch/app_key/dqbG40YNTpcZQTZ7u680Wus6Gn2HzVmK7219GsNM/domain_key/{productId}/widget/reviews"
         # [{"method":"reviews","params":{"pid":"2263121592374","order_metadata_fields":{},"widget_product_id":"2263121592374",
         # "data_source":"default","page":1,"host-widget":"main_widget","is_mobile":false,"pictures_per_review":10}}]
