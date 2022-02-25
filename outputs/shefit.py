@@ -125,6 +125,6 @@ class ShefitOutput(BaseOutput):
 
 if __name__ == '__main__':
     ot = ShefitOutput()
-    ot.output()
-    # ot.output_reviews_only(2)
+    # ot.output()
+    ot.output_reviews_only(2)
     # print(ot.to_chinese("Running/walking/hiking, HIIT/Weightlifting/Gym, Yoga/Low intensity , Everyday Use, Other"))

@@ -180,6 +180,6 @@ class GympluscoffeeOutput(BaseOutput):
 
 if __name__ == '__main__':
     gc = GympluscoffeeOutput()
-    gc.inventory_cols_len = 13  # 新的文件库存栏数量
-    gc.origin_file = gc.output_dir + '/gympluscoffee_2022-01-14_15_58.xlsx'
+    gc.inventory_cols_len = 14  # 新的文件库存栏数量
+    gc.origin_file = gc.output_dir + '/gympluscoffee_2022-02-07_10_22.xlsx'
     gc.output_to_excel()

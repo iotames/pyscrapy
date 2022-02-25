@@ -49,19 +49,19 @@ if __name__ == '__main__':
     dirpath = Config.get_logs_dir()
     args = {
         'logs_dir': dirpath,
-        'spider_child': CHILD_GOODS_DETAIL_RANKING,
-        # 'spider_child': CHILD_GOODS_DETAIL,
+        # 'spider_child': CHILD_GOODS_LIST_RANKING,
+        'spider_child': CHILD_GOODS_DETAIL,
         'log_id': "",  # "39"
         'input_args': {
-            # "page": 1961,
+            # "page": 6579,
             # "store_name": "Foucome",
-            # "code": "MATERNITY SLEEP&LOUNGE",
-            # "url": "https://www.amazon.com/stores/page/47C6A555-DCE3-4978-AD58-269DB3227E77",
-            # "group_log_id": 12
+            # "code": "MATERNITY_SLEEP_LOUNGE",
+            "url": "https://www.amazon.com/bestsellers/fashion/2420094011",
+            # "group_log_id": 14
             # "code": "Baleaf_Women"
-            "ranking_log_id": 5,
-            'category_name': "Women's Hiking Pants",
-            "url": "https://www.amazon.com/bestsellers/fashion/2371101011",
+            # "ranking_log_id": 5,
+            'category_name': "Men's Cycling Tights & Pants",
+            # "url": "https://www.amazon.com/bestsellers/fashion/2371101011",
             # Women's Running Shorts: https://www.amazon.com/bestsellers/fashion/2371114011
             # Women's Tennis Skorts: https://www.amazon.com/bestsellers/fashion/2371145011 https://www.amazon.com/Best-Sellers-Clothing-Shoes-Jewelry-Skorts/zgbs/fashion/2371145011/ref=zg_bs_nav_fashion_5_2371144011
             # Women's Outdoor Recreation Shirts: https://www.amazon.com/bestsellers/sporting-goods/11443924011 https://www.amazon.com/gp/bestsellers/sporting-goods/11443924011/ref=pd_zg_hrsr_sporting-goods
@@ -69,4 +69,4 @@ if __name__ == '__main__':
             # 'url': 'https://www.amazon.de/bestsellers/sports/3771963031'
         }
     }
-    Spider.crawl(NAME_AMAZON, spider_args=args)
+    Spider.crawl(NAME_STRONGERLABEL, spider_args=args)
