@@ -119,7 +119,7 @@ class GoodsDetail(BaseResponse):
         cls.__categories_map = meta['categories_map']
         goods_model = meta['goods_model'] if 'goods_model' in meta else None
 
-        item = response.meta['item'] if 'item' in meta else BaseGoodsItem()
+        item = meta['item'] if 'item' in meta else BaseGoodsItem()
         item['spider_name'] = meta['spider'].name
         ele = cls(response)
         item['model'] = goods_model
@@ -138,11 +138,13 @@ class GoodsDetail(BaseResponse):
 
         details = {"rank_num": 0, "rank_score": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}}
         if goods_model:
+            goods_model.asin = ele.spu
             details = json.loads(goods_model.details)
         if 'details' in item:
             details = item['details']
 
         spu = ele.spu
+        print(f"-------code:{goods_model.code}--------SPU:{spu}----------")
         details['spu'] = spu
         details['goods_id'] = ele.color['goods_id']
         details['color'] = ele.color['color']
@@ -159,7 +161,7 @@ class GoodsDetail(BaseResponse):
             ]
             if spider.spider_child in reviews_children_list:
                 yield rev.get_all(meta={'goods_item': item, 'goods_model': goods_model})
-            if spider.spider_child == CHILD_GOODS_DETAIL:
+            if spider.spider_child in [CHILD_GOODS_DETAIL]:
                 yield rev.get_simple(meta={'goods_item': item, 'goods_model': goods_model})
         else:
             yield item

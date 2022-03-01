@@ -1,10 +1,13 @@
 from pyscrapy.grabs.amazon import BasePage
 from pyscrapy.grabs.basegrab import BaseElement
+# from pyscrapy.grabs.shein_goods import GoodsDetail
 from pyscrapy.items import BaseGoodsItem
 from scrapy.http import TextResponse
 from pyscrapy.extracts.shein import Common as XShein
 from pyscrapy.models import GoodsCategory
 from pyscrapy.extracts.shein import GoodsList as XGoodsList
+# from pyscrapy.enum.spider import *
+# from scrapy import Request
 
 
 class GoodsList(BasePage):
@@ -49,8 +52,11 @@ class GoodsList(BasePage):
             goods_item["spider_name"] = spider.name
             goods_item["category_id"] = categories_map[goods_ele.category_code].id
             goods_item["category_name"] = categories_map[goods_ele.category_code].name
+            # if spider.spider_child in [CHILD_GOODS_LIST_RANKING]:
+            #     next_meta = dict(item=goods_item, categories_map=categories_map, spider=spider)
+            #     yield Request(goods_ele.url, callback=GoodsDetail.parse, meta=next_meta)
+            # else:
             yield goods_item
-            # yield Request(url, callback=GoodsDetail.parse, meta=dict(item=goods_item, categories_map=categories_map))
         # if page == 1:
         #     yield Request(
         #         response.url.replace('pg=1', 'pg=2'),

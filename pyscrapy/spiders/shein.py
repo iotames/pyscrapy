@@ -8,6 +8,7 @@ from pyscrapy.extracts.shein import BASE_URL
 from pyscrapy.models import GoodsCategory, Goods, RankingGoods
 from pyscrapy.enum.shein import EnumGoodsRanking
 from pyscrapy.enum.spider import *  # CHILD_GOODS_REVIEWS_BY_RANKING
+import time
 
 
 class SheinSpider(BaseSpider):
@@ -94,9 +95,24 @@ class SheinSpider(BaseSpider):
         # 评论采集方式: get_simple() 时间顺序 获取1次
         if self.spider_child == self.CHILD_GOODS_DETAIL:
             db_session = Goods.get_db_session()
-            self.goods_model_list = Goods.get_all_model(db_session, {'site_id': self.site_id})
+            ranking_log_id = self.input_args["ranking_log_id"] if "ranking_log_id" in self.input_args else 0
+            if ranking_log_id > 0:
+                goods_models = []
+                rank_goods_list = RankingGoods.get_all_model(db_session, {"ranking_log_id": ranking_log_id})
+                for rank_goods in rank_goods_list:
+                    goods_model = Goods.get_model(db_session, {"id": rank_goods.goods_id})
+                    goods_models.append(goods_model)
+                self.goods_model_list = goods_models
+            else:
+                self.goods_model_list = Goods.get_all_model(db_session, {'site_id': self.site_id})
             print('===============total : = ' + str(len(self.goods_model_list)))
+            # skipI = 1
             for model in self.goods_model_list:
+                # TODO detail_collected_at
+                # if time.time() - model.updated_at < 3600*24:
+                #     print(f"---Skip:{str(skipI)}--Url:{model.url}--")
+                #     skipI += 1
+                #     continue
                 yield Request(model.url, callback=GoodsDetail.parse, headers=dict(referer=self.base_url),
                               meta=dict(spider=self, categories_map=self.categories_map, goods_model=model))
 
@@ -126,8 +142,9 @@ class SheinSpider(BaseSpider):
                 self.create_ranking_log(category_name, rank_type)
 
             page = 1
-            url = "{}{}?{}".format(self.base_url, goods_list_url, urlencode({'page': page, 'sort': sort_by}))
+            url = f"{self.get_site_url(goods_list_url)}?{urlencode({'page': page, 'sort': sort_by})}"
             meta = dict(spider=self, categories_map=self.categories_map)
+
             yield self.get_request_goods_list(url, meta)
 
         # 评论采集方式: get_all() 时间逆序 获取最近N个月评论

@@ -55,12 +55,12 @@ if __name__ == '__main__':
         'input_args': {
             # "page": 6579,
             # "store_name": "Foucome",
-            # "code": "MATERNITY_SLEEP_LOUNGE",
-            "url": "https://www.amazon.com/bestsellers/fashion/2420094011",
+            # "code": "Sports Tees and Tanks 666",
+            "url": "https://us.shein.com/category/Sports-Shorts-Skirts-sc-00862747.html",
             # "group_log_id": 14
             # "code": "Baleaf_Women"
-            # "ranking_log_id": 5,
-            'category_name': "Men's Cycling Tights & Pants",
+            "ranking_log_id": 6,
+            'category_name': "Sports Shorts & Skirts",
             # "url": "https://www.amazon.com/bestsellers/fashion/2371101011",
             # Women's Running Shorts: https://www.amazon.com/bestsellers/fashion/2371114011
             # Women's Tennis Skorts: https://www.amazon.com/bestsellers/fashion/2371145011 https://www.amazon.com/Best-Sellers-Clothing-Shoes-Jewelry-Skorts/zgbs/fashion/2371145011/ref=zg_bs_nav_fashion_5_2371144011
@@ -69,4 +69,4 @@ if __name__ == '__main__':
             # 'url': 'https://www.amazon.de/bestsellers/sports/3771963031'
         }
     }
-    Spider.crawl(NAME_STRONGERLABEL, spider_args=args)
+    Spider.crawl(NAME_SHEIN, spider_args=args)
