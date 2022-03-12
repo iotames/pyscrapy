@@ -18,7 +18,7 @@ class AimnOutput(StrongerlabelOutput):
         sheet = self.work_sheet
         # sheet.sheet_format.defaultRowHeight = 30
         dtime: datetime = self.run_log.datetime
-        title_row = ('商品ID', 'CODE', '图片', '分类名', '商品名', '商品链接', '商品状态', '更新时间', '价格',
+        title_row = ('商品ID', 'CODE', '图片', '分类名', '商品名', '商品链接', '商品状态', '更新时间', '价格', '吊牌价',
                      '库存' + dtime.strftime("%Y_%m_%d"), "详情")
         title_col = 1
         for title in title_row:
@@ -39,7 +39,7 @@ class AimnOutput(StrongerlabelOutput):
             details = json.loads(goods.details)
             desc = details["desc"] if "desc" in details else ""
             goods_info_list = [goods.id, goods.code, image, goods.category_name, goods.title, goods.url, status_text,
-                               time_str, goods.price, goods.quantity, desc]
+                               time_str, goods.price, details['origin_price_text'], goods.quantity, desc]
             # 返回商品信息递增列 next col index
             self.set_values_to_row(sheet, goods_info_list, goods_row_index, goods_col_index)
             goods_row_index += 1

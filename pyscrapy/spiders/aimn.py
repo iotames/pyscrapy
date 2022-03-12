@@ -123,6 +123,11 @@ class AimnSpider(BaseSpider):
         # last_str = image_text.split('_')[-1]
         # img_ext = last_str.split('.')[-1]  # jpg gif
         # image = image_text.replace(last_str, '200x.' + img_ext)
+        origin_price_text = ""
+        origin_price_ele = response.xpath('//span[@class="product__price product__price--compare"]/text()')
+        if origin_price_ele:
+            origin_price_text = origin_price_ele.extract()[0]
+        print("-------origin_price_text------------" + origin_price_text)
         status = Goods.STATUS_UNAVAILABLE
         offers = p_info['offers']
 
@@ -143,6 +148,7 @@ class AimnSpider(BaseSpider):
         details = {
             # 'sku_list': sku_list,
             'desc': desc,
+            'origin_price_text': origin_price_text,
         }
         goods_item = BaseGoodsItem()
         goods_item['model'] = goods_model
