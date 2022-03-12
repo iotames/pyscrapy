@@ -28,17 +28,18 @@ class LululemonOutput(BaseOutput):
             if goods.local_image:
                 image = self.get_image_info(goods.local_image)
             details = json.loads(goods.details)
+            print(details)
             color_num = details['color_num']
 
             goods_url = goods.url
 
             materials_text = ""
-            if details['materials_list']:
+            if 'materials_list' in details:
                 for material in details['materials_list']:
                     materials_text += material['title'] + ":" + material['value'] + "\r\n"
 
             details_text = ""
-            if details['details_list']:
+            if 'details_list' in details:
                 for detail in details['details_list']:
                     ditem_text = ''
                     for ditem in detail['items']:

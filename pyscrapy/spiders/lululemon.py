@@ -33,7 +33,7 @@ class LululemonSpider(BaseSpider):
     }
 
     goods_list_urls = [
-        '/api/c/women'
+        '/api/c/women',  # 换行前,少了个逗号,导致的BUG. 不易发现
         '/api/c/men',
     ]
 
@@ -45,18 +45,23 @@ class LululemonSpider(BaseSpider):
     def __init__(self, name=None, **kwargs):
         super(LululemonSpider, self).__init__(name=name, **kwargs)
         self.domain = "shop.lululemon.com"
-        self.base_url = "https://www." + self.domain
+        self.base_url = "https://shop.lululemon.com"
         self.allowed_domains = [self.domain]
+
+    def request_goods_list(self, page: int, page_size: int, url_path: str):
+        url = f"{self.get_site_url(url_path)}?{urlencode(dict(page=page, page_size=page_size))}"
+        print(f"-------------request-url: {url}")
+        return Request(
+            url,
+            callback=self.parse_goods_list,
+            headers=dict(referer=self.base_url + "/"),
+            meta=dict(page=page, page_size=page_size, url_path=url_path)
+        )
 
     def start_requests(self):
         if self.spider_child == self.CHILD_GOODS_LIST:
-            for url in self.goods_list_urls:
-                yield Request(
-                    "{}?{}".format(self.get_site_url(url), urlencode(dict(page=1, page_size=9))),
-                    callback=self.parse_goods_list,
-                    headers=dict(referer=self.get_site_url(url)),
-                    meta=dict(page=1, page_size=9, url=url)
-                )
+            for url_path in self.goods_list_urls:
+                yield self.request_goods_list(1, 9, url_path)
 
         if self.spider_child == self.CHILD_GOODS_DETAIL:
             # 2小时内的采集过的商品不会再更新
@@ -72,7 +77,7 @@ class LululemonSpider(BaseSpider):
             print('=======goods_list_len============ : {}'.format(str(goods_list_len)))
             if goods_list_len > 0:
                 for model in self.goods_model_list:
-                    yield Request(self.get_site_url(model.url), headers={'referer': self.base_url},
+                    yield Request(self.get_site_url(model.url), headers={'referer': self.base_url + "/"},
                                   callback=self.parse_goods_detail, meta=dict(model=model))
             else:
                 raise RuntimeError('待更新的商品数量为0, 退出运行')
@@ -81,15 +86,15 @@ class LululemonSpider(BaseSpider):
         meta = response.meta
         page = meta['page']
         page_size = meta['page_size']  # 9 or 45
-        meta_url = meta['url']  # '/api/c/women' or '/api/c/men'
+        url_path = meta['url_path']  # '/api/c/women' or '/api/c/men'
 
         next_page = page + 1
         next_page_size = page_size
-        next_url = ""
+        can_next = False
         if page_size == 9 and page == 5:
             next_page = 2
             next_page_size = 45
-            next_url = self.get_site_url(meta_url) + "?" + urlencode(dict(page=2, page_size=45))
+            can_next = True
 
         json_response = json.loads(response.text)
 
@@ -98,9 +103,9 @@ class LululemonSpider(BaseSpider):
         last_page = int(links['last'].split('=')[1])  # self: "/c/men?page=11"
         if self_page < last_page:
             next_page = int(links['next'].split('=')[1])
-            next_url = self.get_site_url(meta_url + "?" + urlencode(dict(page=next_page, page_size=next_page_size)))
+            can_next = True
 
-        print('===========next url===={}===page={}==page_size={}=='.format(next_url, str(page), str(page_size)))
+        print('===========next url===={}===page={}==page_size={}=='.format(url_path, str(page), str(page_size)))
 
         data = json_response['data']
         attributes = data['attributes']
@@ -131,12 +136,8 @@ class LululemonSpider(BaseSpider):
             goods_item['image'] = image
             goods_item['image_urls'] = [image]
             yield goods_item
-        if next_url:
-            yield Request(
-                next_url, callback=self.parse_goods_list,
-                headers=dict(referer=self.get_site_url(meta_url)),
-                meta=dict(page=next_page, page_size=next_page_size, url=meta_url)
-            )
+        if can_next:
+            yield self.request_goods_list(next_page, next_page_size, url_path)
 
     def parse_goods_detail(self, response: TextResponse):
         meta = response.meta
