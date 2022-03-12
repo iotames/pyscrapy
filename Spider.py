@@ -49,18 +49,18 @@ if __name__ == '__main__':
     dirpath = Config.get_logs_dir()
     args = {
         'logs_dir': dirpath,
-        # 'spider_child': CHILD_GOODS_LIST_RANKING,
-        'spider_child': CHILD_GOODS_DETAIL,
+        # 'spider_child': CHILD_GOODS_REVIEWS_BY_RANKING,
+        'spider_child': CHILD_GOODS_LIST,
         'log_id': "",  # "39"
         'input_args': {
             # "page": 6579,
             # "store_name": "Foucome",
             # "code": "Sports Tees and Tanks 666",
-            "url": "https://us.shein.com/category/Sports-Shorts-Skirts-sc-00862747.html",
+            # "url": "https://us.shein.com/Women-Sports-Tees-Tanks-c-2185.html",
             # "group_log_id": 14
             # "code": "Baleaf_Women"
-            "ranking_log_id": 6,
-            'category_name': "Sports Shorts & Skirts",
+            "ranking_log_id": 7,
+            'category_name': "Sports Tees & Tanks",
             # "url": "https://www.amazon.com/bestsellers/fashion/2371101011",
             # Women's Running Shorts: https://www.amazon.com/bestsellers/fashion/2371114011
             # Women's Tennis Skorts: https://www.amazon.com/bestsellers/fashion/2371145011 https://www.amazon.com/Best-Sellers-Clothing-Shoes-Jewelry-Skorts/zgbs/fashion/2371145011/ref=zg_bs_nav_fashion_5_2371144011
@@ -69,4 +69,4 @@ if __name__ == '__main__':
             # 'url': 'https://www.amazon.de/bestsellers/sports/3771963031'
         }
     }
-    Spider.crawl(NAME_SHEIN, spider_args=args)
+    Spider.crawl(NAME_SHEFIT, spider_args=args)

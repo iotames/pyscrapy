@@ -2,7 +2,7 @@ from sqlalchemy import Column, String, Integer, DateTime
 from . import BaseModel
 from sqlalchemy import and_
 
-
+# TODO ADD COL url
 class RankingLog(BaseModel):
 
     __tablename__ = 'ranking_log'

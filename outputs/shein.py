@@ -91,7 +91,7 @@ class SheinOutput(BaseOutput):
 
 if __name__ == '__main__':
     db_session = SpiderRunLog.get_db_session()
-    log = SpiderRunLog.get_model(db_session, {'id': 25})  # 24 25
+    log = SpiderRunLog.get_model(db_session, {'id': 35})  # 24 25
     ot = SheinOutput(log)
     ot.output()
 

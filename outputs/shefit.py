@@ -43,7 +43,7 @@ class ShefitOutput(BaseOutput):
             print(goods_info_list)
             # 返回商品信息递增列 next col index
             self.set_values_to_row(sheet, goods_info_list, goods_row_index, goods_col_index)
-            self.output_reviews(sheet_reviews, goods.id)
+            # self.output_reviews(sheet_reviews, goods.id)
             goods_row_index += 1
 
         self.wb.save(self.output_file)
@@ -125,6 +125,6 @@ class ShefitOutput(BaseOutput):
 
 if __name__ == '__main__':
     ot = ShefitOutput()
-    # ot.output()
-    ot.output_reviews_only(2)
+    ot.output()
+    # ot.output_reviews_only(2)
     # print(ot.to_chinese("Running/walking/hiking, HIIT/Weightlifting/Gym, Yoga/Low intensity , Everyday Use, Other"))

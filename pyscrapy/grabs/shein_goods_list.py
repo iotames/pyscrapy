@@ -101,7 +101,7 @@ class GoodsInList(BaseElement):
     def item(self) -> BaseGoodsItem:
         goods_item = BaseGoodsItem()
         image = self.image
-
+        # TODO price price_text
         goods_item["url"] = self.url
         goods_item["image"] = self.image
         goods_item["code"] = self.code
