@@ -7,6 +7,7 @@ import json
 from pyscrapy.models.Goods import Goods
 from Config import Config
 from pyscrapy.enum.spider import *
+import re
 
 
 class AimnSpider(BaseSpider):
@@ -25,13 +26,20 @@ class AimnSpider(BaseSpider):
     limit = 24
     filters = []
     slot = "collections/all-products"
-    api_key = "8f97d0d5-c808-47aa-8499-8aee6533989e"
-    uid = "plPzSHFe7SmxqbaS"
-    sid = "DbezUFAuq8rKu68J"
+    # www.aimn.com: fd978d93-b87c-4c25-8db1-f29de51ee6bf
+    # aimn.co.nz: 8f97d0d5-c808-47aa-8499-8aee6533989e
+    api_key = "fd978d93-b87c-4c25-8db1-f29de51ee6bf"
+    # www.aimn.com: 6Obj6nq1x1hkx8fC
+    # aimn.co.nc: plPzSHFe7SmxqbaS
+    uid = "6Obj6nq1x1hkx8fC"
+    # www.aimn.com: yZsxIgaJZWaHbnb7
+    # aimn.co.nz: DbezUFAuq8rKu68J
+    sid = "yZsxIgaJZWaHbnb7"
 
     def __init__(self, name=None, **kwargs):
         super(AimnSpider, self).__init__(name=name, **kwargs)
-        self.domain = "aimn.co.nz"
+        # aimn.co.nz
+        self.domain = "aimn.com"
         self.base_url = f"https://www.{self.domain}"
         self.image_referer = self.base_url + "/"
         self.allowed_domains.append('api-v3.findify.io')
@@ -74,7 +82,84 @@ class AimnSpider(BaseSpider):
                        meta=dict(page=page))
 
     def start_requests(self):
-        yield self.request_goods_list(page=1)
+        if self.spider_child == CHILD_GOODS_LIST:
+            yield self.request_goods_list(page=1)
+        if self.spider_child == CHILD_GOODS_DETAIL:
+            request_list = self.request_list_goods_detail()
+            for req in request_list:
+                yield req
+
+    statuses = {
+        'InStock': Goods.STATUS_AVAILABLE,
+        'SoldOut': Goods.STATUS_SOLD_OUT,
+        'OutOfStock': Goods.STATUS_SOLD_OUT,
+        'Discontinued': Goods.STATUS_UNAVAILABLE
+    }
+
+    def parse_goods_detail(self, response: TextResponse):
+        meta = response.meta
+        goods_model = meta['goods_model'] if 'goods_model' in meta else None
+        re_rule0 = r"\"Viewed Product\",(.+?)\);"
+        re_info0 = re.findall(re_rule0, response.text)
+        info0 = json.loads(re_info0[0])
+        code = info0['productId']
+        price = info0['price']
+        currency = info0['currency']
+        price_text = price + currency
+        category_name = info0['category']
+
+        xpath_json = '//script[@type="application/ld+json"]/text()'
+        json_product_text = response.xpath(xpath_json)[0].get()
+        # print('======json_product_text===========')
+        # print(json_product_text)
+        p_info = json.loads(json_product_text, strict=False)
+        print(p_info)
+        title = p_info['name']
+        url = p_info['url']
+        # sku_code = p_info['sku']  # 140003-011
+        desc = p_info['description']
+        # image_text: str = p_info['image'][0]
+        # image_text = image_text.split('?')[0]
+        # last_str = image_text.split('_')[-1]
+        # img_ext = last_str.split('.')[-1]  # jpg gif
+        # image = image_text.replace(last_str, '200x.' + img_ext)
+        status = Goods.STATUS_UNAVAILABLE
+        offers = p_info['offers']
+
+        for sku in offers:
+            """
+            {
+                "@type" : "Offer","sku": "140003-011","availability" : "http://schema.org/InStock",
+                "price" : "68.0", "priceCurrency" : "USD",
+                "url" : "https://shefit.com/products/boss-leggings-conquer?variant=38474305700009"
+            }
+            """
+            # price = sku['price']
+            # price_text = price + sku['priceCurrency']
+            status_text = sku['availability'].split('/')[-1]
+            if status_text == 'InStock':
+                status = self.statuses[status_text]
+
+        details = {
+            # 'sku_list': sku_list,
+            'desc': desc,
+        }
+        goods_item = BaseGoodsItem()
+        goods_item['model'] = goods_model
+        goods_item['spider_name'] = self.name
+        goods_item['category_name'] = category_name
+        # goods_item['image'] = image
+        goods_item['code'] = code
+        goods_item['title'] = title
+        # goods_item['image_urls'] = [image]
+        goods_item['url'] = response.url
+        goods_item['price'] = price
+        goods_item['price_text'] = price_text
+        # goods_item['reviews_num'] = reviews_num
+        goods_item['status'] = status
+        goods_item['details'] = details
+        # goods_item['quantity'] = quantity
+        yield goods_item
 
     def parse(self, response: TextResponse, **kwargs):
         meta = response.meta

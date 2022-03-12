@@ -50,7 +50,7 @@ if __name__ == '__main__':
     args = {
         'logs_dir': dirpath,
         # 'spider_child': CHILD_GOODS_REVIEWS_BY_RANKING,
-        'spider_child': CHILD_GOODS_LIST,
+        'spider_child': CHILD_GOODS_DETAIL,
         'log_id': "",  # "39"
         'input_args': {
             # "page": 6579,
@@ -69,4 +69,4 @@ if __name__ == '__main__':
             # 'url': 'https://www.amazon.de/bestsellers/sports/3771963031'
         }
     }
-    Spider.crawl(NAME_SHEFIT, spider_args=args)
+    Spider.crawl(NAME_AIMN, spider_args=args)
