@@ -8,7 +8,8 @@ from sqlalchemy import and_, or_
 import time
 from pyscrapy.spiders.basespider import BaseSpider
 from urllib.parse import urlencode
-# from translate import Translator
+from Config import Config
+import re
 
 
 class SweatybettySpider(BaseSpider):
@@ -20,6 +21,7 @@ class SweatybettySpider(BaseSpider):
         # 'RANDOMIZE_DOWNLOAD_DELAY': True,
         # 'CONCURRENT_REQUESTS_PER_DOMAIN': 1, default 8
         'CONCURRENT_REQUESTS': 16,  # default 16 recommend 5
+        'IMAGES_STORE': Config.ROOT_PATH + "/runtime/images",
     }
 
     goods_model_list: list
@@ -62,13 +64,13 @@ class SweatybettySpider(BaseSpider):
                 headers=dict(referer="https://www.sweatybetty.com/shop?start=34&sz=36&format=ajax"),
                 meta=dict(start=0)
             )
-        # TODO 点一次未更新完整，要多点几次。原因未知
+
         if self.spider_child == self.CHILD_GOODS_DETAIL:
             # 2小时内的采集过的商品不会再更新
-            before_time = time.time() - (2 * 3600)
+            # before_time = time.time() - (2 * 3600)
             self.goods_model_list = self.db_session.query(Goods).filter(
                 Goods.site_id == self.site_id,
-                Goods.updated_at < before_time
+                # Goods.updated_at < before_time
             ).all()
             goods_list_len = len(self.goods_model_list)
             print(goods_list_len)
@@ -88,11 +90,17 @@ class SweatybettySpider(BaseSpider):
         print('parse_goods_detail_page====================================')
         item = response.meta['item']
         try:
+            # TODO GET CATEGORY_NAME
+            # re_rule0 = r"\"Viewed Product\",(.+?)\);"  # https://www.gymshark.com/products/gymshark-flex-shorts-black-aw21
+            # re_info0 = re.findall(re_rule0, response.text)
+            # info0 = json.loads(re_info0[0])
+
             composition = response.xpath(self.xpath_goods_fabric + "/text()").get().strip()
             fabric = composition.split(":")[1].strip()
             details = item['details']
             details["fabric"] = fabric
             item['details'] = details
+            # item['category_name'] = info0['category']
         except AttributeError:
             print("AttributeError: =============================================================")
         yield item
@@ -188,5 +196,5 @@ class SweatybettySpider(BaseSpider):
             i += 1
             print("=========================end======")
         print(i)
-        if next_start < 1150:
+        if i > 0:
             yield Request(self.base_url+self.goods_list_url.format(str(next_start)), callback=self.parse_goods_list, meta=dict(start=next_start))
