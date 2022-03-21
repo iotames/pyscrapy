@@ -9,6 +9,8 @@ source venv/bin/activate
 # for windows
 .\venv\Scripts\activate.bat
 
+pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/
+
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```

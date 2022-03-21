@@ -10,8 +10,7 @@ class Database(BaseConfig):
         "username": "root",
         "password": "123456",
         "db_name": "pywebspider",
-        "db_type": "sqlite",  # sqlite mysql
-        "db_driver": "pymysql"
+        "db_type": "sqlite"  # sqlite mysql
     }
 
     SAMPLE_CONFIG = DEFAULT_CONFIG
