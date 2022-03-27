@@ -5,7 +5,7 @@ from Config import Config
 from pyscrapy.grabs.shein_goods_list import GoodsList
 from pyscrapy.grabs.shein_goods import GoodsDetail
 from pyscrapy.extracts.shein import BASE_URL
-from pyscrapy.models import GoodsCategory, Goods, RankingGoods
+from pyscrapy.models import GoodsCategory, Goods, RankingGoods, RankingLog
 from pyscrapy.enum.shein import EnumGoodsRanking
 from pyscrapy.enum.spider import *  # CHILD_GOODS_REVIEWS_BY_RANKING
 import time
@@ -41,6 +41,10 @@ class SheinSpider(BaseSpider):
         {
             'total_page': 40,
             'url': '/category/Active-sc-00856973.html'  # 女装运动服
+        },
+        {
+            "total_page": 40,
+            "url": "/Sports-c-3195.html",
         }
     ]
 
@@ -122,12 +126,13 @@ class SheinSpider(BaseSpider):
                           meta=dict(spider=self, categories_map=self.categories_map))
 
         if self.spider_child == CHILD_GOODS_LIST_RANKING:
-            category_name = self.input_args["category_name"]  # 'Women Sports Tees & Tanks'
-            goods_list_url = self.input_args['url']  # '/Women-Sports-Tees-Tanks-c-2185.html'
+            category_name = self.input_args["category_name"] if 'category_name' in self.input_args else "" # 'Women Sports Tees & Tanks'
+            goods_list_url = self.input_args['url'] if 'url' in self.input_args else "" # '/Women-Sports-Tees-Tanks-c-2185.html'
 
             ranking_log_id = int(self.input_args['ranking_log_id']) if 'ranking_log_id' in self.input_args else 0
 
             sort_by = 7
+            page = 1
             if 'sort_by' in self.input_args:
                 sort_by = int(self.input_args['sort_by'])
 
@@ -138,10 +143,13 @@ class SheinSpider(BaseSpider):
             # 最终数据管道保存goods_item信息到数据库时，先保存或更新goods, 再存储 goods和ranking_log 的对应关系
             if ranking_log_id:
                 self.ranking_log_id = ranking_log_id
+                ranking_log = RankingLog.get_log(self.db_session, self.site_id, "", rank_type, ranking_log_id)
+                goods_list_url = ranking_log.url
             else:
                 self.create_ranking_log(category_name, rank_type)
-
-            page = 1
+                url = f"{self.get_site_url(goods_list_url)}?{urlencode({'page': page, 'sort': sort_by})}"
+                RankingLog.save_update({"id": self.ranking_log_id}, {"url": url})
+            
             url = f"{self.get_site_url(goods_list_url)}?{urlencode({'page': page, 'sort': sort_by})}"
             meta = dict(spider=self, categories_map=self.categories_map)
 

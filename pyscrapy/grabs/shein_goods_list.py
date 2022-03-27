@@ -27,7 +27,7 @@ class GoodsList(BasePage):
         grab = cls(response)
         spider = meta['spider']
         categories_map = meta['categories_map'] if 'categories_map' in meta else None
-
+        # TODO UPDATE categories every time in goods_list parse
         if 'only_category' in meta:
             for cat in grab.categories:
                 ele = Categories(cat)
@@ -41,21 +41,27 @@ class GoodsList(BasePage):
 
         goods_list = grab.elements
         print('===========goods_list=====len=' + str(len(goods_list)))
+        i = 1
         for ele in goods_list:
             goods_ele = GoodsInList(ele)
             goods_ele.spider = spider
             goods_ele.page = page
+            print(f"=====goods_url ======{str(i)}===={goods_ele.url}")
             if not goods_ele.url:
                 print('=====Skip======goods_url ======')
                 continue
             goods_item = goods_ele.item
             goods_item["spider_name"] = spider.name
-            goods_item["category_id"] = categories_map[goods_ele.category_code].id
-            goods_item["category_name"] = categories_map[goods_ele.category_code].name
+            cid = goods_ele.category_code
+            goods_item["category_id"] = categories_map[cid].id if cid in categories_map else 0
+            goods_item["category_name"] = categories_map[cid].name if cid in categories_map else ""
             # if spider.spider_child in [CHILD_GOODS_LIST_RANKING]:
             #     next_meta = dict(item=goods_item, categories_map=categories_map, spider=spider)
             #     yield Request(goods_ele.url, callback=GoodsDetail.parse, meta=next_meta)
             # else:
+            print(f"--------goods_item---{str(i)}---")
+            print(goods_item)
+            i += 1
             yield goods_item
         # if page == 1:
         #     yield Request(

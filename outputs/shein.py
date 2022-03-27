@@ -18,8 +18,8 @@ class SheinOutput(BaseOutput):
         super(SheinOutput, self).__init__('商品信息列表', filename)
 
     def output_top_100(self):
-        if self.is_download_file_exists():
-            return True
+        # if self.is_download_file_exists():
+        #     return True
         sheet = self.work_sheet
         log = self.ranking_log_model
         if not log:

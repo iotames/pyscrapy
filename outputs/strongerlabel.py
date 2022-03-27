@@ -49,7 +49,7 @@ class StrongerlabelOutput(BaseOutput):
             self.set_values_to_row(sheet, goods_info_list, goods_row_index, goods_col_index)
             goods_row_index += 1
         self.wb.save(self.output_file)
-        self.copy_to_download_path(self.output_file)
+        # self.copy_to_download_path(self.output_file)
 
 
 if __name__ == '__main__':

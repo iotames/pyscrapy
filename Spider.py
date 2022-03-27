@@ -44,12 +44,12 @@ class Spider:
 
 
 if __name__ == '__main__':
-    Spider.create_all_tables()
+    # Spider.create_all_tables()
     dirpath = Config.get_logs_dir()
     args = {
         'logs_dir': dirpath,
         # 'spider_child': CHILD_GOODS_REVIEWS_BY_RANKING,
-        'spider_child': CHILD_GOODS_DETAIL,
+        'spider_child': CHILD_GOODS_LIST_RANKING,
         'log_id': "",  # "39"
         'input_args': {
             # "page": 6579,
@@ -58,9 +58,9 @@ if __name__ == '__main__':
             # "url": "https://us.shein.com/Women-Sports-Tees-Tanks-c-2185.html",
             # "group_log_id": 14
             # "code": "Baleaf_Women"
-            "ranking_log_id": 7,
-            'category_name': "Sports Tees & Tanks",
-            # "url": "https://www.amazon.com/bestsellers/fashion/2371101011",
+            "ranking_log_id": 2,
+            # 'category_name': "Women New-In-Activewear",  # Women New-In-Activewear
+            # "url": "/new/New-In-Activewear-sc-00201310.html",  # /new/New-In-Activewear-sc-00201310.html /Sports-c-3195.html
             # Women's Running Shorts: https://www.amazon.com/bestsellers/fashion/2371114011
             # Women's Tennis Skorts: https://www.amazon.com/bestsellers/fashion/2371145011 https://www.amazon.com/Best-Sellers-Clothing-Shoes-Jewelry-Skorts/zgbs/fashion/2371145011/ref=zg_bs_nav_fashion_5_2371144011
             # Women's Outdoor Recreation Shirts: https://www.amazon.com/bestsellers/sporting-goods/11443924011 https://www.amazon.com/gp/bestsellers/sporting-goods/11443924011/ref=pd_zg_hrsr_sporting-goods
@@ -68,4 +68,4 @@ if __name__ == '__main__':
             # 'url': 'https://www.amazon.de/bestsellers/sports/3771963031'
         }
     }
-    Spider.crawl(NAME_EYDA, spider_args=args)
+    Spider.crawl(NAME_SHEIN, spider_args=args)

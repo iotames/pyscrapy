@@ -15,6 +15,7 @@ class RankingLog(BaseModel):
     category_id = Column(Integer, comment='排名分类ID', default=0)
     category_name = Column(String(64), comment='排名分类名')
     category_code = Column(String(64), comment='排名分类code')
+    url = Column(String(255), comment='链接')
     rank_date = Column(DateTime, comment='排名日期')
 
     @classmethod

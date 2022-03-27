@@ -254,6 +254,7 @@ class GoodsBase(Base):
         spu = details['spu'] if 'spu' in details else ''
         spu = spu if spu else model.asin
         xd_find = {'site_id': spider.site_id, 'ranking_log_id': spider.ranking_log_id, 'goods_id': model.id}
+        print("-------save_ranking_goods----------------")
         print(xd_find)
 
         xgoods = RankingGoods.get_self(xd_find)
