@@ -18,6 +18,7 @@ class BaseReview(Base):
             if key == 'model':
                 model = value
                 print('=================review model is exists=======')
+                print(model)
                 continue
             attrs[key] = value
         if not model and ('code' in item):

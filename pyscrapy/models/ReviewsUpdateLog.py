@@ -37,10 +37,13 @@ class ReviewsUpdateLog(BaseModel):
     def is_exists_by_spu(cls, site_id: int, spu: str, expires_in=None) -> bool:
         log = cls.get_log_by_spu(site_id, spu)
         if log:
+            print("---------is_exists_by_spu----true")
+            print(log.id)
             if not expires_in:
                 return True
             if time.time() - log.updated_at < expires_in:
                 return True
+        print("---------is_exists_by_spu----false")
         return False
 
 

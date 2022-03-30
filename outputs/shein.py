@@ -24,8 +24,8 @@ class SheinOutput(BaseOutput):
         log = self.ranking_log_model
         if not log:
             raise RuntimeError('找不到排行榜数据')
-        if time.time() - log.created_at > 3600 * 72:
-            raise RuntimeError('最近排行榜数据已超过72小时, 请重新采集')
+        # if time.time() - log.created_at > 3600 * 240:
+        #     raise RuntimeError('最近排行榜数据已超过240小时（10天）, 请重新采集')
         db_session = self.db_session
         ranking_goods_list = db_session.query(RankingGoods).filter_by(**{'ranking_log_id': log.id}).order_by(
             RankingGoods.rank_num.asc()).all()

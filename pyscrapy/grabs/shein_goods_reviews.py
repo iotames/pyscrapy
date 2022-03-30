@@ -128,6 +128,8 @@ class ReviewRequest(object):
         review_item['goods_id'] = self.goods_model.id
         review_item['goods_code'] = self.goods_model.code
         review_item['goods_spu'] = self.goods_model.asin
+        print("--------get_all---------")
+        print(review_item)
         self.review_item = review_item
         return Request(self.request_url, callback=self.parse, headers=self.headers, dont_filter=True)
 
@@ -145,7 +147,9 @@ class ReviewRequest(object):
         # self.db_session = db.get_db_session()
 
     def get_review_item(self, review: dict, review_base: GoodsReviewSheinItem) -> GoodsReviewSheinItem:
-        review_item = copy.copy(review_base)
+        review_item = copy.deepcopy(review_base)  # 浅拷贝会出现BUG!!
+        print("------copy.copy(review_base)-------------")
+        print(review_item)
         review_item['code'] = review['code']
         review_item['rating_value'] = review['rank']
         review_item['sku_text'] = review['color'] + "|" + review['size']
@@ -157,8 +161,8 @@ class ReviewRequest(object):
         review_item['body'] = review['body']
         self.check_time_old(timestamp)
         self.check_review_exists(review_item)
-        print('=============get_review_item=====goods_id={}======'.format(str(self.goods_model.id)))
-        print(review)
+        print(f"=============get-review_item=====goods_id={str(self.goods_model.id)}======")
+        print(review_item)
         return review_item
 
     @classmethod
@@ -199,9 +203,11 @@ class ReviewRequest(object):
 
     def can_next_page(self) -> bool:
         if self.is_last_page() or self.is_review_too_old:
+            print("-------self.is_last_page() or self.is_review_too_old-------")
             return False
-        check_exists = True if ReviewsUpdateLog.is_exists_by_spu(self.spider.site_id, self.goods_model.asin) else False
+        check_exists = ReviewsUpdateLog.is_exists_by_spu(self.spider.site_id, self.goods_model.asin)
         if check_exists and self.is_review_exists:
+            print("--------check_exists and self.is_review_exists----------")
             return False
         return True
 
@@ -234,11 +240,16 @@ class ReviewRequest(object):
 
         if self.filter_type == self.TYPE_ALL:
             print('reviews_parse_TYPE_ALL====================')
+            i  = 0
             for review in data['items']:
+                i += 1
+                print("-------------------item--count---:"+str(i))
+                print(self.review_item)
                 yield self.get_review_item(review, self.review_item)
 
             if self.can_next_page():
                 self.page += 1
+                print("------------------------------next---page---:"+str(self.page))
                 yield Request(url=self.request_url, callback=self.parse, headers=self.headers, dont_filter=True)
             else:
                 # 切换请求方式。 获取首次评论的时间。 yield self.goods_item

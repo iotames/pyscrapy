@@ -29,7 +29,7 @@ class BaseOutput:
     images_dir: str
     downloads_dirname = "downloads"
     download_filename = None
-    server_config: ApiServer
+    # server_config: ApiServer
     trans_dic_en_zh = {}
     translator: TranslatorService
 
@@ -37,7 +37,7 @@ class BaseOutput:
 
         self.translator = TranslatorService()  # Translator(to_lang='chinese', provider='mymemory')  # , proxies={'http': '127.0.0.1:1080'}
 
-        self.server_config = ApiServer()
+        # self.server_config = ApiServer()
         self.images_dir = BaseSpider.custom_settings.get('IMAGES_STORE')  # get_project_settings().get('IMAGES_STORE')
         db = DB.get_instance(Config().get_database())
         db.ROOT_PATH = Config.ROOT_PATH
@@ -139,11 +139,11 @@ class BaseOutput:
             return True
         return False
 
-    def get_downloads_dir(self):
-        downloads_dir = self.server_config.get_config()['static_folder'] + os.path.sep + self.downloads_dirname
-        if not os.path.exists(downloads_dir):
-            os.makedirs(downloads_dir)
-        return downloads_dir
+    # def get_downloads_dir(self):
+    #     downloads_dir = self.server_config.get_config()['static_folder'] + os.path.sep + self.downloads_dirname
+    #     if not os.path.exists(downloads_dir):
+    #         os.makedirs(downloads_dir)
+    #     return downloads_dir
 
     def output(self):
         pass
