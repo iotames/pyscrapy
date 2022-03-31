@@ -1,6 +1,6 @@
-from pyscrapy.items import GoodsReviewAmazonItem, GoodsReviewSheinItem, GoodsReviewShefitItem
+from pyscrapy.items import GoodsReviewAmazonItem, GoodsReviewSheinItem, GoodsReviewShefitItem, GoodsReviewItem
 from pyscrapy.spiders import AmazonSpider, SheinSpider, BaseSpider
-from pyscrapy.models import GoodsReview
+from pyscrapy.models import GoodsReview as GoodsReviewModel
 from .base import Base
 import json
 from scrapy import Item
@@ -22,19 +22,23 @@ class BaseReview(Base):
                 continue
             attrs[key] = value
         if not model and ('code' in item):
-            model = db_session.query(GoodsReview).filter(
-                GoodsReview.code == item['code'], GoodsReview.site_id == site_id).first()
+            model = db_session.query(GoodsReviewModel).filter(
+                GoodsReviewModel.code == item['code'], GoodsReviewModel.site_id == site_id).first()
         if model:
             opt_str = 'SUCCESS UPDATE GOODS REVIEW id = {} : '.format(str(model.id))
-            db_session.query(GoodsReview).filter(GoodsReview.id == model.id).update(attrs)
+            db_session.query(GoodsReviewModel).filter(GoodsReviewModel.id == model.id).update(attrs)
         else:
             opt_str = 'SUCCESS ADD GOODS REVIEW'
-            model = GoodsReview(**attrs)
+            model = GoodsReviewModel(**attrs)
             db_session.add(model)
         db_session.commit()
         print(opt_str)
         print(attrs)
 
+class GoodsReview(BaseReview):
+
+    def process_item(self, item: GoodsReviewItem, spider: BaseSpider):
+        super(GoodsReview, self).process_item(item, spider)
 
 class ReviewAmazon(BaseReview):
 

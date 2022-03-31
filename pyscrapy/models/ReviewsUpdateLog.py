@@ -25,6 +25,14 @@ class ReviewsUpdateLog(BaseModel):
             cls.goods_spu == spu,
         )).order_by(cls.created_at.desc()).first()
 
+    @classmethod
+    def get_log_by_goods_code(cls, site_id: int, goods_code: str):
+        db_session = cls.get_db_session()
+        return db_session.query(cls).filter(and_(
+            cls.site_id == site_id,
+            cls.goods_code == goods_code,
+        )).order_by(cls.created_at.desc()).first()
+
     # @classmethod
     # def done_log_by_id(cls, log_id: int):
     #     cls.save_update({'id': log_id}, {'is_done': 1})
@@ -44,6 +52,18 @@ class ReviewsUpdateLog(BaseModel):
             if time.time() - log.updated_at < expires_in:
                 return True
         print("---------is_exists_by_spu----false")
+        return False
+
+    @classmethod
+    def is_exists_by_goods_code(cls, site_id: int, goods_code: str, expires_in=None) -> bool:
+        log = cls.get_log_by_goods_code(site_id, goods_code)
+        if log:
+            print(f"---------is_exists_by_goods_code----true---log_id={str(log.id)}")
+            if not expires_in:
+                return True
+            if time.time() - log.updated_at < expires_in:
+                return True
+        print("---------is_exists_by_goods_code----false")
         return False
 
 

@@ -17,7 +17,7 @@ import os
 from pyscrapy.process.goods import GoodsStrongerlabel, GoodsGympluscoffee, GoodsSweatybetty, GoodsAmazon, GoodsBase
 from pyscrapy.process.category import CategoryGympluscoffee
 from pyscrapy.process.goods_sku import SkuGympluscoffee
-from pyscrapy.process.goods_review import ReviewAmazon, ReviewShein, ReviewShefit
+from pyscrapy.process.goods_review import ReviewAmazon, ReviewShein, ReviewShefit, GoodsReview
 
 process_map = {
     StrongerlabelGoodsItem: GoodsStrongerlabel.get_instance(),
@@ -29,7 +29,8 @@ process_map = {
     BaseGoodsItem: GoodsBase(),
     GoodsReviewAmazonItem: ReviewAmazon(),
     GoodsReviewSheinItem: ReviewShein(),
-    GoodsReviewShefitItem: ReviewShefit()
+    GoodsReviewShefitItem: ReviewShefit(),
+    GoodsReviewItem: GoodsReview()
 }
 
 

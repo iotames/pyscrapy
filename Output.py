@@ -9,12 +9,7 @@ if __name__ == '__main__':
 
     db_session = SpiderRunLog.get_db_session()
 
-    # log = SpiderRunLog.get_model(db_session, {'id': 26})  # 6 15 16
-    # SheinOutput(log).output()
-
-    reviews = GoodsReview.get_all_model(db_session, {"goods_spu": "w21062176471"})
-    print(len(reviews))
-    # for review in reviews:
-    #     print(review.time_str)
+    log = SpiderRunLog.get_model(db_session, {'id': 49})  # 6 15 16
+    SheinOutput(log).output()
 
     # StrongerlabelOutput(log).output()

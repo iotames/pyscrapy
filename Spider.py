@@ -44,8 +44,8 @@ class Spider:
 
 
 if __name__ == '__main__':
-    Spider.create_all_tables()
-    exit()
+    # Spider.create_all_tables()
+    # exit()
     dirpath = Config.get_logs_dir()
     args = {
         'logs_dir': dirpath,
@@ -59,9 +59,13 @@ if __name__ == '__main__':
             # "url": "https://us.shein.com/Women-Sports-Tees-Tanks-c-2185.html",
             # "group_log_id": 14
             # "code": "Baleaf_Women"
-            "ranking_log_id": 4,  # Women Activewear 1年   Women New-In-Activewear 2个月
-            'category_name': "Women Activewear",  # Women New-In-Activewear Women Activewear
-            "url": "/Sports-c-3195.html",  # /new/New-In-Activewear-sc-00201310.html /Sports-c-3195.html
+            "ranking_log_id": 1,  # Women Activewear 1年   Women New-In-Activewear 2个月
+
+            # 'category_name': "activewear-lounge",  # Women New-In-Activewear Women Activewear
+            # "url": "https://www.fashionnova.com/collections/activewear-lounge?sort=products_published_at_desc&page=1",  # /new/New-In-Activewear-sc-00201310.html /Sports-c-3195.html
+            # "sort": "products_published_at_desc",  # products_recently_ordered_count_desc products_published_at_desc
+            # "total_page": 1,
+
             # Women's Running Shorts: https://www.amazon.com/bestsellers/fashion/2371114011
             # Women's Tennis Skorts: https://www.amazon.com/bestsellers/fashion/2371145011 https://www.amazon.com/Best-Sellers-Clothing-Shoes-Jewelry-Skorts/zgbs/fashion/2371145011/ref=zg_bs_nav_fashion_5_2371144011
             # Women's Outdoor Recreation Shirts: https://www.amazon.com/bestsellers/sporting-goods/11443924011 https://www.amazon.com/gp/bestsellers/sporting-goods/11443924011/ref=pd_zg_hrsr_sporting-goods
@@ -69,4 +73,4 @@ if __name__ == '__main__':
             # 'url': 'https://www.amazon.de/bestsellers/sports/3771963031'
         }
     }
-    Spider.crawl(NAME_SHEIN, spider_args=args)
+    Spider.crawl(NAME_FASHIONNOVA, spider_args=args)
