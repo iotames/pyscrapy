@@ -10,3 +10,4 @@ from outputs.strongerlabel import StrongerlabelOutput
 from outputs.sweatybetty import SweatybettyOutput
 from outputs.cottonon import CottononOutput
 from outputs.eyda import EydaOutput
+from outputs.fashionnova import FashionnovaOutput

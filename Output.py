@@ -1,5 +1,5 @@
 # from outputs import EydaOutput
-from outputs import StrongerlabelOutput, SheinOutput
+from outputs import StrongerlabelOutput, SheinOutput, FashionnovaOutput
 from pyscrapy.models import SpiderRunLog, GoodsReview
 
 
@@ -9,7 +9,7 @@ if __name__ == '__main__':
 
     db_session = SpiderRunLog.get_db_session()
 
-    log = SpiderRunLog.get_model(db_session, {'id': 51})  # 6 15 16
-    SheinOutput(log).output()
+    log = SpiderRunLog.get_model(db_session, {'id': 56})  # 6 15 16
+    FashionnovaOutput(log).output()
 
     # StrongerlabelOutput(log).output()
