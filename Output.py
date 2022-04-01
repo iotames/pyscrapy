@@ -9,7 +9,7 @@ if __name__ == '__main__':
 
     db_session = SpiderRunLog.get_db_session()
 
-    log = SpiderRunLog.get_model(db_session, {'id': 49})  # 6 15 16
+    log = SpiderRunLog.get_model(db_session, {'id': 51})  # 6 15 16
     SheinOutput(log).output()
 
     # StrongerlabelOutput(log).output()

@@ -59,12 +59,13 @@ if __name__ == '__main__':
             # "url": "https://us.shein.com/Women-Sports-Tees-Tanks-c-2185.html",
             # "group_log_id": 14
             # "code": "Baleaf_Women"
-            "ranking_log_id": 1,  # Women Activewear 1年   Women New-In-Activewear 2个月
+            "ranking_log_id": 7,  # Women Activewear 1年   Women New-In-Activewear 2个月
 
             # 'category_name': "activewear-lounge",  # Women New-In-Activewear Women Activewear
-            # "url": "https://www.fashionnova.com/collections/activewear-lounge?sort=products_published_at_desc&page=1",  # /new/New-In-Activewear-sc-00201310.html /Sports-c-3195.html
-            # "sort": "products_published_at_desc",  # products_recently_ordered_count_desc products_published_at_desc
-            # "total_page": 1,
+            # "url": "https://www.fashionnova.com/collections/activewear-lounge?sort=products_recently_ordered_count_desc&page=2",  # /new/New-In-Activewear-sc-00201310.html /Sports-c-3195.html https://www.fashionnova.com/collections/activewear-lounge?sort=products_published_at_desc&page=1
+            # # "sort_by": 9,
+            # "sort": "products_recently_ordered_count_desc",  # products_recently_ordered_count_desc products_published_at_desc
+            # "total_page": 2,
 
             # Women's Running Shorts: https://www.amazon.com/bestsellers/fashion/2371114011
             # Women's Tennis Skorts: https://www.amazon.com/bestsellers/fashion/2371145011 https://www.amazon.com/Best-Sellers-Clothing-Shoes-Jewelry-Skorts/zgbs/fashion/2371145011/ref=zg_bs_nav_fashion_5_2371144011

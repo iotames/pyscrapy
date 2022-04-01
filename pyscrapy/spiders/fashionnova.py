@@ -26,7 +26,6 @@ class FashionnovaSpider(BaseSpider):
     sort = "products_recently_ordered_count_desc"
     collection = "activewear-lounge"
     limit = 48
-    limit_review = 10
     total_page_goods_list = 1
 
     RANK_TYPE_NEW = 1
@@ -108,18 +107,18 @@ class FashionnovaSpider(BaseSpider):
                 model = Goods.get_model(self.db_session, {'id': xgd.goods_id})
                 yield Request(f"{model.url}.js", method="GET",meta=dict(goods_model=model), callback=self.parse_goods_detail)
 
-    def request_goods_reviews(self, page: int, meta: dict) -> Request:
+    def request_goods_reviews(self, meta: dict) -> Request:
         goods_model = meta['goods_model']
         url = "https://api-cdn.yotpo.com/v1/reviews/bBxKixoakwLbMRVuO8JhTHZFlwJXaFEwHIaOVnG5/filter.json"
-        post_data = {"domain_key":goods_model.code,"per_page":self.limit_review,"page":page,"sortings":[{"sort_by":"date","ascending":False}]}
+        post_data = {"domain_key":goods_model.code,"per_page":meta['limit'],"page":meta['page'],"sortings":[{"sort_by":"date","ascending":False}]}
         post_data = json.dumps(post_data, separators=(',', ':'))
         headers = {
             "origin": self.base_url,
+            "referer": self.image_referer,
             "accept": "application/json",
-            "content-type": "application/x-www-form-urlencoded",
-            "referer": self.image_referer
+            "content-type": "application/json",
         }
-        meta['page'] = page
+        print(f"--request-reviews------page:{str(meta['page'])}---post_data:{post_data}---")
         return Request(url, method='POST', headers=headers, body=post_data, meta=meta, callback=self.parse_goods_reviews)
 
     def parse_goods_list(self, response: TextResponse):
@@ -159,12 +158,14 @@ class FashionnovaSpider(BaseSpider):
         goods_item['price'] = resp['price']/100
         
         meta['goods_item'] = goods_item
-
-        yield self.request_goods_reviews(1, meta)
-
+        meta['limit'] = 3
+        meta['page'] = 1
+        yield self.request_goods_reviews(meta)
+    
     def parse_goods_reviews(self, response: TextResponse):
         meta = response.meta
         page = meta['page']
+        limit = meta['limit']
         goods_model = meta['goods_model']
 
         is_log_exist = ReviewsUpdateLog.is_exists_by_spu(self.site_id, goods_model.code)
@@ -175,6 +176,7 @@ class FashionnovaSpider(BaseSpider):
         # print(resp)
         
         reviews_num = resp['pagination']['total']
+        print(f"----goods_id---total-reviews------{str(goods_model.id)}--{str(reviews_num)}-----")
         if page == 1:
             goods_item = meta['goods_item']
             goods_item['reviews_num'] = reviews_num
@@ -206,20 +208,27 @@ class FashionnovaSpider(BaseSpider):
                 # 评论日期太久远
                 is_recent = False
             
-            # is_review_exist = False
-            # model = GoodsReview.get_model(self.db_session, {'code': review_item['code'], 'site_id': self.site_id})
-            # if model:
-            #     review_item['model'] = model
-            #     is_review_exist = True
+            is_review_exist = False
+            model = GoodsReview.get_model(self.db_session, {'code': review_item['code'], 'site_id': self.site_id})
+            if model:
+                review_item['model'] = model
+                is_review_exist = True
             
             yield review_item
         
-        if (not self.is_last_page(reviews_num, page)) and is_recent: # and (not (is_review_exist and is_log_exist)):
-            yield self.request_goods_reviews(page+1, meta)
+        if (not self.is_last_page(reviews_num, page, limit)) and is_recent and (not (is_review_exist and is_log_exist)):
+            if limit == 3 and page == 1:
+                meta['limit'] = 10
+            else:
+                meta['page'] += 1
+            yield self.request_goods_reviews(meta)
+        else:
+            print(f"------reviews--get--end---id,total_reviews---{goods_model.id}--{reviews_num}------")
+            ReviewsUpdateLog.add_log(goods_model)
 
-    def is_last_page(self, reviews_num, page) -> bool:
-        total_page = reviews_num // self.limit_review
-        remainder = reviews_num % self.limit_review
+    def is_last_page(self, reviews_num, page, limit) -> bool:
+        total_page = reviews_num // limit
+        remainder = reviews_num % limit
         if remainder > 0:
             total_page += 1
         if page < total_page:
