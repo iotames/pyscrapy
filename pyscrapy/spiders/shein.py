@@ -48,6 +48,8 @@ class SheinSpider(BaseSpider):
         }
     ]
 
+    only_goods_detail = False
+
     def __init__(self, name=None, **kwargs):
         super(SheinSpider, self).__init__(name=name, **kwargs)
         self.base_url = BASE_URL
@@ -122,6 +124,7 @@ class SheinSpider(BaseSpider):
         if self.spider_child == CHILD_GOODS_REVIEWS:
             url = self.input_args.get('url')  # https://shefit.com/products/leggings-boss
             goods_model = Goods.get_model(self.db_session, {'url': url})
+            # self.only_goods_detail = True
             yield Request(url, callback=GoodsDetail.parse, headers=dict(referer=self.base_url),
                           meta=dict(spider=self, categories_map=self.categories_map, goods_model=goods_model))
 

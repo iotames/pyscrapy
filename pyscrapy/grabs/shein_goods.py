@@ -96,6 +96,10 @@ class GoodsDetail(BaseResponse):
     @property
     def url(self):
         return self.response.url
+    
+    @property
+    def code(self):
+        return self.get_text_by_re(r"-p-(.+?)-cat-\d+\.html", self.response.url)
 
     @property
     def cat_id(self):
@@ -130,6 +134,7 @@ class GoodsDetail(BaseResponse):
         item['price_text'] = ele.price_text
         item['price'] = ele.price
         item['asin'] = ele.spu
+        item['code'] = ele.code
 
         # if 'image' not in item:
         #     image = ele.image
@@ -144,7 +149,7 @@ class GoodsDetail(BaseResponse):
             details = item['details']
 
         spu = ele.spu
-        print(f"-------code:{goods_model.code}--------SPU:{spu}----------")
+        print(f"-------code:{ele.code}--------SPU:{spu}----------")
         details['spu'] = spu
         details['goods_id'] = ele.color['goods_id']
         details['color'] = ele.color['color']
@@ -152,9 +157,9 @@ class GoodsDetail(BaseResponse):
         details['relation_colors'] = ele.relation_colors
         item['details'] = details
         # TODO goods_spu_list 排除SPU已在列表中的的商品，避免重复采集同一个SPU商品
-        if spu:
+        spider = meta['spider']
+        if spu and not spider.only_goods_detail:
             rev = ReviewRequest(spu, spider=meta['spider'], headers={'referer': response.url})
-            spider = meta['spider']
             reviews_children_list = [
                 CHILD_GOODS_REVIEWS_BY_RANKING,
                 CHILD_GOODS_REVIEWS

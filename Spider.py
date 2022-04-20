@@ -49,14 +49,14 @@ if __name__ == '__main__':
     dirpath = Config.get_logs_dir()
     args = {
         'logs_dir': dirpath,
-        'spider_child': CHILD_GOODS_REVIEWS_BY_RANKING,
+        'spider_child': CHILD_GOODS_REVIEWS,
         # 'spider_child': CHILD_GOODS_LIST_RANKING,
         'log_id': "",  # "39"
         'input_args': {
             # "page": 6579,
             # "store_name": "Foucome",
             # "code": "Sports Tees and Tanks 666",
-            # "url": "https://us.shein.com/Women-Sports-Tees-Tanks-c-2185.html",
+            "url": "https://us.shein.com/VUTRU-High-Support-Criss-Cross-Back-Sports-Bra-p-2163884-cat-2184.html",
             # "group_log_id": 14
             # "code": "Baleaf_Women"
             "ranking_log_id": 7,  # Women Activewear 1年   Women New-In-Activewear 2个月
@@ -74,4 +74,4 @@ if __name__ == '__main__':
             # 'url': 'https://www.amazon.de/bestsellers/sports/3771963031'
         }
     }
-    Spider.crawl(NAME_FASHIONNOVA, spider_args=args)
+    Spider.crawl(NAME_SHEIN, spider_args=args)

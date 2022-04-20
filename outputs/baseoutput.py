@@ -33,15 +33,20 @@ class BaseOutput:
     trans_dic_en_zh = {}
     translator: TranslatorService
 
+    @staticmethod
+    def get_db_session() -> Session:
+        db = DB.get_instance(Config().get_database())
+        db.ROOT_PATH = Config.ROOT_PATH
+        return db.get_db_session()
+
     def __init__(self, sheet_title='库存详情', filename='output'):
 
         self.translator = TranslatorService()  # Translator(to_lang='chinese', provider='mymemory')  # , proxies={'http': '127.0.0.1:1080'}
 
         # self.server_config = ApiServer()
         self.images_dir = BaseSpider.custom_settings.get('IMAGES_STORE')  # get_project_settings().get('IMAGES_STORE')
-        db = DB.get_instance(Config().get_database())
-        db.ROOT_PATH = Config.ROOT_PATH
-        self.db_session = db.get_db_session()
+        
+        self.db_session = self.get_db_session()
         # TODO 因文件名故，xlsx文件通常仅走新增路线
         self.output_file = self.output_file.format(filename)
         if os.path.isfile(self.output_file):
