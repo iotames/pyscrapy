@@ -1,5 +1,5 @@
 # from outputs import EydaOutput
-from outputs import StrongerlabelOutput, SheinOutput, FashionnovaOutput
+from outputs import StrongerlabelOutput, SheinOutput, FashionnovaOutput, AmazonOutput
 from pyscrapy.models import SpiderRunLog, GoodsReview
 
 

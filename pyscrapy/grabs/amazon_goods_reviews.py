@@ -22,9 +22,19 @@ class AmazonGoodsReviews(BasePage):
     def count_text(self) -> str:
         if self.__reviews_count_text is None:
             self.__reviews_count_text = ''
-            ele = self.response.xpath(XReviews.xpath_reviews_count)
+            ele = self.response.xpath('//div[@id="filter-info-section"]/div/span/text()')
+            if not ele:
+                ele = self.response.xpath('//div[@id="filter-info-section"]/div/text()')
+                if not ele:
+                    print("-----Not-------XPATH://div[@id=\"filter-info-section\"]/div/span/text()")
             if ele:
                 self.__reviews_count_text = ele.get().strip()
+                origin = ele.extract()
+                print("-------count_text-------extract")
+                print(origin)
+                print(f"------reviews_count_text=--{ele.get().strip()}------{ele.get()}---")
+        print("-----------self.__reviews_count_text--------------")
+        print(self.__reviews_count_text)
         return self.__reviews_count_text
 
     @property
@@ -38,9 +48,17 @@ class AmazonGoodsReviews(BasePage):
     @property
     def reviews_count(self) -> int:
         num = 0
+        print("-------reviews_count-----self.count_text-" + self.count_text)
         if self.count_text:
-            text = self.count_text.split('|')[1]
-            num = int(text.split(' ')[1].replace(',', ''))
+            splices = self.count_text.split('|')
+            if len(splices) == 2:
+                text = splices[1]
+                num = int(text.split(' ')[1].replace(',', ''))
+            else:
+                splices = self.count_text.split(',')
+                if len(splices) == 2:
+                    text = splices[1]
+                    num = int(text.split("with")[0].replace(",", "").strip())
         return num
 
     @classmethod

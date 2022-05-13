@@ -59,7 +59,7 @@ class AmazonSpider(BaseSpider):
     def __init__(self, name=None, **kwargs):
         super(AmazonSpider, self).__init__(name=name, **kwargs)
         self.allowed_domains.append("amazon.de")
-        selenium_children = [CHILD_GOODS_LIST_RANKING, CHILD_GOODS_REVIEWS_BY_RANKING, CHILD_GOODS_REVIEWS_BY_GROUP]  #
+        selenium_children = [CHILD_GOODS_LIST_RANKING, CHILD_GOODS_REVIEWS_BY_RANKING, CHILD_GOODS_REVIEWS_BY_GROUP, CHILD_GOODS_REVIEWS]  #
         if self.spider_child in selenium_children:
             self.SELENIUM_ENABLED = True  # 启用 Selenium 中间件
 
@@ -129,10 +129,10 @@ class AmazonSpider(BaseSpider):
             )
 
         if self.spider_child == CHILD_GOODS_REVIEWS:
-            asin = "B093GZ8797"
-            goods_url = XAmazon.get_url_by_code(asin, self.url_params)
-            reviews_url = XGoodsReviews(self).get_reviews_url_by_asin(asin)
-            goods_model = Goods.get_model(self.db_session, {'code': asin, 'site_id': self.site_id})
+            code = "B07WVFDSN8"
+            goods_url = XAmazon.get_url_by_code(code, self.url_params)
+            reviews_url = XGoodsReviews(self).get_reviews_url_by_asin(code)
+            goods_model = Goods.get_model(self.db_session, {'code': code, 'site_id': self.site_id})
             if not goods_model:
                 raise RuntimeError("ASIN {} : 商品不存在， 请先通过ASIN采集商品详情".format(asin))
             if not ReviewsUpdateLog.is_exists_by_spu(self.site_id, goods_model.asin, 3600*24):
@@ -189,7 +189,7 @@ class AmazonSpider(BaseSpider):
             merchant_id = 0
             # 手动填写 asin_list [ASIN列表通过mitmproxy中间代理人抓取, 注意缓存后可能会不再走网络请求而是直接读取缓存]
             self.asin_list = [
-                {'category_name': 'unknown', 'items': ['B089DJBKN4', 'B093GZ8797']}
+                {'category_name': '女士跑步夹克邱婷', 'items': ['B09GK8Y13C', 'B09FXVTRFQ', 'B07WVFDSN8']}
             ]
             # self.asin_list = [self.asin_list[-1]]
             for group in self.asin_list:

@@ -74,4 +74,4 @@ if __name__ == '__main__':
             # 'url': 'https://www.amazon.de/bestsellers/sports/3771963031'
         }
     }
-    Spider.crawl(NAME_SHEIN, spider_args=args)
+    Spider.crawl(NAME_AMAZON, spider_args=args)

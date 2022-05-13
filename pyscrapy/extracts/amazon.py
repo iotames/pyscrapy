@@ -140,7 +140,6 @@ class GoodsReviews(object):
     """
 
     spider = None
-    xpath_reviews_count = '//*[@id="filter-info-section"]/div/span/text()'
     xpath_reviews_items = '//div[@class="a-section review aok-relative"]'
     xpath_review_id = '@id'
     xpath_review_sku = 'div/div/div[3]/a/text()'
