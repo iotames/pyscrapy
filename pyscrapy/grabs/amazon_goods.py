@@ -128,6 +128,10 @@ class AmazonGoodsDetail(BasePage):
             image = ele.image
             item['image'] = image
             item['image_urls'] = [image]
+        
+        if 'category_name' not in item:
+            if len(ele.rank_list) > 0:
+                item['category_name'] = ele.rank_list[0]["category_text"]
 
         details = {}
         if 'details' in item:
@@ -142,6 +146,9 @@ class AmazonGoodsDetail(BasePage):
         details['root_rank'] = ele.root_category_rank_num
         details['root_category_name'] = ele.root_category_name
         item['details'] = details
+
+
+
         print('=============parse_goods_detail=============end===========')
         print(item)
         yield item

@@ -9,7 +9,7 @@ if __name__ == '__main__':
 
     db_session = SpiderRunLog.get_db_session()
 
-    log = SpiderRunLog.get_model(db_session, {'id': 56})  # 6 15 16
-    FashionnovaOutput(log).output()
-
+    log = SpiderRunLog.get_model(db_session, {'id': 39})  # 6 15 16
+    # FashionnovaOutput(log).output()
+    AmazonOutput(log).output()
     # StrongerlabelOutput(log).output()

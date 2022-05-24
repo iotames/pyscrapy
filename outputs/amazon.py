@@ -21,7 +21,7 @@ class AmazonOutput(BaseOutput):
     group_log_model: GroupLog
     # run_log_model: SpiderRunLog
 
-    group_log_children = [CHILD_GOODS_REVIEWS_BY_GROUP, CHILD_GOODS_LIST_STORE_PAGE, CHILD_GOODS_LIST_ALL_COLORS]
+    group_log_children = [CHILD_GOODS_REVIEWS_BY_GROUP, CHILD_GOODS_LIST_STORE_PAGE, CHILD_GOODS_LIST_ALL_COLORS, CHILD_GOODS_LIST_ASIN]
     ranking_log_children = [CHILD_GOODS_REVIEWS_BY_RANKING, CHILD_GOODS_LIST_RANKING, CHILD_GOODS_DETAIL_RANKING]
     
     def __init__(self, run_log: SpiderRunLog):
@@ -81,8 +81,8 @@ class AmazonOutput(BaseOutput):
                 self.set_colors_show_times(color)
 
     def output(self):
-        if self.is_download_file_exists():
-            return True
+        # if self.is_download_file_exists():
+        #     return True
         sheet = self.work_sheet
 
         if not self.log_model:
