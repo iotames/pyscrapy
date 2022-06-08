@@ -185,14 +185,14 @@ class AmazonSpider(BaseSpider):
             # self.group_log_id = int(self.input_args['group_log_id']) if 'group_log_id' in self.input_args else 0
             # if self.group_log_id == 0:
             group_args = dict(group_type=0, url="")
-            groupName = 'Baleaf_OUTDOOR'
+            groupName = 'Baleaf_Running'
             self.create_group_log(groupName, group_args)
             
             # goods_x_list = GroupGoods.get_all_model(self.db_session, {'group_log_id': self.group_log_id})
             
             merchant_id = 0
             # 手动填写 asin_list [ASIN列表通过mitmproxy中间代理人抓取, 注意缓存后可能会不再走网络请求而是直接读取缓存]
-            asin_list = ["B072BMG4JN", "B072BMXDRC", "B095JZ4S42", "B07MPC8SX9", "B09NKQ6NQD", "B09P86LDJB", "B09P89829N", "B09NVVZP47", "B09NM3K9YQ", "B09LPX9CGC", "B08QCDV3VJ", "B08HQ2MNR6", "B08TWGGRQQ", "B09963FX9W", "B07WNQRHMK", "B09BVJJNZ5", "B07JDLSRY4", "B08DCPFMD7", "B0995XBCJM", "B0995MZPN4", "B08F9MFBYF", "B08PBRCGG3", "B09CD6YDRX", "B098D6P1LW", "B091YP5DTZ", "B08B1MMK9R", "B09BR1TBP4", "B09B1ZJ33Z", "B098WM98QB", "B08HCFK8L2", "B09BVMKPG9", "B098F6MXH4", "B096W18ZKD", "B098F1RZRB", "B096VX45NR", "B081JQRVZM", "B08YYSXFFM", "B08PBHWXHK", "B09BTXDZLJ", "B0876YGQTC", "B08RSJ48T8", "B08PK561G6", "B092VXN63K", "B081JQ9SXJ", "B08S2XH96P", "B077G5WGVD", "B075XFYH6V", "B08T97G34R", "B07ZRNNB38", "B08PJX5HTW", "B07LF9NT2P", "B07JJN4NMW", "B07NV7MXQR", "B08R8H3J1Q", "B08B1LW3TB", "B09PYGSBVC", "B099631CYL", "B08RDCKP3D", "B07MB9M15D", "B091YDV4VC", "B07VNQB2YT", "B09BVV2S89", "B0727Q1D66", "B09NVZLVRY"]
+            asin_list = ["B073P114BX", "B08TC6PNP7", "B08RP2JZZC", "B096ZF9287", "B07ZFSVZQS", "B095BP2ZJ2", "B092DS2H24", "B07Y25CK7V", "B01FW2CWJC", "B071CPTDCT",  "B073P38ZCH", "B07BHCJMC9", "B086YG5CNQ", "B09PY6BN81", "B08W3S27DV", "B09PVDVLHJ",]
             self.asin_list = [
                 {'category_name': groupName, 'items': asin_list}
             ]

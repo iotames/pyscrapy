@@ -49,7 +49,7 @@ if __name__ == '__main__':
     dirpath = Config.get_logs_dir()
     args = {
         'logs_dir': dirpath,
-        'spider_child': CHILD_GOODS_LIST_ASIN,
+        'spider_child': CHILD_GOODS_DETAIL,
         # 'spider_child': CHILD_GOODS_LIST_RANKING,
         'log_id': "",  # "39"
         'input_args': {
@@ -74,4 +74,4 @@ if __name__ == '__main__':
             # 'url': 'https://www.amazon.de/bestsellers/sports/3771963031'
         }
     }
-    Spider.crawl(NAME_AMAZON, spider_args=args)
+    Spider.crawl(NAME_KINDREDBRAVELY, spider_args=args)
