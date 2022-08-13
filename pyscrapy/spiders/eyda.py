@@ -26,8 +26,6 @@ class EydaSpider(BaseSpider):
 
     def __init__(self, name=None, **kwargs):
         super(EydaSpider, self).__init__(name=name, **kwargs)
-        self.base_url = f"https://{self.domain}"
-        self.image_referer = self.base_url + "/"
         # self.allowed_domains.append('api-v3.findify.io')
 
     def request_goods_list(self, page: int) -> Request:
