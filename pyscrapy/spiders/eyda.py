@@ -18,6 +18,12 @@ class EydaSpider(BaseSpider):
         'IMAGES_STORE': Config.ROOT_PATH + "/runtime/images",
     }
 
+    def get_price_text(self, price):
+        if self.domain == "eyda.com":
+            return f"€{price}"
+        if self.domain == "eyda.dk":
+            return f"{price} kr."
+
     def __init__(self, name=None, **kwargs):
         super(EydaSpider, self).__init__(name=name, **kwargs)
         self.base_url = f"https://{self.domain}"
@@ -79,6 +85,7 @@ class EydaSpider(BaseSpider):
             goods_item['asin'] = spu
             goods_item['spider_name'] = self.name
             goods_item['price'] = price
+            goods_item["price_text"] = self.get_price_text(price)
             goods_item['image'] = image
             goods_item['image_urls'] = [image]
             goods_item['code'] = code

@@ -13,7 +13,7 @@ class EydaOutput(BaseOutput):
     def output(self):
         sheet = self.work_sheet
         # sheet.sheet_format.defaultRowHeight = 30
-        title_row = ('商品ID', 'SPU', '图片', '分类', '商品标题', '商品链接', '更新时间', '价格/€', '状态',
+        title_row = ('商品ID', 'SPU', '图片', '分类', '商品标题', '商品链接', '更新时间', '价格', "价格含单位", '状态',
                      '库存', '颜色款数', '面料')
         title_col = 1
         for title in title_row:
@@ -38,7 +38,7 @@ class EydaOutput(BaseOutput):
             goods_url = goods.url
 
             goods_info_list = [
-                goods.id, goods.asin, image, goods.category_name, goods.title, goods_url, time_str, goods.price,
+                goods.id, goods.asin, image, goods.category_name, goods.title, goods_url, time_str, goods.price, goods.price_text,
                 Goods.statuses_map[goods.status], goods.quantity, colors_len, composition_text
             ]
             print(goods_info_list)

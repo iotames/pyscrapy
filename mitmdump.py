@@ -55,10 +55,9 @@ def response(flow: HTTPFlow):
             urlmsg = "SUCCESS =============================" + request.url
             asin_list = GoodsListInStore.get_asin_list(response.text)
             logger.debug(urlmsg + os.linesep + json.dumps(asin_list))
-
-    if response.text.find('Lipsy Multi Regular Printed Keyhole Fit and Flare Midi Dress') > -1:
-        urlmsg = "SUCCESS==========request_url=" + request.url
-        logger.debug(urlmsg + os.linesep + request.text)
+    if request.url.startswith("https://4fstore.com/graphql"):
+        if response.text.find("Main fabric") > -1:
+            logger.debug("------find--Main fabric---:"+request.url)
 
     # response.text = response.text.replace('百度', '摆渡')
     # # 实例化输出类

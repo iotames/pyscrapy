@@ -1,5 +1,5 @@
 # from outputs import EydaOutput
-from outputs import StrongerlabelOutput, SheinOutput, FashionnovaOutput, AmazonOutput, KindredbravelyOutput
+from outputs import StrongerlabelOutput, SheinOutput, FashionnovaOutput, AmazonOutput, KindredbravelyOutput, MyproteinOutput, EydaOutput
 from pyscrapy.models import SpiderRunLog, GoodsReview
 
 
@@ -13,4 +13,6 @@ if __name__ == '__main__':
     # FashionnovaOutput(log).output()
     # AmazonOutput(log).output()
     # StrongerlabelOutput(log).output()
-    KindredbravelyOutput().output()
+    # KindredbravelyOutput().output()
+    # MyproteinOutput().output()
+    EydaOutput().output()

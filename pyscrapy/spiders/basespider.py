@@ -28,6 +28,7 @@ class BaseSpider(Spider):
         pass
 
     name: str
+    domain: str
     base_url: str
     start_urls = []
     db_session = None
@@ -61,8 +62,12 @@ class BaseSpider(Spider):
 
     def __init__(self, name=None, **kwargs):
         super(BaseSpider, self).__init__(name=name, **kwargs)
-        self.domain = self.name + '.com'
-        self.base_url = "https://www." + self.domain
+        if self.base_url:
+            self.domain = self.base_url.split("//")[1]
+        else:
+            self.domain = self.name + '.com'
+            self.base_url = "https://www." + self.domain
+
         self.image_referer = self.base_url + "/"
         self.allowed_domains = [self.domain]
 
