@@ -37,12 +37,13 @@ class AloyogaSpider(BaseSpider):
     }
 
     handle_list = [
-        'tops',  # https://www.aloyoga.com/collections/tops 318 Products
+        # 'tops',  # https://www.aloyoga.com/collections/tops 318 Products
+        "bras-tops",
         'bottoms',  # https://www.aloyoga.com/collections/bottoms 285 Products
         'jackets-coverups',  # https://www.aloyoga.com/collections/jackets-coverups 176 Products
-        'tees-tanks',  # https://www.aloyoga.com/collections/tees-tanks 102 Products
-        'shorts-pants',  # https://www.aloyoga.com/collections/shorts-pants 146 Products
-        'outerwear',  # https://www.aloyoga.com/collections/outerwear 123 Products
+        # 'tees-tanks',  # https://www.aloyoga.com/collections/tees-tanks 102 Products
+        # 'shorts-pants',  # https://www.aloyoga.com/collections/shorts-pants 146 Products
+        # 'outerwear',  # https://www.aloyoga.com/collections/outerwear 123 Products
     ]
 
     # KEY_HasNextPage = 'hasNextPage'  # False
