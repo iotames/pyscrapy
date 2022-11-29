@@ -25,6 +25,15 @@ def request(flow: HTTPFlow):
             dnb_cookie = file.read()
         # logger.debug(f"-----------dnbhoovers_cookie=({dnb_cookie})")
         flow.request.headers["cookie"] = dnb_cookie
+
+    if flow.request.url.find("https://us.shein.com/VUTRU-Wide-Waistband-Drawstring-Knot-Sports-Shorts-p-1259918-cat-2188.html") > -1:
+        print(flow.request.headers["cookie"])
+        logger.debug("before clear cookies" + flow.request.headers["cookie"])
+        flow.request.cookies.clear()
+        logger.debug("after clear" + flow.request.headers["cookie"])
+        # flow.request.headers["cookie"] = "bi_session_id=bi_1669692279073_52786"
+        # logger.debug(flow.request.headers)
+
     flow.request.headers["sec-ch-ua-platform"] = "Windows"
     # flow.request.headers['hello3'] = 'world56'
     flow.request.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.67 Safari/537.36'

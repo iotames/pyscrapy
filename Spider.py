@@ -49,17 +49,18 @@ if __name__ == '__main__':
     dirpath = Config.get_logs_dir()
     args = {
         'logs_dir': dirpath,
-        'spider_child': CHILD_GOODS_DETAIL,
+        # 'spider_child': CHILD_GOODS_LIST_ASIN, 
+        'spider_child':  CHILD_GOODS_REVIEWS,
         # 'spider_child': CHILD_GOODS_LIST_RANKING,
         'log_id': "",  # "39"
         'input_args': {
             # "page": 6579,
             # "store_name": "Foucome",
             # "code": "Sports Tees and Tanks 666",
-            "url": "https://us.shein.com/VUTRU-High-Support-Criss-Cross-Back-Sports-Bra-p-2163884-cat-2184.html",
+            "url": "https://www.amazon.com/VUTRU-Boyshorts-Swimwear-Elastic-Closure/dp/B08GCCDZJP",
             # "group_log_id": 14
             # "code": "Baleaf_Women"
-            "ranking_log_id": 7,  # Women Activewear 1年   Women New-In-Activewear 2个月
+            # "ranking_log_id": 7,  # Women Activewear 1年   Women New-In-Activewear 2个月
 
             # 'category_name': "activewear-lounge",  # Women New-In-Activewear Women Activewear
             # "url": "https://www.fashionnova.com/collections/activewear-lounge?sort=products_recently_ordered_count_desc&page=2",  # /new/New-In-Activewear-sc-00201310.html /Sports-c-3195.html https://www.fashionnova.com/collections/activewear-lounge?sort=products_published_at_desc&page=1
@@ -74,4 +75,4 @@ if __name__ == '__main__':
             # 'url': 'https://www.amazon.de/bestsellers/sports/3771963031'
         }
     }
-    Spider.crawl(NAME_ALOYOGA, spider_args=args)
+    Spider.crawl(NAME_AMAZON, spider_args=args)

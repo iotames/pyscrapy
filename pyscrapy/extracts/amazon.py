@@ -3,7 +3,7 @@ import re
 import json
 from scrapy.http import TextResponse
 
-BASE_URL = "https://www.amazon.com"
+BASE_URL = "https://www.amazon.de"
 
 
 class GoodsListInRanking(object):

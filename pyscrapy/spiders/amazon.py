@@ -59,6 +59,8 @@ class AmazonSpider(BaseSpider):
     def __init__(self, name=None, **kwargs):
         super(AmazonSpider, self).__init__(name=name, **kwargs)
         self.allowed_domains.append("amazon.de")
+        self.allowed_domains.append("amazon.co.uk")
+        self.allowed_domains.append("amazon.fr")
         selenium_children = [CHILD_GOODS_LIST_RANKING, CHILD_GOODS_REVIEWS_BY_RANKING, CHILD_GOODS_REVIEWS_BY_GROUP, CHILD_GOODS_REVIEWS]  #
         if self.spider_child in selenium_children:
             self.SELENIUM_ENABLED = True  # 启用 Selenium 中间件
@@ -129,7 +131,7 @@ class AmazonSpider(BaseSpider):
             )
 
         if self.spider_child == CHILD_GOODS_REVIEWS:
-            code = "B09GVWJ7DR"
+            code = "B08BCR2J4S"
             goods_url = XAmazon.get_url_by_code(code, self.url_params)
             reviews_url = XGoodsReviews(self).get_reviews_url_by_asin(code)
             goods_model = Goods.get_model(self.db_session, {'code': code, 'site_id': self.site_id})
@@ -192,7 +194,8 @@ class AmazonSpider(BaseSpider):
             
             merchant_id = 0
             # 手动填写 asin_list [ASIN列表通过mitmproxy中间代理人抓取, 注意缓存后可能会不再走网络请求而是直接读取缓存]
-            asin_list = ["B073P114BX", "B08TC6PNP7", "B08RP2JZZC", "B096ZF9287", "B07ZFSVZQS", "B095BP2ZJ2", "B092DS2H24", "B07Y25CK7V", "B01FW2CWJC", "B071CPTDCT",  "B073P38ZCH", "B07BHCJMC9", "B086YG5CNQ", "B09PY6BN81", "B08W3S27DV", "B09PVDVLHJ",]
+            # asin_list = ["B073P114BX", "B08TC6PNP7", "B08RP2JZZC", "B096ZF9287", "B07ZFSVZQS", "B095BP2ZJ2", "B092DS2H24", "B07Y25CK7V", "B01FW2CWJC", "B071CPTDCT",  "B073P38ZCH", "B07BHCJMC9", "B086YG5CNQ", "B09PY6BN81", "B08W3S27DV", "B09PVDVLHJ",]
+            asin_list = ["B08CGPGF1Q"]
             self.asin_list = [
                 {'category_name': groupName, 'items': asin_list}
             ]
@@ -206,7 +209,7 @@ class AmazonSpider(BaseSpider):
                     item['code'] = asin
                     # item['category_name'] = category_name
                     yield Request(
-                        XAmazon.get_url_by_code(asin, self.url_params),
+                        XAmazon.get_url_by_code(asin, self.url_params), # TODO 非美国站，请修改 extracts/amazon的BASE_URL常量
                         callback=AmazonGoodsDetail.parse,
                         # dont_filter=True,
                         meta=dict(item=item)

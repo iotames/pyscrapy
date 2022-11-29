@@ -15,6 +15,15 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
+## selenium WebDriverException 错误
+
+1. 浏览器驱动文件丢失
+2. 浏览器驱动文件和浏览器版本不匹配
+
+通常是因为爬虫使用谷歌浏览器抓取数据，项目中使用的谷歌浏览器驱动文件版本，与操作系统的浏览器版本不匹配导致的错误。
+
+最新驱动文件[下载链接](https://npm.taobao.org/mirrors/chromedriver/)
+
 ## 依赖错误(Windows)
 
 - 缺少头文件 `openssl/opensslv.h`
