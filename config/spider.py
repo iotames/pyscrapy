@@ -15,7 +15,7 @@ class Spider(BaseConfig):
     ENV_DEVELOPMENT = 'development'
 
     DEFAULT_CONFIG = {
-        'env': ENV_PRODUCTION,
+        'env': ENV_DEVELOPMENT,
         'enabled_components_list': []
     }
 

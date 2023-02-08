@@ -14,6 +14,6 @@ if __name__ == '__main__':
     # AmazonOutput(log).output()
     # StrongerlabelOutput(log).output()
     # KindredbravelyOutput().output()
-    # MyproteinOutput().output()
+    MyproteinOutput().output()
     # EydaOutput().output()
-    AloyogaOutput().output()
+    # AloyogaOutput().output()

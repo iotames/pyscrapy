@@ -41,10 +41,16 @@ class MyproteinOutput(BaseOutput):
                 for benefit in details['benefits']:
                     benefits += benefit + "\n"
             goods_url = goods.url
+            price = ""
+            if "price_rr_text" in details:
+                price = details['price_rr_text']
+            save_price = ""
+            if "price_saving_text" in details:
+                save_price = details["price_saving_text"]
 
             goods_info_list = [
                 goods.id, goods.code, image, goods.category_name, goods.title, goods_url, time_str, goods.price,
-                details['price_rr_text'], details['price_saving_text'], goods.reviews_num,
+                price, save_price, goods.reviews_num,
                 Goods.statuses_map[goods.status], brand, rating_value, goods_range, overview, benefits
             ]
             print('================')
