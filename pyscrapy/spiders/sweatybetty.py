@@ -29,8 +29,6 @@ class SweatybettySpider(BaseSpider):
     CHILD_GOODS_DETAIL = 'goods_detail'
     spider_child = CHILD_GOODS_LIST
 
-    xpath_goods_list_item = "//ul[@id=\"search-result-items\"]/li[contains(@id, \"productlist-\")]"
-
     xpath_goods_image = "div/div[@class=\"product-image  \"]/a/img"  # @data-src
     xpath_goods_url = "div/div[@class=\"product-image  \"]/a"  # @href
     xpath_goods_title = "div/div[@class=\"product-tile-details\"]/div[@class=\"product-title\"]/div[@class=\"product-name-grade-wrap\"]/div[@class=\"product-name\"]/a"
@@ -157,36 +155,34 @@ class SweatybettySpider(BaseSpider):
         start = response.meta['start']
         category_name = response.meta['category_name']
         print(start)
-
-        goods_li_eles = response.xpath(self.xpath_goods_list_item)
-        print(len(goods_li_eles))
+        goods_li_eles = response.xpath('//ul[@id="search-result-items"]/li')
+        print("items--len=", len(goods_li_eles))
         i = 0
         for ele in goods_li_eles:
-            i += 1
             item = SweatybettyGoodsItem()
-            li_id = ele.xpath("@id").get()
+            li_id = ele.xpath("@id").get("")
+            if li_id == "":
+                continue
             code = self.get_product_code(li_id)
             model = self.db_session.query(Goods).filter(Goods.code == code, Goods.site_id == self.site_id).first()
             print(code)
             image = ele.xpath(self.xpath_goods_image + "/@data-src").get() + "&fmt=webp"
             print(image)
             url = ele.xpath(self.xpath_goods_url + "/@href").get()
-            print(url)
             title = ele.xpath(self.xpath_goods_title + "/text()").get().strip()
-            print(title)
-            price_text = ele.xpath('//div[@class="product-price"]/text()').get().strip()
-            print(price_text)
+            price_text = ele.xpath('div//div[@class="product-price"]/span/text()').get().strip()
+
 
             # rating = ele.xpath(self.xpath_goods_rating + "/meta/@content").get()
             # print(rating)
 
             try:
-                price = ele.xpath('//div[@class="product-price"]/span[1]/@data-price-sales').get().strip()
-                print(price)
+                price = ele.xpath('div//div[@class="product-price"]/span[1]/@data-price-sales').get()
+                print("------try_price----", price)
             except AttributeError as e:
                 try:
-                    print(e)
-                    price = ele.xpath('//div[@class="product-price"]/span[2]/@data-price-sales').get().strip()
+                    print("---error---AttributeError", e)
+                    price = ele.xpath('div//div[@class="product-price"]/span[2]/@data-price-sales').get()
                     print(price)
                     # price_text = ele.xpath('//div[@class="product-price"]/span[2]/text()').get().strip()
                     # print(price_text)
@@ -200,6 +196,9 @@ class SweatybettySpider(BaseSpider):
             item["image"] = image
             item["price"] = price
             item["category_name"] = category_name
+            item["price_text"] = price_text
+            print(f"--item_detail--category({category_name})--title({title})--price_text({price_text})--url({url})--")
+            i += 1
             yield item
         if i == 24:
             # self.base_url + self.goods_list_url.format(str(next_start))
