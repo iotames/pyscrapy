@@ -29,7 +29,7 @@ class SweatybettyOutput(BaseOutput):
         sheet = self.work_sheet
         sheet.sheet_format.defaultRowHeight = 100
         # sheet.sheet_format.defaultColWidth = 100
-        title_row = ('商品ID', '图片', '商品标题', '商品链接', '更新时间',
+        title_row = ('商品ID', '图片', '分类', '商品标题', '商品链接', '更新时间',
                      '评论数', '价格/CNY', '织物布料', '平均星级',
                      '5星评论', '4星评论', '3星评论', '2星评论', '1星评论')
         title_col = 1
@@ -88,7 +88,7 @@ class SweatybettyOutput(BaseOutput):
             image = ''
             if goods.local_image:
                 image = self.get_image_info(goods.local_image)
-            goods_info_list = [goods.id, goods.title, goods.url, time_str,
+            goods_info_list = [goods.id, goods.category_name, goods.title, goods.url, time_str,
                                reviews_num, price, fabric, average, rating5, rating4, rating3, rating2, rating1]
             goods_row_info = goods_info_list.copy()
             goods_row_info.insert(1, image)
@@ -97,6 +97,7 @@ class SweatybettyOutput(BaseOutput):
             start_row_index += 1
 
         self.wb.save(self.output_file)
+        print(self.output_file)
 
 
 if __name__ == '__main__':

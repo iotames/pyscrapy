@@ -15,12 +15,12 @@ import re
 class SweatybettySpider(BaseSpider):
 
     name = 'sweatybetty'
-
+    base_url = "https://www.sweatybetty.com"
     custom_settings = {
         # 'DOWNLOAD_DELAY': 3,
         # 'RANDOMIZE_DOWNLOAD_DELAY': True,
         # 'CONCURRENT_REQUESTS_PER_DOMAIN': 1, default 8
-        'CONCURRENT_REQUESTS': 16,  # default 16 recommend 5
+        'CONCURRENT_REQUESTS': 8,  # default 16 recommend 5
         'IMAGES_STORE': Config.ROOT_PATH + "/runtime/images",
     }
 
@@ -28,14 +28,12 @@ class SweatybettySpider(BaseSpider):
     CHILD_GOODS_LIST = 'goods_list'
     CHILD_GOODS_DETAIL = 'goods_detail'
     spider_child = CHILD_GOODS_LIST
-    goods_list_url = "/shop?start={}&sz=36&format=ajax"  # 0 34 70 106 142
 
     xpath_goods_list_item = "//ul[@id=\"search-result-items\"]/li[contains(@id, \"productlist-\")]"
 
     xpath_goods_image = "div/div[@class=\"product-image  \"]/a/img"  # @data-src
     xpath_goods_url = "div/div[@class=\"product-image  \"]/a"  # @href
     xpath_goods_title = "div/div[@class=\"product-tile-details\"]/div[@class=\"product-title\"]/div[@class=\"product-name-grade-wrap\"]/div[@class=\"product-name\"]/a"
-    xpath_goods_price = "div/div[@class=\"product-tile-details\"]/div[@class=\"product-pricing\"]/div[@class=\"product-price\"]"  # @data-price-sales  text()
     # xpath_goods_rating = "div/div[@class='product-tile-details']/div[@class='product-rating']/div/div/a/div[@class='bv_numReviews_component_container']" // JS render
     xpath_goods_fabric = "//div[@class='pl-text pl-text--p3 fibre-composition-web']"
 
@@ -57,13 +55,22 @@ class SweatybettySpider(BaseSpider):
     }
 
     def start_requests(self):
+
         if self.spider_child == self.CHILD_GOODS_LIST:
-            yield Request(
-                self.base_url+self.goods_list_url.format(str(0)),
-                callback=self.parse_goods_list,
-                headers=dict(referer="https://www.sweatybetty.com/shop?start=34&sz=36&format=ajax"),
-                meta=dict(start=0)
-            )
+            urls = {
+                # "all": "https://www.sweatybetty.com/shop?start=0&sz=24&format=load-more",
+                "leggings": "https://www.sweatybetty.com/shop/bottoms/leggings?start=0&sz=24&format=load-more",
+                "sport-bras": "https://www.sweatybetty.com/shop/underwear/sports-bras?start=0&sz=24&format=load-more",
+                "t-shirts": "https://www.sweatybetty.com/shop/tops/t-shirts?start=0&sz=24&format=load-more",
+                "jumpers-and-hoodies": "https://www.sweatybetty.com/shop/tops/jumpers-and-hoodies?start=0&sz=24&format=load-more"
+            }
+            for k, v in urls.items():
+                yield Request(
+                    v,
+                    callback=self.parse_goods_list,
+                    headers=dict(referer=v.replace("start=0&sz=24", "start=24&sz=24")),
+                    meta=dict(start=0, category_name=k)
+                )
 
         if self.spider_child == self.CHILD_GOODS_DETAIL:
             # 2小时内的采集过的商品不会再更新
@@ -148,14 +155,14 @@ class SweatybettySpider(BaseSpider):
 
     def parse_goods_list(self, response: TextResponse, **kwargs):
         start = response.meta['start']
+        category_name = response.meta['category_name']
         print(start)
-        next_start = start + 36
-        if start == 0:
-            next_start = 34
+
         goods_li_eles = response.xpath(self.xpath_goods_list_item)
         print(len(goods_li_eles))
         i = 0
         for ele in goods_li_eles:
+            i += 1
             item = SweatybettyGoodsItem()
             li_id = ele.xpath("@id").get()
             code = self.get_product_code(li_id)
@@ -167,22 +174,22 @@ class SweatybettySpider(BaseSpider):
             print(url)
             title = ele.xpath(self.xpath_goods_title + "/text()").get().strip()
             print(title)
-            price_text = ele.xpath(self.xpath_goods_price + "/span[1]/text()").get().strip()
+            price_text = ele.xpath('//div[@class="product-price"]/text()').get().strip()
             print(price_text)
 
             # rating = ele.xpath(self.xpath_goods_rating + "/meta/@content").get()
             # print(rating)
 
             try:
-                price = ele.xpath(self.xpath_goods_price + "/span[1]/@data-price-sales").get().strip()
+                price = ele.xpath('//div[@class="product-price"]/span[1]/@data-price-sales').get().strip()
                 print(price)
             except AttributeError as e:
                 try:
                     print(e)
-                    price = ele.xpath(self.xpath_goods_price + "/span[2]/@data-price-sales").get().strip()
+                    price = ele.xpath('//div[@class="product-price"]/span[2]/@data-price-sales').get().strip()
                     print(price)
-                    price_text = ele.xpath(self.xpath_goods_price + "/span[2]/text()").get().strip()
-                    print(price_text)
+                    # price_text = ele.xpath('//div[@class="product-price"]/span[2]/text()').get().strip()
+                    # print(price_text)
                 except AttributeError:
                     continue
             item["model"] = model
@@ -192,9 +199,9 @@ class SweatybettySpider(BaseSpider):
             item["url"] = url
             item["image"] = image
             item["price"] = price
+            item["category_name"] = category_name
             yield item
-            i += 1
-            print("=========================end======")
-        print(i)
-        if i > 0:
-            yield Request(self.base_url+self.goods_list_url.format(str(next_start)), callback=self.parse_goods_list, meta=dict(start=next_start))
+        if i == 24:
+            # self.base_url + self.goods_list_url.format(str(next_start))
+            next_start = start + 24
+            yield Request(response.url.replace(f"start={str(start)}", f"start={next_start}"), callback=self.parse_goods_list, meta=dict(start=next_start,category_name=category_name))

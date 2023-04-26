@@ -13,8 +13,8 @@ class CottononOutput(BaseOutput):
     def output(self):
         sheet = self.work_sheet
         # sheet.sheet_format.defaultRowHeight = 30
-        title_row = ('商品ID', 'CODE', 'SPU', '图片', '分类', '商品标题', '商品链接', '更新时间', '评论数', '价格/AU$', '颜色数',
-                     '推荐', '不推荐', '面料', '商品特性')
+        title_row = ('商品ID', 'CODE', 'SPU', '图片', '分类', '商品标题', '原价', '销售价', '商品链接', '更新时间', '评论数', '价格/AU$', '颜色数',
+                     )
         title_col = 1
         for title in title_row:
             sheet.cell(1, title_col, title)
@@ -28,21 +28,23 @@ class CottononOutput(BaseOutput):
             # 商品信息元组
             image = self.get_image_info(goods.local_image) if goods.local_image else ''
             details = json.loads(goods.details)
-            features_text = ""
-            for feature in details["features_list"]:
-                features_text += feature + "\n"
-            recommended_count = 0
-            not_recommended_count = 0
-            for item in details["recommended_distribution_list"]:
-                if item["key"]:
-                    recommended_count = item["count"]
-                else:
-                    not_recommended_count = item["count"]
+            old_price = details['old_price']
+
+            # features_text = ""
+            # for feature in details["features_list"]:
+            #     features_text += feature + "\n"
+            # recommended_count = 0
+            # not_recommended_count = 0
+            # for item in details["recommended_distribution_list"]:
+            #     if item["key"]:
+            #         recommended_count = item["count"]
+            #     else:
+            #         not_recommended_count = item["count"]
 
             goods_info_list = [
-                goods.id, goods.code, goods.asin, image, goods.category_name, goods.title, goods.url, time_str,
-                goods.reviews_num, goods.price, details["color_num"], recommended_count, not_recommended_count,
-                details["composition"], features_text
+                goods.id, goods.code, goods.asin, image, goods.category_name, goods.title, old_price, goods.price, goods.url, time_str,
+                goods.reviews_num, goods.price, details["color_num"],
+                # recommended_count, not_recommended_count,details["composition"], features_text
             ]
             print(goods_info_list)
             # 返回商品信息递增列 next col index

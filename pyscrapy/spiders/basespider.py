@@ -11,6 +11,8 @@ from pyscrapy.helpers import JsonFile
 from pyscrapy.models.Goods import Goods
 from sqlalchemy import and_, or_
 from scrapy import Request
+import hashlib
+from scrapy.utils.python import to_bytes
 
 
 class BaseSpider(Spider):
@@ -210,6 +212,11 @@ class BaseSpider(Spider):
             db_session.add(log)
             db_session.commit()
             self.group_log_id = log.id
+
+    @staticmethod
+    def get_guid_by_url(url: str) -> str:
+        print(url)
+        return hashlib.sha1(to_bytes(url)).hexdigest()
 
     def closed(self, reason):
         print("============Close Base Spider : " + self.name)

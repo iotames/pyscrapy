@@ -9,6 +9,7 @@ import time
 from pyscrapy.spiders.basespider import BaseSpider
 from Config import Config
 from urllib.parse import urlencode
+# 子元素内使用.xpath方法，字符串参数不能以//开头
 
 
 class CottononSpider(BaseSpider):
@@ -19,17 +20,17 @@ class CottononSpider(BaseSpider):
     product_api_url = "https://api.bazaarvoice.com/data/display/0.2alpha/product/summary"
 
     categories_list = [
-        {"name": "men", "url": "https://cottonon.com/AU/men/"},
-        {"name": "women", "url": "https://cottonon.com/AU/women/"},
+        {'gender': 'Women', "name": "Bras", "url": "https://cottonon.com/AU/co/women/womens-lingerie/bras/"},
+        {'gender': 'Women', "name": "Tights", "url": "https://cottonon.com/AU/co/women/womens-activewear/gym-tights/"},
+        {'gender': 'Women', "name": "Fleece & Sweats", "url": "https://cottonon.com/AU/co/women/womens-clothing/womens-hoodies-jumpers/"},
+        {'gender': 'Women', "name": "Graphic T-Shirts", "url": "https://cottonon.com/AU/co/women/womens-clothing/womens-graphic-tees/"},
     ]
-    limit = 24
-    categories_info = {}  # start = 0 sz = 24
 
     custom_settings = {
         # 'DOWNLOAD_DELAY': 3,
         # 'RANDOMIZE_DOWNLOAD_DELAY': True,
         # 'CONCURRENT_REQUESTS_PER_DOMAIN': 1,  # default 8
-        # 'CONCURRENT_REQUESTS': 5,  # default 16 recommend 5
+        'CONCURRENT_REQUESTS': 5,  # default 16 recommend 5
         'IMAGES_STORE': Config.ROOT_PATH + "/runtime/images",
         'COMPONENTS_NAME_LIST_DENY': []
     }
@@ -54,13 +55,12 @@ class CottononSpider(BaseSpider):
         if self.spider_child == self.CHILD_GOODS_LIST:
             for category in self.categories_list:
                 name = category.get("name")
-                self.categories_info[name] = dict(start=0)
                 headers = dict(referer=self.base_url)
                 yield Request(
                     category.get("url"),
                     callback=self.parse_goods_list,
                     headers=headers,
-                    meta=dict(category_name=name)
+                    meta=dict(category_name=name, start=0)
                 )
         if self.spider_child == self.CHILD_GOODS_DETAIL:
             # 2小时内的采集过的商品不会再更新
@@ -81,44 +81,44 @@ class CottononSpider(BaseSpider):
             else:
                 raise RuntimeError('待更新的商品数量为0, 退出运行')
 
-    goods_list_count = 0
-
-    def is_last_page(self, start: int, product_total: int) -> bool:
-        if (product_total - start) <= self.limit:
-            return True
-        return False
-
     def parse_goods_list(self, response: TextResponse):
         meta = response.meta
         category_name = meta["category_name"]
-        start = self.categories_info[category_name]["start"]
-        print('========================start======{}=={}==='.format(category_name, str(start)))
-        if start == 0:
-            product_total = int(response.xpath('//span[@class="total-product-count"]/text()').extract()[0])
-            self.categories_info[category_name]["product_total"] = product_total
-        else:
-            product_total = self.categories_info[category_name]["product_total"]
-
-        xpath = '//li[@class="grid-tile columns"]/div[@class="product-tile"]'
-        eles = response.xpath(xpath)
-        for ele in eles:
-            # data = ele.xpath("@data-bvproduct").extract()[0]
-            # json_data = json.loads(data)
-            url = ele.xpath('div[@class="product-image"]/a/@href').extract()[0]
-            if not url:
-                self.mylogger.debug("==============empty==url===in===={}".format(str(start)))
+        start = meta["start"]
+        nds = response.xpath('//li[@class="grid-tile pagination-item columns"]')
+        i = 1
+        for nd in nds:
+            code = nd.xpath("@data-colors-to-show").get("")
+            self.mylogger.debug(f"--start({start})-begin({i})--code({code})----")
+            if code == "":
                 continue
-            image = ele.xpath('div[@class="product-image"]/a/img/@src').extract()[0]
-            title = ele.xpath('div[@class="product-name"]/a/text()').extract()[0].strip()
-            color_num_text = ele.xpath('div[@class="product-colors row"]/div/@aria-label').get()
-            print(color_num_text)
-            color_num = int(color_num_text.split(" ")[0])
-            price_text = ele.xpath('div[@class="product-pricing "]/span/@aria-label').get()
-            print(price_text)
-            price_text = price_text.split("Price ")[1] if price_text else ""
-            price = price_text.split(" ")[1] if price_text else 0
-            code = url.split("/")[-1].split(".html")[0]  # json_data["productId"]
             spu = code.split("-")[0]
+            title = nd.xpath('div//a[@class="name-link"]/text()').get().strip()
+            url = nd.xpath('div//a[@class="name-link"]/@href').get()
+            # // div[@class="product-name "] 子元素内使用.xpath方法，字符串参数不能以//开头
+
+            # url_split = url.split('originalPid=')
+            # if len(url_split) == 2:
+            #     code = url_split[1]
+            # else:
+            code = self.get_guid_by_url(url)
+            image = nd.xpath('div//div[@class="product-image"]//img/@src').get("")
+            price_text1 = nd.xpath('div//span[@class="product-sales-price"]/text()').get().strip()
+            price_text2 = nd.xpath('div//span[@class="product-sales-price"]/sup/text()').get()
+            price_text = price_text1 + price_text2
+            # print("-----price_text", price_text)
+            price = price_text.split('$')[1]
+            old_price = price
+            old_price_text1 = nd.xpath('div//span[@class="product-standard-price"]/text()').get("").strip()
+            if old_price_text1 != "":
+                old_price_text2 = nd.xpath('div//span[@class="product-standard-price"]/sup/text()').get("")
+                old_price_text = old_price_text1 + old_price_text2
+                old_price = old_price_text.split('$')[1]
+            # print("-----price--old_price", price, old_price)
+            color_num_text = nd.xpath('div//div[@class="product-colours-available"]/@aria-label').get().strip()
+            # print("-----color_num_text-----", color_num_text)
+            color_num = int(color_num_text.split(" ")[0])
+
             goods_item = BaseGoodsItem()
             goods_item['spider_name'] = self.name
             goods_item['url'] = url
@@ -130,23 +130,23 @@ class CottononSpider(BaseSpider):
             goods_item['image'] = image
             goods_item['image_urls'] = [image]
             goods_item['category_name'] = category_name
-            goods_item['details'] = {'color_num': color_num}
+            goods_item['details'] = {'color_num': color_num, 'old_price': old_price}
+            self.mylogger.debug(f"--goods_item--{start}-{i}--code({code})--title({title})--price({price})--url({url})--")
+            i += 1
             yield goods_item
 
-        if not self.is_last_page(start, product_total):
-            self.categories_info[category_name]["start"] += self.limit
-            next_start = self.categories_info[category_name]["start"]
-            url = response.url
+        currentUrl = response.url
+        limit = 60
+        if len(nds) == limit:
+            next_url = ''
+            next_start = start + limit
             if start == 0:
-                url_args = dict(start=next_start, sz=self.limit)
-                url += "?" + urlencode(url_args)
+                next_url = response.url+'?start=60&sz=60'
             else:
-                url = url.replace("start=" + str(start), "start=" + str(next_start))
+                next_url = response.url.replace(f'start={start}', f'start={next_start}')
+            print("-----next_page_url------------", next_url)
             yield Request(
-                url,
-                callback=self.parse_goods_list,
-                meta=dict(category_name=category_name),
-                dont_filter=True
+                next_url, callback=self.parse_goods_list, meta=dict(category_name=category_name, start=next_start), dont_filter=True
             )
 
     def parse_goods_detail(self, response: TextResponse):
@@ -187,4 +187,3 @@ class CottononSpider(BaseSpider):
         details["rating_value"] = rating_value
         details["rating_distribution_list"] = primary_rating["distribution"]  # {key: 5, count: 161}
         yield goods_item
-

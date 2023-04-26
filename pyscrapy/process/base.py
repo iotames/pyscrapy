@@ -34,7 +34,7 @@ class Base(Singleton):
             Goods.code == code, Goods.site_id == spider.site_id
         ).first()
         if model:
-            print(f"===Waring!!!====Goods code EXISTS===Skip=code={code}")
+            print(f"===SKIP====Goods code EXISTS===code({code})")
         return model
 
     @staticmethod

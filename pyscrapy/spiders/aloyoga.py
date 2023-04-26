@@ -26,12 +26,12 @@ class AloyogaSpider(BaseSpider):
         # 'DEFAULT_REQUEST_HEADERS': {
         #     'USER_AGENT': USER_AGENT,
         # },
-        # 'USER_AGENT': USER_AGENT,
+        'USER_AGENT': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.5005.63 Safari/537.36",
         # 'COOKIES_ENABLED': True,
-        # 'DOWNLOAD_DELAY': 3,
-        # 'RANDOMIZE_DOWNLOAD_DELAY': True,
-        # 'CONCURRENT_REQUESTS_PER_DOMAIN': 1,  # default 8
-        # 'CONCURRENT_REQUESTS': 5,  # default 16 recommend 5
+        'DOWNLOAD_DELAY': 2,
+        'RANDOMIZE_DOWNLOAD_DELAY': True,
+        'CONCURRENT_REQUESTS_PER_DOMAIN': 3,  # default 8
+        'CONCURRENT_REQUESTS': 5,  # default 16 recommend 5
         'IMAGES_STORE': Config.ROOT_PATH + "/runtime/images",
         # 'COMPONENTS_NAME_LIST_DENY': ['user_agent'],
     }
@@ -113,8 +113,8 @@ class AloyogaSpider(BaseSpider):
         if self.spider_child == self.CHILD_GOODS_DETAIL:
             # 2小时内的采集过的商品不会再更新
             before_time = time.time()
-            if self.app_env == self.spider_config.ENV_PRODUCTION:
-                before_time = time.time() - (2 * 3600)
+            # if self.app_env == self.spider_config.ENV_PRODUCTION:
+            #     before_time = time.time() - (2 * 3600)
             self.goods_model_list = self.db_session.query(Goods).filter(and_(
                 Goods.site_id == self.site_id, or_(
                     Goods.status == Goods.STATUS_UNKNOWN,

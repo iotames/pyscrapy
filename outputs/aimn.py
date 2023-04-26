@@ -35,20 +35,23 @@ class AimnOutput(StrongerlabelOutput):
             if goods.local_image:
                 image = self.get_image_info(goods.local_image)
             status_text = Goods.statuses_map[goods.status]
-            print(goods.details)
             details = json.loads(goods.details)
             desc = details["desc"] if "desc" in details else ""
+            originalPriceText = details['origin_price_text']
+            if originalPriceText == "":
+                originalPriceText = "$"+str(goods.price)
             goods_info_list = [goods.id, goods.code, image, goods.category_name, goods.title, goods.url, status_text,
-                               time_str, goods.price, details['origin_price_text'], goods.quantity, desc]
+                               time_str, goods.price, originalPriceText, goods.quantity, desc]
             # 返回商品信息递增列 next col index
             self.set_values_to_row(sheet, goods_info_list, goods_row_index, goods_col_index)
+            print(goods_row_index, goods.details)
             goods_row_index += 1
         self.wb.save(self.output_file)
-        self.copy_to_download_path(self.output_file)
+        # self.copy_to_download_path(self.output_file)
 
 
 if __name__ == '__main__':
     db_session = SpiderRunLog.get_db_session()
-    log = SpiderRunLog.get_model(db_session, {'id': 42})
+    log = SpiderRunLog.get_model(db_session, {'id': 50})
     sl = AimnOutput(log)
     sl.output()

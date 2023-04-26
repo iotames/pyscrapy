@@ -35,6 +35,7 @@ class AimnSpider(BaseSpider):
     # www.aimn.com: yZsxIgaJZWaHbnb7
     # aimn.co.nz: DbezUFAuq8rKu68J
     sid = "yZsxIgaJZWaHbnb7"
+    base_url = "https://www.aimn.com"
 
     def __init__(self, name=None, **kwargs):
         super(AimnSpider, self).__init__(name=name, **kwargs)

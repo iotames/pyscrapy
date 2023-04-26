@@ -72,17 +72,17 @@ class ImagePipeline(ImagesPipeline):
         return dir_path + os.path.sep + cls.get_guid_by_url(url) + ".jpg"
 
     def get_media_requests(self, item, info: ImagesPipeline.SpiderInfo):
-        print('=========ImagePipeline=======get_media_requests====(Download image)======')
         urls = ItemAdapter(item).get(self.images_urls_field, [])  # item['image_urls']
-        print(urls)
+        # print('=========ImagePipeline=======get_media_requests====(Download image)======', urls)
+        # print(urls)
         spider = info.spider
         # return [Request(u) for u in urls]
         for image_url in urls:
             meta = None
-            print(image_url)
+            # print(image_url)
             file_path = self.get_local_file_path_by_url(image_url, spider)
             if os.path.isfile(file_path):
-                print('SkipUrl: {} Exists File {}'.format(image_url, file_path))
+                print('SkipImageUrl: {} Exists File {}'.format(image_url, file_path))
                 continue
             if spider.image_referer:
                 meta = {"referer": spider.image_referer}
