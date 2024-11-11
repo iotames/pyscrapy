@@ -12,7 +12,7 @@ class Config(Singleton):
     IMAGES_PATH = os.getenv("IMAGES_PATH", "")
 
     def __init__(self, rootpath: str):
-        print("--------init--Config---:"+rootpath)
+        # print("--------init--Config---:"+rootpath)
         self.__root_path = rootpath
         self.__http_proxy = os.getenv("HTTP_PROXY", "")
         super(Config, self).__init__(rootpath)

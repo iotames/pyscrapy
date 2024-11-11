@@ -14,9 +14,9 @@ from service import Config, DB, Snowflake
 Config.get_instance(os.getenv("ROOT_PATH", os.path.dirname(os.path.dirname(__file__))))
 DB.get_instance(Config.get_database())
 
-print(Config.get_instance().get_root_path())
-print(DB.get_instance().get_db_engine_uri())
-print(Config.get_instance().get_http_proxy())
+# print(Config.get_instance().get_root_path())
+# print(DB.get_instance().get_db_engine_uri())
+# print(Config.get_instance().get_http_proxy())
 
 BOT_NAME = 'pyscrapy'
 
