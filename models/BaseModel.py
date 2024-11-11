@@ -9,7 +9,7 @@ from service import Config, DB, Snowflake
 AlchemyBase = declarative_base()
 
 # class AlchemyBase(object):
-snf = Snowflake.get_instance()
+snf = Snowflake.get_instance(1, 1)
 
 class BaseModel(AlchemyBase):
 

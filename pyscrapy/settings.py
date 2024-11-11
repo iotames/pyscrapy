@@ -13,7 +13,6 @@ from service import Config, DB, Snowflake
 # 初始化全局调用的单例服务
 Config.get_instance(os.getenv("ROOT_PATH", os.path.dirname(os.path.dirname(__file__))))
 DB.get_instance(Config.get_database())
-Snowflake.get_instance(1, 1)
 
 print(Config.get_instance().get_root_path())
 print(DB.get_instance().get_db_engine_uri())
