@@ -1,0 +1,6 @@
+python-dotenv
+scrapy
+sqlalchemy
+pymysql
+pillow
+mitmproxy
