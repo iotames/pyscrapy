@@ -8,10 +8,10 @@
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
 import os
-from service import Config, DB, Snowflake
+from service import Config, DB
 
 # 初始化全局调用的单例服务
-Config.get_instance(os.getenv("ROOT_PATH", os.path.dirname(os.path.dirname(__file__))))
+cf = Config.get_instance(os.getenv("ROOT_PATH", os.path.dirname(os.path.dirname(__file__))))
 DB.get_instance(Config.get_database())
 
 # print(Config.get_instance().get_root_path())
@@ -23,6 +23,9 @@ BOT_NAME = 'pyscrapy'
 SPIDER_MODULES = ['pyscrapy.spiders']
 NEWSPIDER_MODULE = 'pyscrapy.spiders'
 
+# LOG_LEVEL = 'INFO' # default: DEBUG
+# LOG_FORMAT = '%(asctime)s [%(name)s] %(levelname)s: %(message)s'
+LOG_FILE = f'{cf.get_root_path()}/runtime/logs/scrapy.log'
 
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36"
 
@@ -73,9 +76,9 @@ DOWNLOADER_MIDDLEWARES = {
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-   'pyscrapy.pipelines.ImagePipeline': 200,
-   'pyscrapy.pipelines.ExportPipeline': 299,
-   'pyscrapy.pipelines.PyscrapyPipeline': 300,
+   # 'pyscrapy.pipelines.ImagePipeline': 200,
+   # 'pyscrapy.pipelines.ExportPipeline': 299,
+   # 'pyscrapy.pipelines.PyscrapyPipeline': 300,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

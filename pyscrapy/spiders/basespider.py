@@ -102,6 +102,10 @@ class BaseSpider(Spider):
             info = price_text.split("£")
             if len(info) > 1:
                 price = info[1].strip().replace(",", "")
+        if price == 0.0:
+            info = price_text.split("€")
+            if len(info) > 1:
+                price = info[1].strip().replace(",", "")
         return price
 
     def closed(self, reason):

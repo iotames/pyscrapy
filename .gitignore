@@ -3,3 +3,4 @@ updateip.py
 .env
 sqlite3.db
 __pycache__
+*.csv
