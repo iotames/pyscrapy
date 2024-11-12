@@ -12,6 +12,8 @@ class PyscrapyItem(Item):
     pass
 
 class BaseProductItem(Item):
+    SizeNum = Field()
+    SizeList = Field()
     Thumbnail = Field()
     Url = Field()
     Title = Field()
@@ -21,11 +23,11 @@ class BaseProductItem(Item):
     PriceText = Field()
     FinalPrice = Field()
         
-    # image_urls = Field()
-    # image_paths = Field()
+    image_urls = Field()
+    image_paths = Field()
+    spider_name = Field()
+    
     # model = Field()
-
-    # spider_name = Field()
     # category_name = Field()
     # category_id = Field()
 

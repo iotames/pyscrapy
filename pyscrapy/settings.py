@@ -25,7 +25,7 @@ NEWSPIDER_MODULE = 'pyscrapy.spiders'
 
 # LOG_LEVEL = 'INFO' # default: DEBUG
 # LOG_FORMAT = '%(asctime)s [%(name)s] %(levelname)s: %(message)s'
-LOG_FILE = f'{cf.get_root_path()}/runtime/logs/scrapy.log'
+# LOG_FILE = f'{cf.get_root_path()}/runtime/logs/scrapy.log'
 
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36"
 
@@ -76,8 +76,8 @@ DOWNLOADER_MIDDLEWARES = {
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-   # 'pyscrapy.pipelines.ImagePipeline': 200,
-   # 'pyscrapy.pipelines.ExportPipeline': 299,
+   'pyscrapy.pipelines.ImagePipeline': 200,
+   'pyscrapy.pipelines.ExportPipeline': 299,
    # 'pyscrapy.pipelines.PyscrapyPipeline': 300,
 }
 
