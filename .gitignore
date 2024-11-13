@@ -4,3 +4,4 @@ updateip.py
 sqlite3.db
 __pycache__
 *.csv
+*.xlsx

@@ -9,12 +9,14 @@ class Config(Singleton):
 
     __root_path: str
     __http_proxy: str
-    IMAGES_PATH = os.getenv("IMAGES_PATH", "")
+    __images_path: str
 
     def __init__(self, rootpath: str):
         # print("--------init--Config---:"+rootpath)
         self.__root_path = rootpath
         self.__http_proxy = os.getenv("HTTP_PROXY", "")
+        # runtime/downloads/images"
+        self.__images_path = os.getenv("IMAGES_PATH", os.path.join(self.__root_path, "runtime", "downloads", "images"))
         super(Config, self).__init__(rootpath)
     
     def get_root_path(self) -> str:
@@ -32,7 +34,10 @@ class Config(Singleton):
         return self.get_root_path() + os.path.sep + path
 
     def get_logs_dir(self):
-        return self.get_root_path() + '/runtime/logs'
+        return os.path.join(self.__root_path, "runtime", "logs")
+    
+    def get_images_path(self):
+        return self.__images_path
 
     @staticmethod
     def get_database() -> dict:

@@ -24,7 +24,8 @@ class BaseProductItem(Item):
     FinalPrice = Field()
     Category = Field()
     TotalInventoryQuantity = Field()
-        
+    Material= Field()
+    
     image_urls = Field()
     image_paths = Field()
     spider_name = Field()

@@ -1,6 +1,8 @@
 python-dotenv
 scrapy
 sqlalchemy
+psycopg2
 pymysql
 pillow
+openpyxl
 mitmproxy

@@ -58,13 +58,14 @@ class A4tharqSpider(BaseSpider):
             dd['FinalPrice'] = self.get_price_by_text(dd['PriceText']) if dd['PriceText'] else None
 
             dd['image_urls'] = [dd['Thumbnail']]
+            # yield dd
             yield Request(dd['Url'], self.parse_detail, meta=dict(dd=dd))
 
         next_page = response.xpath('//a[@aria-label="Next page"]/@href').get()
         if next_page:
             next_page_url = self.get_site_url(next_page)
             next_page_num = page + 1
-            print(f"---------------next_page-{next_page_num}-", next_page_url)
+            print(f"------------next_page-{next_page_num}---", next_page_url)
             yield Request(next_page_url, callback=self.parse_list, meta=dict(page=next_page_num))
 
     def parse_detail(self, response: TextResponse):
@@ -98,5 +99,8 @@ class A4tharqSpider(BaseSpider):
         if lensz == 0:
             lensz = 1
         dd['SizeNum'] = lensz
-        print("-----------parse_detail--------", dd)
+        # 提取面料信息
+        fabric_info = response.xpath('//span[@class="description"]/p[strong[contains(text(), "Fabric Composition:")]]/following-sibling::p[1]/text()').get()
+        dd['Material'] = fabric_info.strip() if fabric_info else None
+        # print("-----------parse_detail--------", dd)
         yield dd

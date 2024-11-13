@@ -6,14 +6,17 @@
 
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
-from scrapy import Item, Request
+from scrapy import Item, Request, signals
 from scrapy.pipelines.images import ImagesPipeline
 import hashlib
 from scrapy.utils.python import to_bytes
-import os
+import os, csv, openpyxl
+from scrapy.exporters import BaseItemExporter
 from service import Config
 from .items import BaseProductItem
 from pyscrapy.process.product import ProcessProductBase
+
+cf = Config.get_instance()
 
 process_map = {
     BaseProductItem: ProcessProductBase(),
@@ -29,18 +32,39 @@ class PyscrapyPipeline:
             raise RuntimeError(msg)
 
 
-class ExportPipeline:
+class ExportPipeline(BaseItemExporter):
+
+    def __init__(self, file, **kwargs):
+        self._configure(kwargs)
+        self.file = file
+        self.wb = openpyxl.Workbook()
+        self.ws = self.wb.active
+        self.ws.title = "Scraped Data"
+        self.header_written = False
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        # 从命令行参数中获取输出文件名
+        output_file = crawler.settings.get('FEEDS', {}).get('output', {}).get('uri', 'output.xlsx')
+        pipeline = cls(file=output_file)
+        crawler.signals.connect(pipeline.open_spider, signals.spider_opened)
+        crawler.signals.connect(pipeline.close_spider, signals.spider_closed)
+        return pipeline
 
     def open_spider(self, spider):
+        # 初始化操作，例如打开文件或创建工作簿
         pass
 
-    def process_item(self, item: Item, spider):
-        print(f"---------ExportPipeline----{spider.get_images_dirname()}", item)
-        # 'image_paths': ['eyda\\a73d6e853c5e51967d06e3755007ea3d.jpg'],
-        return item
-    
     def close_spider(self, spider):
-        pass
+        self.wb.save(self.file)
+
+    def process_item(self, item, spider):
+        if not self.header_written:
+            self.ws.append(list(item.keys()))
+            self.header_written = True
+
+        self.ws.append(list(item.values()))
+        return item
 
 
 class ImagePipeline(ImagesPipeline):
@@ -61,8 +85,7 @@ class ImagePipeline(ImagesPipeline):
 
     @classmethod
     def get_local_file_path_by_url(cls, url, spider):
-        imgdir = spider.get_images_dirname()
-        dir_path = Config.IMAGES_PATH + os.path.sep + imgdir
+        dir_path = os.path.join(cf.get_images_path(), spider.get_images_dirname())
         print("-------pipelines---image---dir_path=", dir_path)
         return dir_path + os.path.sep + cls.get_guid_by_url(url) + ".jpg"
 
