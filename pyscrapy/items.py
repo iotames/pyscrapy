@@ -22,6 +22,8 @@ class BaseProductItem(Item):
     OldPrice = Field()
     PriceText = Field()
     FinalPrice = Field()
+    Category = Field()
+    TotalInventoryQuantity = Field()
         
     image_urls = Field()
     image_paths = Field()

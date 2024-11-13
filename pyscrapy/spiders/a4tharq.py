@@ -2,6 +2,8 @@ from scrapy.http import TextResponse
 from pyscrapy.spiders import BaseSpider
 from scrapy import Request
 from pyscrapy.items import BaseProductItem
+import json
+import re
 
 class A4tharqSpider(BaseSpider):
     name = "4tharq"
@@ -68,6 +70,26 @@ class A4tharqSpider(BaseSpider):
     def parse_detail(self, response: TextResponse):
         meta = response.meta
         dd = meta['dd']
+        
+        # 解析 _BISConfig.product 后面的 JSON 数据
+        script_text = response.xpath('//script[contains(text(), "_BISConfig.product")]/text()').get()
+        if script_text:
+            # 使用正则表达式提取 JSON 数据
+            json_match = re.search(r'_BISConfig\.product\s*=\s*({.*?});', script_text, re.DOTALL)
+            if json_match:
+                product_json_str = json_match.group(1)
+                try:
+                    product_data = json.loads(product_json_str)
+                    dd['Category'] = product_data.get('type')
+                except json.JSONDecodeError as e:
+                    self.logger.error(f"Failed to parse JSON data: {e}")
+
+
+            # 解析 inventory_quantity 信息
+        inventory_quantities = re.findall(r'_BISConfig\.product\.variants\[(\d+)\]\[\'inventory_quantity\'\]\s*=\s*(-?\d+);', script_text)
+        total_inventory = sum(int(qty) for _, qty in inventory_quantities)
+        
+        dd['TotalInventoryQuantity'] = total_inventory
         sizelist = []
         for sz in response.xpath('//input[@name="Size"]/@value').getall():
             sizelist.append(sz)
@@ -76,4 +98,5 @@ class A4tharqSpider(BaseSpider):
         if lensz == 0:
             lensz = 1
         dd['SizeNum'] = lensz
+        print("-----------parse_detail--------", dd)
         yield dd
