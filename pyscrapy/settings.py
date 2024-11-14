@@ -86,6 +86,10 @@ FEED_EXPORTERS_BASE = {
     "csv": "scrapy.exporters.CsvItemExporter",
 }
 
+FEED_EXPORT_FIELDS = [
+    'Thumbnail', 'Category', 'Title',  'Color', 'OldPriceText', 'PriceText', 'OldPrice', 'FinalPrice', 'SizeList', 'SizeNum', 'TotalInventoryQuantity', 'Material', 'Url'
+]
+
 # 默认的 FEEDS 配置
 
 # FEEDS = {

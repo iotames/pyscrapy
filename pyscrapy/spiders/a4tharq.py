@@ -10,7 +10,7 @@ class A4tharqSpider(BaseSpider):
     base_url = "https://4tharq.com"
     allowed_domains = ["4tharq.com"]
     start_urls = ["https://4tharq.com/collections/all"]
-    
+
     # 该属性cls静态调用 无法继承覆盖
     custom_settings = {
         'DOWNLOAD_DELAY': 1.2,
@@ -20,6 +20,9 @@ class A4tharqSpider(BaseSpider):
         'COOKIES_ENABLED': False,
         'CONCURRENT_REQUESTS_PER_IP': 5,  # default 8
         'CONCURRENT_REQUESTS': 5,  # default 16 recommend 5-8
+        'FEED_URI': '4tharq.csv',
+        'FEED_FORMAT': 'csv',
+        'FEED_EXPORT_FIELDS': ['Thumbnail', 'Category', 'Title',  'Color', 'OldPriceText', 'PriceText', 'OldPrice', 'FinalPrice', 'SizeList', 'SizeNum', 'TotalInventoryQuantity', 'Material', 'Url']
     }
 
     def start_requests(self):
@@ -36,6 +39,7 @@ class A4tharqSpider(BaseSpider):
 
         for nd in nds:
             dd = BaseProductItem()
+            dd['spider_name'] = self.name
             # 使用相对路径
             img = nd.xpath('.//img[@class="motion-reduce"]/@src').get()
             dd['Thumbnail'] = self.get_site_url(img)

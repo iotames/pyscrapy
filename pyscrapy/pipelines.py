@@ -106,22 +106,46 @@ class ImagePipeline(ImagesPipeline):
             print(f"Begin Download Image: {image_url} => {file_path}")
             yield Request(image_url, meta=meta)
 
-    def item_completed(self, results, item, info: ImagesPipeline.SpiderInfo):
-        print('==========ImagePipeline======item_completed==========')
-        print(results)
-        # results [] or [(True, {'url': '', 'path': 'dir/file.jpg', 'checksum': '', 'status': 'uptodate'})]
-        image_paths = [x['path'] for ok, x in results if ok]
-        adapter = ItemAdapter(item)
-        urls_field = self.images_urls_field
-        if urls_field in item:
-            if not image_paths:
-                image_paths = []
-                for url in item[urls_field]:
-                    file_path = self.get_local_file_path_by_url(url, info.spider)
-                    if os.path.isfile(file_path):
-                        image_paths.append(info.spider.get_images_dirname() + os.path.sep + self.get_guid_by_url(url) + '.jpg')
-            adapter['image_paths'] = image_paths
-        # if not image_paths:
-        #     raise DropItem("Item contains no images")
-        # print(item)
-        return item
+def item_completed(self, results, item, info: ImagesPipeline.SpiderInfo):
+    print('==========ImagePipeline======item_completed==========')
+    print(results)
+    # results [] or [(True, {'url': '', 'path': 'dir/file.jpg', 'checksum': '', 'status': 'uptodate'})]
+    # [(False, <twisted.python.failure.Failure scrapy.pipelines.files.FileException: >)]
+    
+    # 初始化一个列表来存储成功的图片路径
+    image_paths = []
+    # 初始化一个列表来存储失败的图片 URL
+    failed_urls = []
+
+    # 遍历 results，处理成功和失败的下载
+    for ok, x in results:
+        if ok:
+            image_paths.append(x['path'])
+        else:
+            # 如果下载失败，记录失败的 URL
+            failed_urls.append(x.get('url', 'Unknown URL'))
+            self.logger.error(f"Failed to download image: {x.get('url', 'Unknown URL')}")
+            # raise Exception("Item contains no successfully downloaded images")
+
+    adapter = ItemAdapter(item)
+    urls_field = self.images_urls_field
+
+    if urls_field in item:
+        if not image_paths:
+            image_paths = []
+            for url in item[urls_field]:
+                file_path = self.get_local_file_path_by_url(url, info.spider)
+                if os.path.isfile(file_path):
+                    image_paths.append(info.spider.get_images_dirname() + os.path.sep + self.get_guid_by_url(url) + '.jpg')
+
+        adapter['image_paths'] = image_paths
+        # 将失败的 URL 存储在 item 中
+        adapter['failed_urls'] = failed_urls
+
+    # 如果没有成功下载的图片，可以抛出一个异常或记录日志
+    if not image_paths:
+        self.logger.warning("Item contains no successfully downloaded images")
+        # 如果你希望在这种情况下抛出异常，可以取消注释下面的代码
+        # raise DropItem("Item contains no successfully downloaded images")
+
+    return item

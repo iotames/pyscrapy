@@ -15,6 +15,7 @@ class BaseProductItem(Item):
     SizeNum = Field()
     SizeList = Field()
     Thumbnail = Field()
+    Image = Field()
     Url = Field()
     Title = Field()
     Color = Field()
