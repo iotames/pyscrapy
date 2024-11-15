@@ -40,13 +40,14 @@ class ProcessProductBase(Base):
         db_session.commit()
 
     def process_item(self, item: BaseProductItem, spider: BaseSpider):
-        if 'spider_name' not in item:
-            err_msg = 'process_item error: spider_name not in BaseGoodsItem!!!'
+        if not spider.name or len(spider.name.strip()) == 0:
+        # if 'spider_name' not in item:
+            err_msg = 'process_item error: spider.name is empty!'
             print(err_msg)
             raise RuntimeError(err_msg)
 
         db_session = self.db_session
-        not_update = ['image_urls', 'image_paths', 'model', 'spider_name']
+        not_update = ['image_urls', 'image_paths', 'model']
         attrs = {'site_id': spider.site_id, "collected_at": datetime.now()}
         for key, value in item.items():
             if key in not_update:

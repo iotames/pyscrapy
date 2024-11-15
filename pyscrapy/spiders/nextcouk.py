@@ -87,7 +87,6 @@ class NextcoukSpider(BaseSpider):
                 rating_str = rating_split[1]
                 rating = int(rating_str)
             product_item = BaseProductItem()
-            product_item["spider_name"] = self.name
             product_item["code"] = code
             product_item["spu"] = spu
             product_item["price_text"] = price_text

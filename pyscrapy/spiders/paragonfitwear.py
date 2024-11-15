@@ -42,7 +42,6 @@ class Paragonfitwear(BaseSpider):
             goods_item['status'] = 0
             goods_item['category_name'] = n.xpath("//span[@class=\"stamped-product-reviews-badge\"]/@data-product-type").get()
             goods_item['spu'] = n.xpath("//span[@class=\"stamped-product-reviews-badge\"]/@data-product-sku").get()
-            goods_item['spider_name'] = self.name
             goods_item["price_text"] = n.xpath("//span[@class=\"current_price\"]/text()").get()
             goods_item['image'] = 'https:'+n.xpath("//div[@class=\"image-element__wrap\"]/img/@data-src").get()
             # goods_item['image_urls'] = [image]

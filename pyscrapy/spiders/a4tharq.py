@@ -1,7 +1,7 @@
 from scrapy.http import TextResponse
 from pyscrapy.spiders import BaseSpider
 from scrapy import Request
-from pyscrapy.items import BaseProductItem
+from pyscrapy.items import BaseProductItem, FromPage
 import json
 import re
 
@@ -35,11 +35,19 @@ class A4tharqSpider(BaseSpider):
         page = meta['page']
         print(f"------------page={page}----", response.url)
         self.logger.debug(f"---------parse_list--page={page}---")
-        nds = response.xpath('//ul[@id="product-grid"]/li')
 
+        # if meta['UrlRequest'] is not None:
+        #     dl = meta['dd']
+        #     for dd in dl:
+        # ur = UrlRequest.createUrlRequest(request, spider.site_id, 1, 0, 0)
+        # dd = {}
+        # dd['UrlRequest'] = ur
+        # request.meta['dd'] = dd
+
+        nds = response.xpath('//ul[@id="product-grid"]/li')
         for nd in nds:
             dd = BaseProductItem()
-            dd['spider_name'] = self.name
+            dd['FromKey'] = FromPage.FROM_PAGE_PRODUCT_LIST
             # 使用相对路径
             img = nd.xpath('.//img[@class="motion-reduce"]/@src').get()
             dd['Thumbnail'] = self.get_site_url(img)
@@ -75,6 +83,7 @@ class A4tharqSpider(BaseSpider):
     def parse_detail(self, response: TextResponse):
         meta = response.meta
         dd = meta['dd']
+        dd['FromKey'] = FromPage.FROM_PAGE_PRODUCT_DETAIL
         
         # 解析 _BISConfig.product 后面的 JSON 数据
         script_text = response.xpath('//script[contains(text(), "_BISConfig.product")]/text()').get()

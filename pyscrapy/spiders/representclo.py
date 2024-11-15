@@ -42,7 +42,6 @@ class RepresentcloSpider(BaseSpider):
 
         for nd in nds:
             dd = BaseProductItem()
-            dd['spider_name'] = self.name
 
             # 提取缩略图
             img = nd.xpath('.//img/@src').get()

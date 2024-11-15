@@ -176,7 +176,6 @@ class AloyogaSpider(BaseSpider):
             product_handle = product['handle']
             spu = product_handle.split('-')[0]
             goods_item = BaseProductItem()
-            goods_item['spider_name'] = self.name
             goods_item['spu'] = spu
             goods_item['image'] = image
             goods_item['price'] = price
@@ -237,7 +236,6 @@ class AloyogaSpider(BaseSpider):
         category_name = info0['category']
 
         # goods_item['model'] = goods_model
-        goods_item['spider_name'] = self.name
         goods_item['code'] = str(product_id)
         goods_item['category_name'] = category_name
         goods_item['price_text'] = price_text

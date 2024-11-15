@@ -5,13 +5,22 @@
 
 from scrapy import Item, Field
 
-
+class FromPage:
+    FROM_PAGE_HOME = "page_home"
+    FROM_PAGE_PRODUCT_DETAIL = "page_product_detail"
+    FROM_PAGE_PRODUCT_REVIEWS = "page_product_reviews"
+    FROM_PAGE_PRODUCT_QUANTITY = "page_product_quantity"
+    FROM_PAGE_PRODUCT_LIST = "page_product_list"
+    
 class PyscrapyItem(Item):
     # define the fields for your item here like:
     # name = scrapy.Field()
     pass
 
 class BaseProductItem(Item):
+    
+    UrlRequest = Field()
+    FromKey = Field()
     SizeNum = Field()
     SizeList = Field()
     Thumbnail = Field()
@@ -29,7 +38,6 @@ class BaseProductItem(Item):
     
     image_urls = Field()
     image_paths = Field()
-    spider_name = Field()
     
     # model = Field()
     # category_name = Field()

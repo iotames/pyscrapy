@@ -13,22 +13,32 @@ from scrapy.utils.python import to_bytes
 import os, csv, openpyxl
 from scrapy.exporters import BaseItemExporter
 from service import Config
-from .items import BaseProductItem
-from pyscrapy.process.product import ProcessProductBase
+from .items import FromPage, BaseProductItem
+from .dbpipeline import ProductList, ProductDetail
+# from pyscrapy.process.product import ProcessProductBase
 
 cf = Config.get_instance()
 
-process_map = {
-    BaseProductItem: ProcessProductBase(),
-}
 
-class PyscrapyPipeline:
+
+class DatabasePipeline:
+    
+    process_map = {
+        FromPage.FROM_PAGE_PRODUCT_LIST: ProductList,
+        FromPage.FROM_PAGE_PRODUCT_DETAIL: ProductDetail
+    }
+    
     def process_item(self, item: Item, spider):
-        print('====================== PyscrapyPipeline : process_item ===================')
-        if type(item) in process_map:
-            process_map[type(item)].process_item(item, spider)
+        print('====================== DatabasePipeline : process_item ===================', spider.name, item)
+        if 'FromKey' not in item:
+            err_msg = '======process_item error: the key: FromKey is not in item===='
+            print(err_msg)
+            raise RuntimeError(err_msg)
+        
+        if item['FromKey'] in self.process_map:
+            self.process_map[item['FromKey']]().process_item(item, spider)
         else:
-            msg = "Item对象 {} 在管道处理中没有找到process处理类。 请在 process_map 字典中添加对应关系。".format(item.__class__.__name__)
+            msg = "Item对象的 FromKey 字段值： {} , 没有在 DatabasePipeline.process_map字典中".format(item['FromKey'])
             raise RuntimeError(msg)
 
 

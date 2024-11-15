@@ -5,11 +5,26 @@
 
 from service import Config
 from scrapy import signals
+import time
+import hashlib
+from scrapy.http import HtmlResponse
 
 # useful for handling different item types with a single interface
 from itemadapter import is_item, ItemAdapter
 
 conf = Config.get_instance()
+
+def get_request_hash(method, url, request_body):
+    method = method.upper()
+    shastr = method + url
+    if method == "POST":
+        shastr += request_body.strip()
+    return get_sha256(shastr)
+
+def get_sha256(s):
+    h = hashlib.sha256()
+    h.update(s.encode('utf-8'))
+    return h.hexdigest()
 
 class PyscrapySpiderMiddleware:
     # Not all methods need to be defined. If a method is not defined,

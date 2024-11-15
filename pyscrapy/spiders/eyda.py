@@ -84,7 +84,6 @@ class EydaSpider(BaseSpider):
             goods_item = BaseProductItem()
             goods_item['status'] = status
             goods_item['spu'] = spu
-            goods_item['spider_name'] = self.name
             goods_item['price'] = price
             goods_item["price_text"] = self.get_price_text(price)
             goods_item['image'] = image

@@ -6,7 +6,8 @@ from datetime import datetime
 
 class Product(BaseModel):
 
-    __tablename__ = 'products'
+    __tablename__ = BaseModel.table_prefix + 'products' + BaseModel.table_suffix
+    
     collected_at = Column(DateTime, default=datetime.now())
     code = Column(String(64), comment='商品编码')
     spu = Column(String(64), comment='SPU')

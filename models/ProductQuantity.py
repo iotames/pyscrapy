@@ -6,7 +6,7 @@ from datetime import datetime
 
 class ProductQuantity(BaseModel):
 
-    __tablename__ = 'product_quantities'
+    __tablename__ = BaseModel.table_prefix + 'product_quantities' + BaseModel.table_suffix
     
     product_id = Column(BigInteger, default=0, comment='商品ID')
     time_before = Column(DateTime, comment="最近采集时间")
