@@ -1,6 +1,6 @@
 from email.policy import default
 from sqlalchemy import Column, String, Integer, Text, DateTime, BigInteger, JSON
-from . import BaseModel
+from . import BaseModel, UrlRequestSnapshot
 from datetime import datetime
 from scrapy import Request
 import hashlib
@@ -25,15 +25,13 @@ class UrlRequest(BaseModel):
     data_raw = Column(Text, nullable=False)
     collected_at = Column(DateTime, default=None)
 
-    # 定义唯一索引
-    __table_args__ = (
-        {'extend_existing': True},
-        {'schema': 'craw'},
-        {'postgresql_indexes': [
-            {'name': 'UQE_ods_cwr_end_url_request_nd_id', 'columns': ['id'], 'unique': True},
-            {'name': 'UQE_ods_cwr_end_url_request_nd_request_hash', 'columns': ['request_hash'], 'unique': True}
-        ]}
-    )
+    # # 定义唯一索引
+    # __table_args__ = (
+    #     {'postgresql_indexes': [
+    #         {'name': 'UQE_ods_cwr_end_url_request_nd_id', 'columns': ['id'], 'unique': True},
+    #         {'name': 'UQE_ods_cwr_end_url_request_nd_request_hash', 'columns': ['request_hash'], 'unique': True}
+    #     ]}
+    # )
 
     def setDataFormat(self, data):
         self.data_format = data
@@ -41,17 +39,19 @@ class UrlRequest(BaseModel):
     def setDataRaw(self, data: str):
         self.data_raw = data
         
-    def save(self):
-        if self.id == 0:
-            self.db_session.add(self)
+    def save(self, startAt):
+        if self.id is None or self.id == 0:
+            self.get_db_session().add(self)
         else:
-            data = {'data_format': self.data_format, 'data_raw':self.data_raw, 'collected_at':datetime.now()}
-            self.db_session.query(UrlRequest).filter(UrlRequest.request_hash==self.request_hash).update(data)
-        self.db_session.commit()
+            data = {'data_format': str(self.data_format), 'data_raw':self.data_raw, 'collected_at':datetime.now()}
+            print("---------UrlRequest------save-----", data)
+            self.get_db_session().query(UrlRequest).filter(UrlRequest.request_hash==self.request_hash).update(data)
+        self.get_db_session().commit()
+        UrlRequestSnapshot.create_url_request_snapshot(self, startAt, self.status_code)
 
     @classmethod
     def getbyRequestHash(cls, requestHash: str):
-        return cls.get_self(request_hash=requestHash)
+        return cls.get_self(dict(request_hash=requestHash))
     
     @classmethod
     def getByRequest(cls, request: Request) -> 'UrlRequest':
@@ -66,7 +66,7 @@ class UrlRequest(BaseModel):
         return get_sha256(shastr)
     
     @classmethod
-    def createUrlRequest(cls, request:Request, siteid: int, setp, start, group: int) -> 'UrlRequest':
+    def createUrlRequest(cls, request:Request, siteid: int, step, start, group: int) -> 'UrlRequest':
         new_record = cls(
             site_id=siteid,
             request_hash=cls.get_request_hash(request.method, request.url, request.body),
@@ -75,7 +75,7 @@ class UrlRequest(BaseModel):
             status_code=200,
             request_body=request.body,
             request_headers=request.headers,
-            step=setp,
+            step=step,
             start=start,
             group=group,
             collected_at=datetime.now()

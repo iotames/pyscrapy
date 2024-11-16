@@ -35,9 +35,9 @@ class ProductList(Base):
         super().__init__()
 
     def process_item(self, item: BaseProductItem, spider: BaseSpider):
-        print('==========ProductList==========', item)
+        print('==========ProductList====Not Support======', item)
         checkSpider(spider)
-        pass
+        raise NotImplementedError()
 
 
 class ProductDetail(Base):
@@ -48,20 +48,22 @@ class ProductDetail(Base):
         if 'UrlRequest' not in item:
             raise RuntimeError('item key: UrlRequest is empty')
 
-        not_update = ['image_urls', 'image_paths', 'UrlRequest', 'FromKey']
+        not_update = ['image_urls', 'image_paths', 'UrlRequest', 'FromKey', 'SkipRequest', 'StartAt']
         
         dataFormat = {}
         
         for key, value in item.items():
             if key in not_update:
                 continue
+            if key == 'SkipRequest' and value:
+                print("---------Skip--Save----urlRequest---ProductDetail-------------")
+                return
             dataFormat[key] = value
-        
-        urlRequest.SetDataFormat(dataFormat)
-        urlRequest.SetDataRaw(item['DataRaw'])
+            
         urlRequest: UrlRequest = item['UrlRequest']
+        urlRequest.SetDataFormat(dataFormat)
         urlRequest.site_id = spider.site_id
-        urlRequest.save()
+        urlRequest.save(item['StartAt'])
 
 
 # {'Category': 'Leggings',

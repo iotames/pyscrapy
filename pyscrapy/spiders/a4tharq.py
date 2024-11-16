@@ -28,7 +28,8 @@ class A4tharqSpider(BaseSpider):
     def start_requests(self):
         for requrl in self.start_urls:
             print('------start_requests----', requrl)
-            yield Request(requrl, callback=self.parse_list, meta=dict(page=1))
+            # mustin = ['step', 'page', 'group', 'FromKey']
+            yield Request(requrl, callback=self.parse_list, meta=dict(page=1, step=1, group=1, FromKey=FromPage.FROM_PAGE_PRODUCT_LIST))
 
     def parse_list(self, response: TextResponse):
         meta = response.meta
@@ -36,55 +37,66 @@ class A4tharqSpider(BaseSpider):
         print(f"------------page={page}----", response.url)
         self.logger.debug(f"---------parse_list--page={page}---")
 
-        # if meta['UrlRequest'] is not None:
-        #     dl = meta['dd']
-        #     for dd in dl:
-        # ur = UrlRequest.createUrlRequest(request, spider.site_id, 1, 0, 0)
-        # dd = {}
-        # dd['UrlRequest'] = ur
-        # request.meta['dd'] = dd
+        if 'dl' in meta:
+            dl = meta['dl']
+            prods = dl['ProductList']
+        else:
+            prods = []
+            nds = response.xpath('//ul[@id="product-grid"]/li')
+            for nd in nds:
+                dd = BaseProductItem()
+                dd['FromKey'] = FromPage.FROM_PAGE_PRODUCT_LIST
+                # 使用相对路径
+                img = nd.xpath('.//img[@class="motion-reduce"]/@src').get()
+                dd['Thumbnail'] = self.get_site_url(img)
+                
+                url = nd.xpath('.//a[@class="full-unstyled-link"]/@href').get()
+                dd['Url'] = self.get_site_url(url)
+                
+                title = nd.xpath('.//span[@class="card-information__text h5"]/text()').get()
+                dd['Title'] = title.strip() if title else None
+                
+                color = nd.xpath('.//span[@class="card-information__text card-information__colour"]/text()').get()
+                dd['Color'] = color.strip() if color else None
+                
+                old_price_text = nd.xpath('.//span[@class="price-item price-item--regular"]/text()').get()
+                dd['OldPriceText'] = old_price_text.strip() if old_price_text else None
+                dd['OldPrice'] = self.get_price_by_text(dd['OldPriceText']) if dd['OldPriceText'] else None
+                
+                price_text = nd.xpath('.//span[@class="price-item price-item--sale price-item--last"]/text()').get()
+                dd['PriceText'] = price_text.strip() if price_text else None
+                dd['FinalPrice'] = self.get_price_by_text(dd['PriceText']) if dd['PriceText'] else None
 
-        nds = response.xpath('//ul[@id="product-grid"]/li')
-        for nd in nds:
-            dd = BaseProductItem()
-            dd['FromKey'] = FromPage.FROM_PAGE_PRODUCT_LIST
-            # 使用相对路径
-            img = nd.xpath('.//img[@class="motion-reduce"]/@src').get()
-            dd['Thumbnail'] = self.get_site_url(img)
+                dd['image_urls'] = [dd['Thumbnail']]
+                prods.append(dd)
+            nextPageUrl = ""
+            next_page = response.xpath('//a[@aria-label="Next page"]/@href').get()
+            if next_page:
+                nextPageUrl = self.get_site_url(next_page)
+            dl = {'ProductList': prods, 'NextPageUrl': nextPageUrl}
+            ur = meta['UrlRequest']
+            ur.setDataFormat(dl)
+            ur.save(meta['StartAt'])
             
-            url = nd.xpath('.//a[@class="full-unstyled-link"]/@href').get()
-            dd['Url'] = self.get_site_url(url)
-            
-            title = nd.xpath('.//span[@class="card-information__text h5"]/text()').get()
-            dd['Title'] = title.strip() if title else None
-            
-            color = nd.xpath('.//span[@class="card-information__text card-information__colour"]/text()').get()
-            dd['Color'] = color.strip() if color else None
-            
-            old_price_text = nd.xpath('.//span[@class="price-item price-item--regular"]/text()').get()
-            dd['OldPriceText'] = old_price_text.strip() if old_price_text else None
-            dd['OldPrice'] = self.get_price_by_text(dd['OldPriceText']) if dd['OldPriceText'] else None
-            
-            price_text = nd.xpath('.//span[@class="price-item price-item--sale price-item--last"]/text()').get()
-            dd['PriceText'] = price_text.strip() if price_text else None
-            dd['FinalPrice'] = self.get_price_by_text(dd['PriceText']) if dd['PriceText'] else None
-
-            dd['image_urls'] = [dd['Thumbnail']]
+        
+        for dd in prods:
             # yield dd
-            yield Request(dd['Url'], self.parse_detail, meta=dict(dd=dd))
-
-        next_page = response.xpath('//a[@aria-label="Next page"]/@href').get()
-        if next_page:
-            next_page_url = self.get_site_url(next_page)
-            next_page_num = page + 1
-            print(f"------------next_page-{next_page_num}---", next_page_url)
-            yield Request(next_page_url, callback=self.parse_list, meta=dict(page=next_page_num))
+            yield Request(dd['Url'], self.parse_detail, meta=dict(dd=dd, page=page, step=0, group=meta['group'], FromKey=FromPage.FROM_PAGE_PRODUCT_DETAIL))
+        
+        if dl['NextPageUrl'] != "":
+            print(f"------------next_page-{dl['NextPageUrl']}---")
+            yield Request(dl['NextPageUrl'], callback=self.parse_list, meta=dict(page=page+1, step=meta['step'], group=meta['group'], FromKey=FromPage.FROM_PAGE_PRODUCT_LIST))
 
     def parse_detail(self, response: TextResponse):
         meta = response.meta
+        ur = meta['UrlRequest']
         dd = meta['dd']
-        dd['FromKey'] = FromPage.FROM_PAGE_PRODUCT_DETAIL
-        
+        if 'SkipRequest' in meta:
+            dd['SkipRequest'] = True
+            yield dd
+            return
+        dd['UrlRequest'] = ur
+        dd['StartAt'] = meta['StartAt']
         # 解析 _BISConfig.product 后面的 JSON 数据
         script_text = response.xpath('//script[contains(text(), "_BISConfig.product")]/text()').get()
         if script_text:

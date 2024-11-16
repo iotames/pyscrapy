@@ -18,7 +18,7 @@ class PyscrapyItem(Item):
     pass
 
 class BaseProductItem(Item):
-    
+    SkipRequest = Field()
     UrlRequest = Field()
     FromKey = Field()
     SizeNum = Field()
