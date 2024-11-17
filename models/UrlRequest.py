@@ -4,7 +4,9 @@ from . import BaseModel, UrlRequestSnapshot
 from datetime import datetime
 from scrapy import Request
 import hashlib
+from service import Snowflake
 
+snf = Snowflake.get_instance(1, 1)
 
 class UrlRequest(BaseModel):
 
@@ -41,13 +43,15 @@ class UrlRequest(BaseModel):
         
     def save(self, startAt):
         if self.id is None or self.id == 0:
+            # DETAIL:  Key (id)=(1858205946162974721) already exists.
+            self.id = snf.get_next_id()
             self.get_db_session().add(self)
+            self.get_db_session().commit()
         else:
-            data = {'data_format': str(self.data_format), 'data_raw':self.data_raw, 'collected_at':datetime.now()}
-            print("---------UrlRequest------save-----", data)
+            data = {'data_format': self.data_format, 'data_raw':self.data_raw, 'collected_at':datetime.now()}
+            # print("---------UrlRequest------save-----", data)
             self.get_db_session().query(UrlRequest).filter(UrlRequest.request_hash==self.request_hash).update(data)
-        self.get_db_session().commit()
-        UrlRequestSnapshot.create_url_request_snapshot(self, startAt, self.status_code)
+            self.get_db_session().commit()
 
     @classmethod
     def getbyRequestHash(cls, requestHash: str):
@@ -74,7 +78,9 @@ class UrlRequest(BaseModel):
             method=request.method.upper(),
             status_code=200,
             request_body=request.body,
-            request_headers=request.headers,
+            request_headers= {}, # dict(request.headers),
+            response_headers={},
+            data_raw="",
             step=step,
             start=start,
             group=group,

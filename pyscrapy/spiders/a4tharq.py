@@ -1,9 +1,11 @@
+from models import UrlRequest, UrlRequestSnapshot
 from scrapy.http import TextResponse
 from pyscrapy.spiders import BaseSpider
 from scrapy import Request
 from pyscrapy.items import BaseProductItem, FromPage
 import json
 import re
+
 
 class A4tharqSpider(BaseSpider):
     name = "4tharq"
@@ -20,9 +22,9 @@ class A4tharqSpider(BaseSpider):
         'COOKIES_ENABLED': False,
         'CONCURRENT_REQUESTS_PER_IP': 5,  # default 8
         'CONCURRENT_REQUESTS': 5,  # default 16 recommend 5-8
-        'FEED_URI': '4tharq.csv',
-        'FEED_FORMAT': 'csv',
-        'FEED_EXPORT_FIELDS': ['Thumbnail', 'Category', 'Title',  'Color', 'OldPriceText', 'PriceText', 'OldPrice', 'FinalPrice', 'SizeList', 'SizeNum', 'TotalInventoryQuantity', 'Material', 'Url']
+        # 'FEED_URI': '4tharq.csv',
+        # 'FEED_FORMAT': 'csv',
+        # 'FEED_EXPORT_FIELDS': ['Thumbnail', 'Category', 'Title',  'Color', 'OldPriceText', 'PriceText', 'OldPrice', 'FinalPrice', 'SizeList', 'SizeNum', 'TotalInventoryQuantity', 'Material', 'Url']
     }
 
     def start_requests(self):
@@ -38,6 +40,7 @@ class A4tharqSpider(BaseSpider):
         self.logger.debug(f"---------parse_list--page={page}---")
 
         if 'dl' in meta:
+            print("------Skiped------parse_list---", response.url, page)
             dl = meta['dl']
             prods = dl['ProductList']
         else:
@@ -66,21 +69,28 @@ class A4tharqSpider(BaseSpider):
                 price_text = nd.xpath('.//span[@class="price-item price-item--sale price-item--last"]/text()').get()
                 dd['PriceText'] = price_text.strip() if price_text else None
                 dd['FinalPrice'] = self.get_price_by_text(dd['PriceText']) if dd['PriceText'] else None
-
                 dd['image_urls'] = [dd['Thumbnail']]
-                prods.append(dd)
+                prod = {}
+                for key, value in dd.items():
+                    prod[key] = value
+                prods.append(prod)
+
             nextPageUrl = ""
             next_page = response.xpath('//a[@aria-label="Next page"]/@href').get()
             if next_page:
                 nextPageUrl = self.get_site_url(next_page)
-            dl = {'ProductList': prods, 'NextPageUrl': nextPageUrl}
-            ur = meta['UrlRequest']
+            dl = {'ProductList': prods, 'NextPageUrl': nextPageUrl, 'FromKey':FromPage.FROM_PAGE_PRODUCT_LIST}
+            ur: UrlRequest = meta['UrlRequest']
+            # print("------------type--dl----", type(dl), dl)
+            # dljson = json.dumps(dl)
+            # print("------------type--dljson----", type(dljson), "-----dl-:", dl, "----dljson:--", dljson)
             ur.setDataFormat(dl)
             ur.save(meta['StartAt'])
-            
+            UrlRequestSnapshot.create_url_request_snapshot(ur, meta['StartAt'], ur.status_code)
         
         for dd in prods:
             # yield dd
+            dd['FromKey'] = FromPage.FROM_PAGE_PRODUCT_DETAIL
             yield Request(dd['Url'], self.parse_detail, meta=dict(dd=dd, page=page, step=0, group=meta['group'], FromKey=FromPage.FROM_PAGE_PRODUCT_DETAIL))
         
         if dl['NextPageUrl'] != "":
@@ -89,7 +99,7 @@ class A4tharqSpider(BaseSpider):
 
     def parse_detail(self, response: TextResponse):
         meta = response.meta
-        ur = meta['UrlRequest']
+        ur: UrlRequest = meta['UrlRequest']
         dd = meta['dd']
         if 'SkipRequest' in meta:
             dd['SkipRequest'] = True

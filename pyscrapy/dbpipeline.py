@@ -1,6 +1,6 @@
 from pyscrapy.items import  BaseProductItem
 from pyscrapy.spiders import BaseSpider
-from models import UrlRequest
+from models import UrlRequest, UrlRequestSnapshot
 from datetime import datetime
 from copy import copy
 from service.DB import DB
@@ -61,9 +61,10 @@ class ProductDetail(Base):
             dataFormat[key] = value
             
         urlRequest: UrlRequest = item['UrlRequest']
-        urlRequest.SetDataFormat(dataFormat)
+        urlRequest.setDataFormat(dataFormat)
         urlRequest.site_id = spider.site_id
         urlRequest.save(item['StartAt'])
+        UrlRequestSnapshot.create_url_request_snapshot(urlRequest, item['StartAt'], urlRequest.status_code)
 
 
 # {'Category': 'Leggings',

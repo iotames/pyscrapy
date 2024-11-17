@@ -1,6 +1,6 @@
 import time
 import logging
-from service.Singleton import Singleton
+from service import Singleton
 
 
 EPOCH_TIMESTAMP = 1288834974657
@@ -8,6 +8,7 @@ EPOCH_TIMESTAMP = 1288834974657
 class Snowflake(Singleton):
 
     def __init__(self, dc, worker):
+        print("--------Snowflake--init-----count:")
         self.dc = dc
         self.worker = worker
         self.node_id = ((dc & 0x03)<< 8) | (worker & 0xff)
@@ -35,6 +36,7 @@ class Snowflake(Singleton):
         if self.sequence > 4095:
             # the sequence is overload, just wait to next sequence
             logging.warning('The sequence has been overload')
+            raise Exception("The sequence has been overload")
             self.sequence_overload += 1
             time.sleep(0.001)
             return self.get_next_id()
@@ -42,6 +44,7 @@ class Snowflake(Singleton):
         generated_id = ((curr_time - EPOCH_TIMESTAMP) << 22) | (self.node_id << 12) | self.sequence
 
         self.generated_ids += 1
+        print("------Snowflake------get_next_id---generated_id:", self.sequence, self.generated_ids, generated_id)
         return generated_id
 
     @property
@@ -59,10 +62,15 @@ class Snowflake(Singleton):
 
 if __name__ == "__main__":
     one = Snowflake(1, 1)
+    snf = Snowflake.get_instance(1, 1)
     print(one.get_next_id())
     print(one.get_next_id())
     print(Snowflake(1, 1).get_next_id())
     print(Snowflake(1, 1).get_next_id())
+    print(snf.get_next_id())
+    print(snf.get_next_id())
+    print(snf.get_next_id())
+    print(snf.get_next_id())
 
 
 # import time

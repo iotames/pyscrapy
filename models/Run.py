@@ -6,4 +6,7 @@ class Run:
 
     @classmethod
     def create_all_tables(cls, engine: Engine):
-        BaseModel.metadata.create_all(engine)
+        try:
+            BaseModel.metadata.create_all(engine)
+        except Exception as e:
+            raise e
