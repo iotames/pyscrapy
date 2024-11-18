@@ -33,6 +33,7 @@ lg = Logger.get_instance()
 
 class ProductDetail(Base):
 
+    # process_item: 管道中专门处理Item数据的方法。必须返回Item对象，数据才能被下游管道捕获。
     def process_item(self, item: BaseProductItem, spider: BaseSpider):
         # print('========dbpipeline==ProductDetail===process_item=', spider.name, item)
         if 'FromKey' not in item:
@@ -43,15 +44,13 @@ class ProductDetail(Base):
             raise RuntimeError(errmsg)
         if 'SkipRequest' in item:
             print("---------Skip--Save----urlRequest---ProductDetail----SkipRequest:", item['SkipRequest'])
-            return
+            return item
 
-        checkSpider(spider)
-        not_update = ['image_urls', 'image_paths', 'UrlRequest', 'FromKey', 'SkipRequest', 'StartAt']
-        
+        checkSpider(spider)        
         dataFormat = {}
         
         for key, value in item.items():
-            if key in not_update:
+            if key in BaseProductItem.NOT_SAVE_FILEDS:
                 continue
             dataFormat[key] = value
             
@@ -60,20 +59,4 @@ class ProductDetail(Base):
         urlRequest.site_id = spider.site_id
         urlRequest.saveUrlRequest(item['StartAt'])
         UrlRequestSnapshot.create_url_request_snapshot(urlRequest, item['StartAt'], urlRequest.status_code)
-
-
-# {'Category': 'Leggings',
-#  'Color': 'Slate',
-#  'FinalPrice': '48',
-#  'Material': '83% Nylon 17% Spandex',
-#  'OldPrice': '48',
-#  'OldPriceText': '€48',
-#  'PriceText': '€48',
-#  'SizeList': ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
-#  'SizeNum': 6,
-#  'Thumbnail': 'https://4tharq.com/cdn/shop/files/peyt-slate-L_BM_F1.jpg?v=1699913791&width=533',
-#  'Title': 'PEYTON Leggings',
-#  'TotalInventoryQuantity': 764,
-#  'Url': 'https://4tharq.com/products/peyton-leggings-slate',
-#  'image_urls': ['https://4tharq.com/cdn/shop/files/peyt-slate-L_BM_F1.jpg?v=1699913791&width=533'],
-#  'spider_name': '4tharq'}
+        return item

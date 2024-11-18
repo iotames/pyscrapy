@@ -6,12 +6,11 @@
 
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
-from scrapy import Item, Request, signals
+from scrapy import Item, Request
 from scrapy.pipelines.images import ImagesPipeline
 import hashlib
 from scrapy.utils.python import to_bytes
-import os, csv, openpyxl
-from scrapy.exporters import BaseItemExporter
+import os
 from service import Config
 from .items import FromPage, BaseProductItem
 from .dbpipeline import ProductDetail
@@ -19,40 +18,6 @@ from .dbpipeline import ProductDetail
 
 cf = Config.get_instance()
 
-
-class ExportPipeline(BaseItemExporter):
-
-    def __init__(self, file, **kwargs):
-        self._configure(kwargs)
-        self.file = file
-        self.wb = openpyxl.Workbook()
-        self.ws = self.wb.active
-        self.ws.title = "Scraped Data"
-        self.header_written = False
-
-    @classmethod
-    def from_crawler(cls, crawler):
-        # 从命令行参数中获取输出文件名
-        output_file = crawler.settings.get('FEEDS', {}).get('output', {}).get('uri', 'output.xlsx')
-        pipeline = cls(file=output_file)
-        crawler.signals.connect(pipeline.open_spider, signals.spider_opened)
-        crawler.signals.connect(pipeline.close_spider, signals.spider_closed)
-        return pipeline
-
-    def open_spider(self, spider):
-        # 初始化操作，例如打开文件或创建工作簿
-        pass
-
-    def close_spider(self, spider):
-        self.wb.save(self.file)
-
-    def process_item(self, item, spider):
-        if not self.header_written:
-            self.ws.append(list(item.keys()))
-            self.header_written = True
-
-        self.ws.append(list(item.values()))
-        return item
 
 
 class ImagePipeline(ImagesPipeline):

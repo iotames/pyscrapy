@@ -78,7 +78,7 @@ ITEM_PIPELINES = {
 }
 
 FEED_EXPORTERS_BASE = {
-    "xlsx": "pyscrapy.pipelines.ExportPipeline",
+    "xlsx": "pyscrapy.exportpipeline.XlsxExporter",
     "csv": "scrapy.exporters.CsvItemExporter",
 }
 

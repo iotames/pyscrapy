@@ -22,8 +22,8 @@ class A4tharqSpider(BaseSpider):
         'COOKIES_ENABLED': False,
         'CONCURRENT_REQUESTS_PER_IP': 5,  # default 8
         'CONCURRENT_REQUESTS': 5,  # default 16 recommend 5-8
-        # 'FEED_URI': '4tharq.csv',
-        # 'FEED_FORMAT': 'csv',
+        'FEED_URI': '4tharq.xlsx',
+        'FEED_FORMAT': 'xlsx',
         # 'FEED_EXPORT_FIELDS': ['Thumbnail', 'Category', 'Title',  'Color', 'OldPriceText', 'PriceText', 'OldPrice', 'FinalPrice', 'SizeList', 'SizeNum', 'TotalInventoryQuantity', 'Material', 'Url']
     }
 
@@ -99,44 +99,44 @@ class A4tharqSpider(BaseSpider):
         meta = response.meta
         dd = meta['dd']
         if 'SkipRequest' in dd:
-            self.lg.debug(f"----Skiped------parse_detail--requrl:{response.url}----dd:{dd}-")
+            # self.lg.debug(f"----Skiped----typedd({type(dd)})---parse_detail--requrl:{response.url}---dd:{dd}-")
             yield dd
-            return
-        # 解析 _BISConfig.product 后面的 JSON 数据
-        script_text = response.xpath('//script[contains(text(), "_BISConfig.product")]/text()').get()
-        if script_text:
-            # 使用正则表达式提取 JSON 数据
-            json_match = re.search(r'_BISConfig\.product\s*=\s*({.*?});', script_text, re.DOTALL)
-            if json_match:
-                product_json_str = json_match.group(1)
-                try:
-                    product_data = json.loads(product_json_str)
-                    dd['Category'] = product_data.get('type')
-                except json.JSONDecodeError as e:
-                    self.logger.error(f"Failed to parse JSON data: {e}")
+        else:
+            # 解析 _BISConfig.product 后面的 JSON 数据
+            script_text = response.xpath('//script[contains(text(), "_BISConfig.product")]/text()').get()
+            if script_text:
+                # 使用正则表达式提取 JSON 数据
+                json_match = re.search(r'_BISConfig\.product\s*=\s*({.*?});', script_text, re.DOTALL)
+                if json_match:
+                    product_json_str = json_match.group(1)
+                    try:
+                        product_data = json.loads(product_json_str)
+                        dd['Category'] = product_data.get('type')
+                    except json.JSONDecodeError as e:
+                        self.logger.error(f"Failed to parse JSON data: {e}")
 
-        try:
-            # 解析 inventory_quantity 信息
-            inventory_quantities = re.findall(r'_BISConfig\.product\.variants\[(\d+)\]\[\'inventory_quantity\'\]\s*=\s*(-?\d+);', script_text)
-            total_inventory = sum(int(qty) for _, qty in inventory_quantities)
-            dd['TotalInventoryQuantity'] = total_inventory
-        except Exception as e:
-            dd['TotalInventoryQuantity'] = 0
-            # raise e
-        
-        sizelist = []
-        for sz in response.xpath('//input[@name="Size"]/@value').getall():
-            sizelist.append(sz)
-        dd["SizeList"] = sizelist
-        lensz = len(sizelist)
-        if lensz == 0:
-            lensz = 1
-        dd['SizeNum'] = lensz
-        # 提取面料信息
-        fabric_info = response.xpath('//span[@class="description"]/p[strong[contains(text(), "Fabric Composition:")]]/following-sibling::p[1]/text()').get()
-        dd['Material'] = fabric_info.strip() if fabric_info else None
-        # desc_nd = response.xpath('//div[@class="product__description rte quick-add-hidden"]/text()').get()
-        # dd['Description'] = desc_nd.strip() if desc_nd else None
-        # print("-----------parse_detail--------", dd)
-        self.lg.debug(f"------parse_detail--yield--dd--to--SAVE--requrl:{response.url}----dd:{dd}-")
-        yield dd
+            try:
+                # 解析 inventory_quantity 信息
+                inventory_quantities = re.findall(r'_BISConfig\.product\.variants\[(\d+)\]\[\'inventory_quantity\'\]\s*=\s*(-?\d+);', script_text)
+                total_inventory = sum(int(qty) for _, qty in inventory_quantities)
+                dd['TotalInventoryQuantity'] = total_inventory
+            except Exception as e:
+                dd['TotalInventoryQuantity'] = 0
+                # raise e
+            
+            sizelist = []
+            for sz in response.xpath('//input[@name="Size"]/@value').getall():
+                sizelist.append(sz)
+            dd["SizeList"] = sizelist
+            lensz = len(sizelist)
+            if lensz == 0:
+                lensz = 1
+            dd['SizeNum'] = lensz
+            # 提取面料信息
+            fabric_info = response.xpath('//span[@class="description"]/p[strong[contains(text(), "Fabric Composition:")]]/following-sibling::p[1]/text()').get()
+            dd['Material'] = fabric_info.strip() if fabric_info else None
+            # desc_nd = response.xpath('//div[@class="product__description rte quick-add-hidden"]/text()').get()
+            # dd['Description'] = desc_nd.strip() if desc_nd else None
+            # print("-----------parse_detail--------", dd)
+            self.lg.debug(f"------parse_detail--yield--dd--to--SAVE--requrl:{response.url}----dd:{dd}-")
+            yield dd

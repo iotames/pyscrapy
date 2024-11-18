@@ -9,7 +9,6 @@ from service import Config, DB, Snowflake
 AlchemyBase = declarative_base()
 
 # class AlchemyBase(object):
-snf = Snowflake.get_instance(1, 1)
 
 class BaseModel(AlchemyBase):
     
@@ -17,9 +16,9 @@ class BaseModel(AlchemyBase):
     table_prefix = 'ods_cwr_end_'
     table_suffix = '_nd'
     __abstract__ = True
-    __table_args__ = {'schema': 'craw'}
+    __table_args__ = {'schema': Config.get_database()['db_schema']} # "craw"
     
-    id = Column(BigInteger, primary_key=True, default=snf.get_next_id())
+    id = Column(BigInteger, primary_key=True, default=Snowflake.get_instance(1, 1).get_next_id())
     created_at = Column(DateTime, default=datetime.now())
     updated_at = Column(DateTime, default=datetime.now())
     deleted_at = Column(DateTime, default=None)

@@ -2,7 +2,7 @@ from models import UrlRequest
 from datetime import datetime
 from datetime import datetime, timedelta
 from scrapy.http import HtmlResponse
-from pyscrapy.items import FromPage
+from pyscrapy.items import FromPage, BaseProductItem
 from service import Logger
 
 lg = Logger.get_instance()
@@ -21,7 +21,7 @@ class DbMiddleware:
         # 使用 request.url 和 request.body 的组合作为缓存的键
         ur = UrlRequest.getByRequest(request)
         
-        lg.debug(f'-----DbMiddleware--process_request--FromKey({request.meta['FromKey']})--requrl:{request.url}--ur({ur})--request.meta:{request.meta}')
+        lg.debug(f"-----DbMiddleware--process_request--FromKey({request.meta['FromKey']})--requrl:{request.url}--ur({ur})--request.meta:{request.meta}")
 
         mustin = ['step', 'page', 'group', 'FromKey']
         for k in mustin:
@@ -39,7 +39,7 @@ class DbMiddleware:
                     raise ValueError('ProductList not in data_format')
             if request.meta['FromKey'] == FromPage.FROM_PAGE_PRODUCT_DETAIL:
                 # TODO 直接从数据库赋值，可能丢失从 FROM_PAGE_PRODUCT_LIST 页面带过来的数据
-                request.meta['dd'] = d
+                request.meta['dd'] = BaseProductItem(d)
                 request.meta['dd']['StartAt'] = request.meta['StartAt']
 
             # 如果最近8小时内已发送过相同的请求，则从数据库读取
