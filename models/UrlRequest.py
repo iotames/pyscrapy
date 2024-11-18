@@ -4,9 +4,10 @@ from . import BaseModel, UrlRequestSnapshot
 from datetime import datetime
 from scrapy import Request
 import hashlib
-from service import Snowflake
+from service import Snowflake, Logger
 
 snf = Snowflake.get_instance(1, 1)
+lg = Logger.get_instance()
 
 class UrlRequest(BaseModel):
 
@@ -27,13 +28,6 @@ class UrlRequest(BaseModel):
     data_raw = Column(Text, nullable=False)
     collected_at = Column(DateTime, default=None)
 
-    # # 定义唯一索引
-    # __table_args__ = (
-    #     {'postgresql_indexes': [
-    #         {'name': 'UQE_ods_cwr_end_url_request_nd_id', 'columns': ['id'], 'unique': True},
-    #         {'name': 'UQE_ods_cwr_end_url_request_nd_request_hash', 'columns': ['request_hash'], 'unique': True}
-    #     ]}
-    # )
 
     def setDataFormat(self, data):
         self.data_format = data
@@ -41,17 +35,19 @@ class UrlRequest(BaseModel):
     def setDataRaw(self, data: str):
         self.data_raw = data
         
-    def save(self, startAt):
+    def saveUrlRequest(self, startAt):
         if self.id is None or self.id == 0:
             # DETAIL:  Key (id)=(1858205946162974721) already exists.
             self.id = snf.get_next_id()
             self.get_db_session().add(self)
             self.get_db_session().commit()
+            lg.debug(f"---------saveUrlRequest----create---requrl({self.url})-{self.id}---data({self.data_format})--")
         else:
             data = {'data_format': self.data_format, 'data_raw':self.data_raw, 'collected_at':datetime.now()}
             # print("---------UrlRequest------save-----", data)
             self.get_db_session().query(UrlRequest).filter(UrlRequest.request_hash==self.request_hash).update(data)
             self.get_db_session().commit()
+            lg.debug(f"---------saveUrlRequest---update--requrl({self.url})-({self.id})---data({data['data_format']})--")
 
     @classmethod
     def getbyRequestHash(cls, requestHash: str):

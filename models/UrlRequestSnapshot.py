@@ -19,14 +19,6 @@ class UrlRequestSnapshot(BaseModel):
     status = Column(Integer, nullable=False)
     create_date = Column(String(32), nullable=False)
 
-    # # 定义索引
-    # __table_args__ = (
-    #     {'postgresql_indexes': [
-    #         {'name': 'IDX_ods_cwr_end_url_request_snapshot_nd_request_hash', 'columns': ['request_hash']},
-    #         {'name': 'UQE_ods_cwr_end_url_request_snapshot_nd_id', 'columns': ['id'], 'unique': True}
-    #     ]}
-    # )
-
     @classmethod
     def create_url_request_snapshot(cls, ur: UrlRequest, start_at, status):
         m = cls(
@@ -59,7 +51,7 @@ class UrlRequestSnapshot(BaseModel):
         m.id = snf.get_next_id()
         try:
             db_session = cls.get_db_session()
-            print("----------create_url_request_snapshot-----add------id:", m.id, m)
+            # print("----------create_url_request_snapshot-----add------id:", m.id, m)
             db_session.add(m)
             db_session.commit()
         except Exception as e:

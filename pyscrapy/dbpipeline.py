@@ -3,7 +3,7 @@ from pyscrapy.spiders import BaseSpider
 from models import UrlRequest, UrlRequestSnapshot
 from datetime import datetime
 from copy import copy
-from service.DB import DB
+from service import DB, Logger
 from sqlalchemy.orm.session import Session
 from pyscrapy.spiders import BaseSpider
 import json
@@ -27,27 +27,25 @@ class Base:
         # 因为 Python 的名称修饰（Name Mangling）机制，不加这个修饰器会报错：
         # AttributeError: 'ProductDetail' object has no attribute '_ProductDetail__db_session'
         return self.__db_session
-        
 
-class ProductList(Base):
-    
-    def __init__(self):
-        super().__init__()
 
-    def process_item(self, item: BaseProductItem, spider: BaseSpider):
-        print('==========ProductList====Not Support======', item)
-        checkSpider(spider)
-        raise NotImplementedError()
-
+lg = Logger.get_instance()
 
 class ProductDetail(Base):
 
     def process_item(self, item: BaseProductItem, spider: BaseSpider):
-        print('==========ProductDetail==========', item)
-        checkSpider(spider)
+        # print('========dbpipeline==ProductDetail===process_item=', spider.name, item)
+        if 'FromKey' not in item:
+            raise RuntimeError('======item key: FromKey is empty==')
         if 'UrlRequest' not in item:
-            raise RuntimeError('item key: UrlRequest is empty')
+            errmsg = f"-----item key: UrlRequest is empty--FromKey({item['FromKey']})---requrl({item['Url']})---"
+            lg.debug(errmsg)
+            raise RuntimeError(errmsg)
+        if 'SkipRequest' in item:
+            print("---------Skip--Save----urlRequest---ProductDetail----SkipRequest:", item['SkipRequest'])
+            return
 
+        checkSpider(spider)
         not_update = ['image_urls', 'image_paths', 'UrlRequest', 'FromKey', 'SkipRequest', 'StartAt']
         
         dataFormat = {}
@@ -55,15 +53,12 @@ class ProductDetail(Base):
         for key, value in item.items():
             if key in not_update:
                 continue
-            if key == 'SkipRequest' and value:
-                print("---------Skip--Save----urlRequest---ProductDetail-------------")
-                return
             dataFormat[key] = value
             
         urlRequest: UrlRequest = item['UrlRequest']
         urlRequest.setDataFormat(dataFormat)
         urlRequest.site_id = spider.site_id
-        urlRequest.save(item['StartAt'])
+        urlRequest.saveUrlRequest(item['StartAt'])
         UrlRequestSnapshot.create_url_request_snapshot(urlRequest, item['StartAt'], urlRequest.status_code)
 
 

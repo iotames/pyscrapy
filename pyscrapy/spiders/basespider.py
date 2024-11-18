@@ -1,6 +1,6 @@
 from scrapy import Spider
 #import time
-from service import DB
+from service import DB, Logger
 from models import Site
 
 # from sqlalchemy import and_, or_
@@ -17,6 +17,7 @@ class BaseSpider(Spider):
     db_session = None
     site_id: int
     app_env: str
+    lg: Logger
 
     def parse(self, response, **kwargs):
         pass
@@ -45,6 +46,8 @@ class BaseSpider(Spider):
         print("before __init__, self.base_url=", self.base_url)
         super(BaseSpider, self).__init__(name=name, **kwargs)  # assign kwargs to class attr
         print("after __init__, self.base_url=", self.base_url)
+        self.lg = Logger.get_instance()
+        self.lg.echo_msg = True
 
         self.image_referer = self.base_url + "/"
         domain = self.base_url.split("//")[1]

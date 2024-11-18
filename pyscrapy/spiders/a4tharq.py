@@ -36,11 +36,12 @@ class A4tharqSpider(BaseSpider):
     def parse_list(self, response: TextResponse):
         meta = response.meta
         page = meta['page']
-        print(f"------------page={page}----", response.url)
-        self.logger.debug(f"---------parse_list--page={page}---")
+        # self.logger.debug(f"---------parse_list--page={page}---")
+        self.lg.debug(f"-------parse_list---requrl:{response.url}--page={page}--")
 
         if 'dl' in meta:
-            print("------Skiped------parse_list---", response.url, page)
+            # print("------Skiped------parse_list---", response.url, page)
+            self.lg.debug(f"----Skiped------parse_list--requrl:{response.url}--page:{page}")
             dl = meta['dl']
             prods = dl['ProductList']
         else:
@@ -81,11 +82,8 @@ class A4tharqSpider(BaseSpider):
                 nextPageUrl = self.get_site_url(next_page)
             dl = {'ProductList': prods, 'NextPageUrl': nextPageUrl, 'FromKey':FromPage.FROM_PAGE_PRODUCT_LIST}
             ur: UrlRequest = meta['UrlRequest']
-            # print("------------type--dl----", type(dl), dl)
-            # dljson = json.dumps(dl)
-            # print("------------type--dljson----", type(dljson), "-----dl-:", dl, "----dljson:--", dljson)
             ur.setDataFormat(dl)
-            ur.save(meta['StartAt'])
+            ur.saveUrlRequest(meta['StartAt'])
             UrlRequestSnapshot.create_url_request_snapshot(ur, meta['StartAt'], ur.status_code)
         
         for dd in prods:
@@ -99,14 +97,11 @@ class A4tharqSpider(BaseSpider):
 
     def parse_detail(self, response: TextResponse):
         meta = response.meta
-        ur: UrlRequest = meta['UrlRequest']
         dd = meta['dd']
-        if 'SkipRequest' in meta:
-            dd['SkipRequest'] = True
+        if 'SkipRequest' in dd:
+            self.lg.debug(f"----Skiped------parse_detail--requrl:{response.url}----dd:{dd}-")
             yield dd
             return
-        dd['UrlRequest'] = ur
-        dd['StartAt'] = meta['StartAt']
         # 解析 _BISConfig.product 后面的 JSON 数据
         script_text = response.xpath('//script[contains(text(), "_BISConfig.product")]/text()').get()
         if script_text:
@@ -120,12 +115,15 @@ class A4tharqSpider(BaseSpider):
                 except json.JSONDecodeError as e:
                     self.logger.error(f"Failed to parse JSON data: {e}")
 
-
+        try:
             # 解析 inventory_quantity 信息
-        inventory_quantities = re.findall(r'_BISConfig\.product\.variants\[(\d+)\]\[\'inventory_quantity\'\]\s*=\s*(-?\d+);', script_text)
-        total_inventory = sum(int(qty) for _, qty in inventory_quantities)
+            inventory_quantities = re.findall(r'_BISConfig\.product\.variants\[(\d+)\]\[\'inventory_quantity\'\]\s*=\s*(-?\d+);', script_text)
+            total_inventory = sum(int(qty) for _, qty in inventory_quantities)
+            dd['TotalInventoryQuantity'] = total_inventory
+        except Exception as e:
+            dd['TotalInventoryQuantity'] = 0
+            # raise e
         
-        dd['TotalInventoryQuantity'] = total_inventory
         sizelist = []
         for sz in response.xpath('//input[@name="Size"]/@value').getall():
             sizelist.append(sz)
@@ -138,4 +136,5 @@ class A4tharqSpider(BaseSpider):
         fabric_info = response.xpath('//span[@class="description"]/p[strong[contains(text(), "Fabric Composition:")]]/following-sibling::p[1]/text()').get()
         dd['Material'] = fabric_info.strip() if fabric_info else None
         # print("-----------parse_detail--------", dd)
+        self.lg.debug(f"------parse_detail--yield--dd--to--SAVE--requrl:{response.url}----dd:{dd}-")
         yield dd

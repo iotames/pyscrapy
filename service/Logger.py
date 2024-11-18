@@ -1,9 +1,10 @@
 import json
 import os
 import time
+from service import Singleton
 
 
-class Logger:
+class Logger(Singleton):
 
     __filepath = ""
     __mode = ""
@@ -19,6 +20,7 @@ class Logger:
             dirpath = "runtime/logs"
         filepath = dirpath + "/" + filename
         self.__filepath = filepath
+        super().__init__(dirpath)
 
     @property
     def filepath(self):
@@ -32,6 +34,8 @@ class Logger:
         return os.path.isfile(self.filepath)
 
     def debug(self, data):
+        if self.__mode == 'custom':
+            self.__filepath = self.__filepath.replace('custom_', 'debug_')
         if self.__mode == 'default':
             self.__filepath = self.__filepath.replace('default_', 'debug_')
         self.__add(data)
@@ -51,11 +55,8 @@ class Logger:
         if not type(data) is str:
             data = json.dumps(data, ensure_ascii=False)
 
-        long_line = "=====================start========================"
-        time_str = time.strftime("%Y%m%d %H:%M:%S", time.localtime())
-        begin_str = time_str + long_line
-        data = os.linesep + data
-        input_str = begin_str + data + os.linesep  # Windows '\r\n', Linux '\n', Mac'\r'
+        time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        input_str = time_str + data + os.linesep  # Windows '\r\n', Linux '\n', Mac'\r'
         if self.echo_msg:
             print(data)
         file.write(input_str)

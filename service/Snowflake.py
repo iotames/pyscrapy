@@ -36,7 +36,7 @@ class Snowflake(Singleton):
         if self.sequence > 4095:
             # the sequence is overload, just wait to next sequence
             logging.warning('The sequence has been overload')
-            raise Exception("The sequence has been overload")
+            # raise Exception("The sequence has been overload")
             self.sequence_overload += 1
             time.sleep(0.001)
             return self.get_next_id()
@@ -44,7 +44,7 @@ class Snowflake(Singleton):
         generated_id = ((curr_time - EPOCH_TIMESTAMP) << 22) | (self.node_id << 12) | self.sequence
 
         self.generated_ids += 1
-        print("------Snowflake------get_next_id---generated_id:", self.sequence, self.generated_ids, generated_id)
+        # print("------Snowflake------get_next_id---generated_id:", self.sequence, self.generated_ids, generated_id)
         return generated_id
 
     @property

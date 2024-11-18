@@ -4,3 +4,4 @@ from .Singleton import Singleton
 from .Uri import Uri
 from .STread import SThread
 from .Snowflake import Snowflake
+from .Logger import Logger

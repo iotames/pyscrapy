@@ -8,11 +8,12 @@
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
 import os
-from service import Config, DB
+from service import Config, DB, Logger
 
 # 初始化全局调用的单例服务
 cf = Config.get_instance(os.getenv("ROOT_PATH", os.path.dirname(os.path.dirname(__file__))))
 DB.get_instance(Config.get_database())
+Logger.get_instance(os.path.join(cf.get_root_path(), "runtime", "logs"))
 
 # print(Config.get_instance().get_root_path())
 # print(DB.get_instance().get_db_engine_uri())
@@ -71,9 +72,9 @@ DOWNLOADER_MIDDLEWARES = {
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-   'pyscrapy.pipelines.ImagePipeline': 200,
+#    'pyscrapy.pipelines.ImagePipeline': 200,
    # 'pyscrapy.pipelines.ExportPipeline': 299,
-   'pyscrapy.pipelines.DatabasePipeline': 300,
+   'pyscrapy.dbpipeline.ProductDetail': 300,
 }
 
 FEED_EXPORTERS_BASE = {
