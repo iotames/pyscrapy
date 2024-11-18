@@ -48,4 +48,5 @@ class Config(Singleton):
             "password": os.getenv("DB_PASSWORD", "root"),
             "db_name": os.getenv("DB_NAME", "pyscrapy"),
             "db_type": os.getenv("DB_TYPE", "sqlite"),
+            "db_schema": os.getenv("DB_SCHEMA", ""),
         }

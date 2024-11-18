@@ -35,6 +35,7 @@ class BaseProductItem(Item):
     Category = Field()
     TotalInventoryQuantity = Field()
     Material= Field()
+    Description = Field()
     
     image_urls = Field()
     image_paths = Field()

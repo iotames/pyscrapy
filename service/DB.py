@@ -19,6 +19,9 @@ class DB(Singleton):
         self.__db_type = self.db_config['db_type']
         self.__root_path = Config.get_instance().get_root_path()
         super(DB, self).__init__(config=config)
+    
+    def get_db_schema(self):
+        return self.db_config['db_schema']
 
     def get_db_engine_uri(self):
         conf = self.db_config

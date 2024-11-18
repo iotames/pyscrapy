@@ -17,6 +17,7 @@ class BaseModel(AlchemyBase):
     table_prefix = 'ods_cwr_end_'
     table_suffix = '_nd'
     __abstract__ = True
+    __table_args__ = {'schema': 'craw'}
     
     id = Column(BigInteger, primary_key=True, default=snf.get_next_id())
     created_at = Column(DateTime, default=datetime.now())
@@ -36,8 +37,7 @@ class BaseModel(AlchemyBase):
 
     @staticmethod
     def get_db_session() -> Session:
-        db = DB.get_instance(Config.get_database())
-        return db.get_db_session()
+        return DB.get_instance(Config.get_database()).get_db_session()
 
     @classmethod
     def get_model(cls, db_session, args: dict):

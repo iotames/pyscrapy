@@ -14,7 +14,7 @@ class Base(Singleton):
 
     def __init__(self):
         super().__init__()
-        db = DB.get_instance(Config.get_database())
+        db = DB.get_instance()
         self.db_session = db.get_db_session()
 
     def get_real_model_by_url(self, url: str, spider: BaseSpider):

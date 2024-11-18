@@ -135,6 +135,8 @@ class A4tharqSpider(BaseSpider):
         # 提取面料信息
         fabric_info = response.xpath('//span[@class="description"]/p[strong[contains(text(), "Fabric Composition:")]]/following-sibling::p[1]/text()').get()
         dd['Material'] = fabric_info.strip() if fabric_info else None
+        # desc_nd = response.xpath('//div[@class="product__description rte quick-add-hidden"]/text()').get()
+        # dd['Description'] = desc_nd.strip() if desc_nd else None
         # print("-----------parse_detail--------", dd)
         self.lg.debug(f"------parse_detail--yield--dd--to--SAVE--requrl:{response.url}----dd:{dd}-")
         yield dd
