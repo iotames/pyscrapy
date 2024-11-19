@@ -29,12 +29,15 @@ python -m pip install -r requirements.txt
 复制 `env.example` 文件为 `.env` 配置文件
 
 - `HTTP_PROXY`: 爬虫代理，默认为空字符串。
-- `DB_TYPE`: 数据库类型，默认为 `sqlite`。
+- `DB_TYPE`: 数据库类型。仅支持 `postgresql` 和 `mysql`。
 
 ## 运行爬虫
 
 ```
-scrapy crawl spidername -a arg1=abc -a arg2=cdf
+scrapy crawl yourspidername
+
+# 也可以添加自定义参数，在初始化爬虫实例时传入
+scrapy crawl yourspidername -a arg1=abc -a arg2=cdf
 ```
 
 ## 其他爬虫命令
@@ -43,7 +46,7 @@ scrapy crawl spidername -a arg1=abc -a arg2=cdf
 # 新建爬虫
 scrapy genspider itcast "itcast.cn"
 # 运行爬虫并导出数据
-scrapy crawl books -o books.csv
+scrapy crawl itcast -o itcast.xlsx
 ```
 
 > https://docs.scrapy.org/en/latest/intro/install.html#using-a-virtual-environment-recommended

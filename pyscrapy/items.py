@@ -18,7 +18,8 @@ class PyscrapyItem(Item):
     pass
 
 class BaseProductItem(Item):
-    NOT_SAVE_FILEDS = ['image_urls', 'image_paths', 'UrlRequest', 'FromKey', 'SkipRequest', 'StartAt']
+    NOT_SAVE_FILEDS = ['image_urls', 'image_paths', 'UrlRequest', 'FromKey', 'SkipRequest', 'StartAt', 'DataRaw']
+    DataRaw = Field()
     StartAt = Field()
     SkipRequest = Field()
     UrlRequest = Field()

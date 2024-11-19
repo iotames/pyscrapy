@@ -72,8 +72,7 @@ DOWNLOADER_MIDDLEWARES = {
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-#    'pyscrapy.pipelines.ImagePipeline': 200,
-   # 'pyscrapy.pipelines.ExportPipeline': 299,
+   # 'pyscrapy.pipelines.ImagePipeline': 200,
    'pyscrapy.dbpipeline.ProductDetail': 300,
 }
 
@@ -85,21 +84,6 @@ FEED_EXPORTERS_BASE = {
 FEED_EXPORT_FIELDS = [
     'Thumbnail', 'Category', 'Title',  'Color', 'OldPriceText', 'PriceText', 'OldPrice', 'FinalPrice', 'SizeList', 'SizeNum', 'TotalInventoryQuantity', 'Material', 'Url'
 ]
-
-# 默认的 FEEDS 配置
-
-# FEEDS = {
-#     'output.xlsx': {
-#         'format': 'excel',
-#         'encoding': 'utf8',
-#         'store_empty': False,
-#         'fields': None,
-#         'indent': 4,
-#         'item_export_kwargs': {
-#             'export_empty_fields': True,
-#         },
-#     },
-# }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html

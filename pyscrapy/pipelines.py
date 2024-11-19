@@ -6,18 +6,15 @@
 
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
-from scrapy import Item, Request
+from scrapy import Request
 from scrapy.pipelines.images import ImagesPipeline
 import hashlib
 from scrapy.utils.python import to_bytes
 import os
 from service import Config
-from .items import FromPage, BaseProductItem
-from .dbpipeline import ProductDetail
 # from pyscrapy.process.product import ProcessProductBase
 
 cf = Config.get_instance()
-
 
 
 class ImagePipeline(ImagesPipeline):

@@ -50,19 +50,23 @@ class XlsxExporter(BaseItemExporter):
         lg.debug(f"----------XlsxExporter---process_item----------item{item}--")
     def export_item(self, item):
         lg = Logger()
-        lg.debug(f"-----XlsxExporter---export_item---__fields_to_export({self.__fields_to_export})--")
+        # lg.debug(f"-----XlsxExporter---export_item---__fields_to_export({self.__fields_to_export})--")
         # lg.debug(f"----------XlsxExporter---export_item------item({item})--")
         if not item:
             return item
         row = []
         for k in self.__fields_to_export:
-            v = item[k]
-            if v:
-                if k == 'SizeList':
-                    v = ",".join(v)
-                row.append(v)
-            else:
-                row.append("")
+            cellvalue = ""
+            if k in item:
+                v = item[k]
+                if v:
+                    cellvalue = v
+                    if k == 'SizeList' and isinstance(v, list):
+                        cellvalue = ",".join(v)
+                    else:
+                        cellvalue = ""
+            row.append(cellvalue)
+
         if not self.header_written:
             # self.ws.append(list(item.keys()))
             self.ws.append(list(self.__fields_to_export))

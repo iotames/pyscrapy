@@ -23,7 +23,7 @@ class A4tharqSpider(BaseSpider):
         'CONCURRENT_REQUESTS_PER_IP': 5,  # default 8
         'CONCURRENT_REQUESTS': 5,  # default 16 recommend 5-8
         'FEED_EXPORT_FIELDS': ['Thumbnail', 'Category', 'Title',  'Color', 'OldPriceText', 'PriceText', 'OldPrice', 'FinalPrice', 'SizeList', 'SizeNum', 'TotalInventoryQuantity', 'Material', 'Url']
-        # 下面内容注释掉，爬虫数据自动导出xlsx文件功能，会默认关闭。请使用 -o 参数，临时指定导出的文件名
+        # 下面内容注释掉，爬虫自动导出数据到xlsx文件的功能，会默认关闭。请在命令行使用 -o 参数，指定导出的文件名。
         # 'FEED_URI': '4tharq.xlsx',
         # 'FEED_FORMAT': 'xlsx',
     }
@@ -111,6 +111,7 @@ class A4tharqSpider(BaseSpider):
                 if json_match:
                     product_json_str = json_match.group(1)
                     try:
+                        dd['DataRaw'] = product_json_str
                         product_data = json.loads(product_json_str)
                         dd['Category'] = product_data.get('type')
                     except json.JSONDecodeError as e:

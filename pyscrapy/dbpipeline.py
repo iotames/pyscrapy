@@ -55,6 +55,7 @@ class ProductDetail(Base):
             dataFormat[key] = value
             
         urlRequest: UrlRequest = item['UrlRequest']
+        urlRequest.setDataRaw(item['DataRaw'])
         urlRequest.setDataFormat(dataFormat)
         urlRequest.site_id = spider.site_id
         urlRequest.saveUrlRequest(item['StartAt'])
