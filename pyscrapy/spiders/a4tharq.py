@@ -22,9 +22,10 @@ class A4tharqSpider(BaseSpider):
         'COOKIES_ENABLED': False,
         'CONCURRENT_REQUESTS_PER_IP': 5,  # default 8
         'CONCURRENT_REQUESTS': 5,  # default 16 recommend 5-8
-        'FEED_URI': '4tharq.xlsx',
-        'FEED_FORMAT': 'xlsx',
-        # 'FEED_EXPORT_FIELDS': ['Thumbnail', 'Category', 'Title',  'Color', 'OldPriceText', 'PriceText', 'OldPrice', 'FinalPrice', 'SizeList', 'SizeNum', 'TotalInventoryQuantity', 'Material', 'Url']
+        'FEED_EXPORT_FIELDS': ['Thumbnail', 'Category', 'Title',  'Color', 'OldPriceText', 'PriceText', 'OldPrice', 'FinalPrice', 'SizeList', 'SizeNum', 'TotalInventoryQuantity', 'Material', 'Url']
+        # 下面内容注释掉，爬虫数据自动导出xlsx文件功能，会默认关闭。请使用 -o 参数，临时指定导出的文件名
+        # 'FEED_URI': '4tharq.xlsx',
+        # 'FEED_FORMAT': 'xlsx',
     }
 
     def start_requests(self):

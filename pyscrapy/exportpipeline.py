@@ -1,5 +1,5 @@
 from scrapy.exporters import BaseItemExporter
-import os, openpyxl # csv
+import os, openpyxl
 from scrapy import signals
 from service import Logger
 # from pyscrapy.items import  BaseProductItem
@@ -10,7 +10,7 @@ class XlsxExporter(BaseItemExporter):
 
     def __init__(self, file, **kwargs):
         lg = Logger()
-        lg.debug(f"-----XlsxExporter---__init__---kwargs({kwargs})---")
+        lg.debug(f"-----XlsxExporter---__init__file({file})---kwargs({kwargs})---")
         self.__fields_to_export = kwargs['fields_to_export']
         self.file = file
         self.wb = openpyxl.Workbook()
@@ -21,12 +21,14 @@ class XlsxExporter(BaseItemExporter):
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
+        # 会捕获到*args参数： <_io.BufferedWriter name='yourfilename.xlsx'>
         lg = Logger()
-        lg.debug(f"-------from_crawler---{args}--{kwargs}----")
-        
+        lg.debug(f"-------from_crawler---[{args}]--{args[0].name}--{kwargs}--")
+
         # 从命令行参数中获取输出文件名
-        # output_file = crawler.settings.get('FEEDS', {}).get('output', {}).get('uri', 'output.xlsx')
-        output_file = crawler.settings.get('FEED_URI', 'output.xlsx')
+        # 捕获 -o 参数的文件名。也可以通过 custom_settings 的 FEED_URI 参数获取 output_file。
+        # output_file = crawler.settings.get('FEED_URI', 'output.xlsx')
+        output_file = args[0].name
         pipeline = cls(file=output_file, **kwargs)
         crawler.signals.connect(pipeline.open_spider, signals.spider_opened)
         crawler.signals.connect(pipeline.close_spider, signals.spider_closed)
@@ -41,6 +43,8 @@ class XlsxExporter(BaseItemExporter):
             print(f"Warning: File {self.file} already exists and will be overwritten.")
         self.wb.save(self.file)
 
+    # process_item：scrapy.exporters.BaseItemExporter 是特殊的管道，用来导出爬虫数据。
+    # 通过爬虫的 -o 参数，或者 FEED_URI 等相关配置，触发调用 export_item 方法，不会调用process_item。
     def process_item(self, item, spider):
         lg = Logger()
         lg.debug(f"----------XlsxExporter---process_item----------item{item}--")
