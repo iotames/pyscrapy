@@ -91,9 +91,9 @@ class AyblSpider(BaseSpider):
             dd['FromKey'] = FromPage.FROM_PAGE_PRODUCT_DETAIL
             yield Request(dd['Url'], self.parse_detail, meta=dict(dd=dd, page=page, step=0, group=meta['group'], FromKey=FromPage.FROM_PAGE_PRODUCT_DETAIL))
         
-        if dl['NextPageUrl'] != "":
-            print(f"------------next_page-{dl['NextPageUrl']}---")
-            yield Request(dl['NextPageUrl'], callback=self.parse_list, meta=dict(page=page+1, step=meta['step'], group=meta['group'], FromKey=FromPage.FROM_PAGE_PRODUCT_LIST))
+        # if dl['NextPageUrl'] != "":
+        #     print(f"------------next_page-{dl['NextPageUrl']}---")
+        #     yield Request(dl['NextPageUrl'], callback=self.parse_list, meta=dict(page=page+1, step=meta['step'], group=meta['group'], FromKey=FromPage.FROM_PAGE_PRODUCT_LIST))
 
     def parse_detail(self, response: TextResponse):
         meta = response.meta

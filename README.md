@@ -31,6 +31,14 @@ python -m pip install -r requirements.txt
 - `HTTP_PROXY`: 爬虫代理，默认为空字符串。
 - `DB_TYPE`: 数据库类型。仅支持 `postgresql` 和 `mysql`。
 
+
+## 程序初始化
+
+```
+# 主要是初始化数据库
+python main.py init
+```
+
 ## 运行爬虫
 
 ```

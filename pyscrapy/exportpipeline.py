@@ -54,19 +54,7 @@ class XlsxExporter(BaseItemExporter):
         # lg.debug(f"----------XlsxExporter---export_item------item({item})--")
         if not item:
             return item
-        row = []
-        for k in self.__fields_to_export:
-            cellvalue = ""
-            if k in item:
-                v = item[k]
-                if v:
-                    cellvalue = v
-                    if k == 'SizeList' and isinstance(v, list):
-                        cellvalue = ",".join(v)
-                    else:
-                        cellvalue = ""
-            row.append(cellvalue)
-
+        row = self.get_row_data(item)
         if not self.header_written:
             # self.ws.append(list(item.keys()))
             self.ws.append(list(self.__fields_to_export))
@@ -74,3 +62,21 @@ class XlsxExporter(BaseItemExporter):
         lg.debug(f"-----XlsxExporter---process_item---row({row})---")
         self.ws.append(list(row))
         return item
+
+    def get_row_data(self, item) -> list:
+        lg = Logger()
+        row = []
+        for k in self.__fields_to_export:
+            cellvalue = ""
+            if k in item:
+                v = item[k]
+                lg.debug(f"-----XlsxExporter---export_item--fields_to_export---k({k})--v({v})--")
+                if v:
+                    cellvalue = v
+                    if k == 'SizeList':
+                        if isinstance(v, list):
+                            cellvalue = ",".join(v)
+                        else:
+                            cellvalue = ""
+            row.append(cellvalue)
+        return row
