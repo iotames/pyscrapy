@@ -39,6 +39,8 @@ class BaseProductItem(Item):
     TotalInventoryQuantity = Field()
     Material= Field()
     Description = Field()
+    PublishedAt = Field()
+    Tags = Field()
     
     image_urls = Field()
     image_paths = Field()

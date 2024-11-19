@@ -66,11 +66,11 @@ class AyblSpider(BaseSpider):
                 color = nd.xpath('.//span[@class="product-card__title product-title-color"]/text()').get()
                 dd['Color'] = color.strip() if color else None
                 
-                old_price_text = nd.xpath('.//sale-price/span[@class="money"]/text()').get()
+                old_price_text = nd.xpath('.//compare-at-price/span[@class="money"]/text()').get()
                 dd['OldPriceText'] = old_price_text.strip() if old_price_text else None
                 dd['OldPrice'] = self.get_price_by_text(dd['OldPriceText']) if dd['OldPriceText'] else None
                 
-                price_text = nd.xpath('.//compare-at-price/span[@class="money"]/text()').get()
+                price_text = nd.xpath('.//sale-price/span[@class="money"]/text()').get()   
                 dd['PriceText'] = price_text.strip() if price_text else None
                 dd['FinalPrice'] = self.get_price_by_text(dd['PriceText']) if dd['PriceText'] else None
                 dd['image_urls'] = [dd['Thumbnail']]

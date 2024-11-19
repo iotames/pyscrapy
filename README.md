@@ -101,20 +101,17 @@ python -m pip install -r requirements.txt
 python main.py init
 ```
 
-## 运行爬虫
+## 常用命令
 
 ```
 scrapy crawl yourspidername
 
 # 也可以添加自定义参数，在初始化爬虫实例时传入
 scrapy crawl yourspidername -a arg1=abc -a arg2=cdf
-```
 
-## 其他爬虫命令
-
-```
 # 新建爬虫
 scrapy genspider itcast "itcast.cn"
+
 # 运行爬虫并导出数据
 scrapy crawl itcast -o itcast.xlsx
 ```
