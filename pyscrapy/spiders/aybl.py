@@ -30,6 +30,7 @@ class AyblSpider(BaseSpider):
 
 
     def start_requests(self):
+        self.pageSize = 24
         for requrl in self.start_urls:
             print('------start_requests----', requrl)
             # mustin = ['step', 'page', 'group', 'FromKey']
@@ -91,9 +92,9 @@ class AyblSpider(BaseSpider):
             dd['FromKey'] = FromPage.FROM_PAGE_PRODUCT_DETAIL
             yield Request(dd['Url'], self.parse_detail, meta=dict(dd=dd, page=page, step=0, group=meta['group'], FromKey=FromPage.FROM_PAGE_PRODUCT_DETAIL))
         
-        # if dl['NextPageUrl'] != "":
-        #     print(f"------------next_page-{dl['NextPageUrl']}---")
-        #     yield Request(dl['NextPageUrl'], callback=self.parse_list, meta=dict(page=page+1, step=meta['step'], group=meta['group'], FromKey=FromPage.FROM_PAGE_PRODUCT_LIST))
+        if dl['NextPageUrl'] != "":
+            print(f"------------next_page-{dl['NextPageUrl']}---")
+            yield Request(dl['NextPageUrl'], callback=self.parse_list, meta=dict(page=page+1, step=meta['step'], group=meta['group'], FromKey=FromPage.FROM_PAGE_PRODUCT_LIST))
 
     def parse_detail(self, response: TextResponse):
         meta = response.meta
@@ -132,15 +133,19 @@ class AyblSpider(BaseSpider):
                 dd['TotalInventoryQuantity'] = 0
                 # raise e
             
-            # sizelist = []
-            # for sz in response.xpath('//input[@name="Size"]/@value').getall():
-            #     sizelist.append(sz)
-            # dd["SizeList"] = sizelist
-            # lensz = len(sizelist)
-            # if lensz == 0:
-            #     lensz = 1
-            # dd['SizeNum'] = lensz
-            
+            sizelist = []
+            for sz in response.xpath('//div[@class="product-info__variant-picker"]//fieldset[@data-option-name="size"]//div[@data-option-selector]/input/@value').getall():
+                sizelist.append(sz)
+            dd["SizeList"] = sizelist
+            lensz = len(sizelist)
+            if lensz == 0:
+                lensz = 1
+            dd['SizeNum'] = lensz
+            if not dd['PriceText']:
+                price_text = response.xpath('//div[@class="product-info__price"]//sale-price/span[@class="money"]/text()').get()
+                dd['PriceText'] = price_text.strip() if price_text else None
+                dd['FinalPrice'] = self.get_price_by_text(dd['PriceText']) if dd['PriceText'] else None
+
             # 提取面料信息
             # fabric_info = response.xpath('//span[@class="description"]/p[strong[contains(text(), "Fabric Composition:")]]/following-sibling::p[1]/text()').get()
             # dd['Material'] = fabric_info.strip() if fabric_info else None

@@ -37,19 +37,22 @@ class DbMiddleware:
                 request.meta['dl'] = d
                 if 'ProductList' not in d:
                     raise ValueError('ProductList not in data_format')
-            if request.meta['FromKey'] == FromPage.FROM_PAGE_PRODUCT_DETAIL:
-                # TODO 直接从数据库赋值，可能丢失从 FROM_PAGE_PRODUCT_LIST 页面带过来的数据
-                request.meta['dd'] = BaseProductItem(d)
-                request.meta['dd']['StartAt'] = request.meta['StartAt']
-
-            # 如果最近8小时内已发送过相同的请求，则从数据库读取
-            if ur.collected_at > datetime.now() - timedelta(hours=8):
+            # 如果最近12小时内已发送过相同的请求，则从数据库读取
+            if ur.collected_at > datetime.now() - timedelta(hours=12):
                 # 看已有的数据。不再发送请求
                 if request.meta['FromKey'] == FromPage.FROM_PAGE_PRODUCT_DETAIL:
+                    # 直接从数据库赋值
+                    request.meta['dd'] = BaseProductItem(d)
+                    request.meta['dd']['StartAt'] = request.meta['StartAt']
                     request.meta['dd']['SkipRequest'] = True
                 lg.debug(f'---------skip---DbMiddleware--process_request--requrl:{request.url}-----data_format:{d}')
                 return HtmlResponse(url=request.url, body=ur.data_raw, encoding='utf-8', request=request)
-            lg.debug(f'-----last_collectedat > 8hours---DbMiddleware--process_request--requrl:{request.url}---')
+            else:
+                if request.meta['FromKey'] == FromPage.FROM_PAGE_PRODUCT_DETAIL:
+                    request.meta['dd']['StartAt'] = request.meta['StartAt']
+                    request.meta['dd']['UrlRequest'] = request.meta['UrlRequest']
+                    request.meta['dd']['FromKey'] = request.meta['FromKey']
+                    lg.debug(f'-----last_collectedat > 8hours---DbMiddleware--process_request--requrl:{request.url}---')
             return None
         else:
             request.meta['UrlRequest'] = UrlRequest.createUrlRequest(request, spider.site_id, request.meta['step'], request.meta['page'], request.meta['group'])

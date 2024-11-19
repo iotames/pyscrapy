@@ -72,11 +72,16 @@ class XlsxExporter(BaseItemExporter):
                 v = item[k]
                 lg.debug(f"-----XlsxExporter---export_item--fields_to_export---k({k})--v({v})--")
                 if v:
-                    cellvalue = v
-                    if k == 'SizeList':
-                        if isinstance(v, list):
-                            cellvalue = ",".join(v)
-                        else:
-                            cellvalue = ""
+                    cellvalue = self.get_cell_value(k, v)
             row.append(cellvalue)
         return row
+
+    @staticmethod
+    def get_cell_value(k: str, v):
+        if k == 'SizeList':
+            if isinstance(v, list):
+                return ",".join(v)
+            return ""
+        if k == 'OldPrice' or k == 'FinalPrice':
+            return float(v)
+        return v
