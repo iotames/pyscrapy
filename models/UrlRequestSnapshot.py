@@ -1,9 +1,7 @@
 from sqlalchemy import Column, String, Integer, Text, DateTime, BigInteger, JSON, Numeric
 from . import BaseModel, UrlRequest
 from datetime import datetime
-from service import Snowflake
 
-snf = Snowflake.get_instance(1, 1)
 
 class UrlRequestSnapshot(BaseModel):
     
@@ -48,7 +46,7 @@ class UrlRequestSnapshot(BaseModel):
         m.status = status
         m.create_date = ntime.strftime("%Y%m%d")
         # DETAIL:  Key (id)=(1858205946162974721) already exists.
-        m.id = snf.get_next_id()
+        m.id = cls.getSnowflake().get_next_id()
         try:
             db_session = cls.get_db_session()
             # print("----------create_url_request_snapshot-----add------id:", m.id, m)

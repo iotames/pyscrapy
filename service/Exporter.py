@@ -3,11 +3,14 @@ from openpyxl import Workbook #, load_workbook
 from openpyxl.worksheet.worksheet import Worksheet
 from . import Config
 import os
-import time
+import time, mimetypes
 from openpyxl.drawing.image import Image
 from openpyxl.utils import get_column_letter
 import hashlib
 # from scrapy.utils.python import to_bytes
+
+# 手动添加 .webp 文件扩展名的 MIME 类型映射
+mimetypes.add_type('image/webp', '.webp')
 
 
 
@@ -20,6 +23,8 @@ class Exporter:
     output_file: str
     images_dir: str
     image_title = 'Thumbnail'
+    rowheight = 100
+    imagewidth = 100
     
     # 构造函数
     # filename参数为文件名。不包含文件后缀
@@ -62,7 +67,8 @@ class Exporter:
             if not os.path.isfile(fpath):
                 raise ValueError("图片{}不存在".format(fpath))
             image = Image(fpath)
-            image.width, image.height = (100, 100)
+            image.height = self.rowheight
+            image.width = self.imagewidth
             # image.anchor = get_column_letter(start_col) + str(row_index)
             # print(image.anchor)
             return image
@@ -70,6 +76,10 @@ class Exporter:
             raise e
 
     def save(self):
+        self.sheet.column_dimensions['A'].width = 13
+        for row in self.sheet.iter_rows(min_row=1, max_row=self.sheet.max_row, min_col=1, max_col=1):
+            for cell in row:
+                self.sheet.row_dimensions[cell.row].height = self.rowheight
         self.wb.save(self.output_file)
 
     def to_xlsx(self):
@@ -143,17 +153,23 @@ class Exporter:
         time_tuple = time.localtime(timestamp)
         return time.strftime(format_str, time_tuple)
 
+
+    @staticmethod
+    def debug():
+        exp = Exporter("debugexport1111")
+        exp.append_row(['Thumnail', '2', '3', '4', '5', '6', '7', '8', '9'])
+        exp.append_row(["", '2222', '3333', '4', '5', '6', '7', '8', '9'])
+        exp.append_row(["", '2222', '3333', '4', '5', '6', '7', '8', '9'])
+        imgs = [
+            exp.get_image_by_filename("0a5890653dd80b014a9a010deecd7ba2.jpg", "4tharq"),
+            exp.get_image_by_filename("0b023b2ae23b5af4dad335f7aba9e8f8.jpg", "4tharq")
+        ]
+        id = 2
+        for img in imgs:
+            exp.add_image(img, 1, id)
+            id += 1
+        exp.save()
+
+
 if __name__ == '__main__':
-    exp = Exporter("debugexport1111")
-    exp.append_row(['Thumnail', '2', '3', '4', '5', '6', '7', '8', '9'])
-    exp.append_row(["", '2222', '3333', '4', '5', '6', '7', '8', '9'])
-    exp.append_row(["", '2222', '3333', '4', '5', '6', '7', '8', '9'])
-    imgs = [
-        exp.get_image_by_filename("0a0ed0fc505e0a1b0c3bc3a52f386ebc.jpg", "representclo"),
-        exp.get_image_by_filename("0a80f8916ba85bca1f1323c75bb69937.jpg", "representclo")
-    ]
-    id = 2
-    for img in imgs:
-        exp.add_image(img, 1, id)
-        id += 1
-    exp.save()
+    pass

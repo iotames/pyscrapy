@@ -64,5 +64,9 @@ class BaseModel(AlchemyBase):
     @classmethod
     def get_all_model(cls, db_session: Session, args=None) -> list:
         return db_session.query(cls).filter_by(**args).all()
+    
+    @staticmethod
+    def getSnowflake():
+        return Snowflake.get_instance(1, 1)
 
 # BaseModel = declarative_base(cls=AlchemyBase)
