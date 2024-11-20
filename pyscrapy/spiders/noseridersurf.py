@@ -122,7 +122,7 @@ class NoseridersurfSpider(BaseSpider):
             dd['Description'] = data['description']
             dd['Tags'] = data['tags']
             dd['Image'] = self.get_site_url(data['featured_image'])
-            dd['Thumbnail'] = dd['Image'] + "&w=300"
+            dd['Thumbnail'] = dd['Image'] + "&width=200"
             szs = []
             for vv in data['variants']:
                 szs.append(vv['title'])

@@ -36,6 +36,9 @@ class ProductDetail(Base):
     # process_item: 管道中专门处理Item数据的方法。必须返回Item对象，数据才能被下游管道捕获。
     def process_item(self, item: BaseProductItem, spider: BaseSpider):
         # print('========dbpipeline==ProductDetail===process_item=', spider.name, item)
+        if 'image_urls' not in item:
+            print("-----ProductDetail.process_item--image_urls not in item--")
+            item['image_urls'] = [item['Thumbnail']]        
         if 'FromKey' not in item:
             raise RuntimeError('======item key: FromKey is empty==')
         if 'UrlRequest' not in item:

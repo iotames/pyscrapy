@@ -37,7 +37,7 @@ class DB(Singleton):
             uri = f"{self.__db_type}+{db_driver}://{conf['username']}:{conf['password']}@{conf['host']}:{conf['port']}/{conf['db_name']}"
         # engine = create_engine('sqlite:///foo.db')
         # engine = create_engine('sqlite:absolute/path/to/foo.db')
-        print(f"------get_db_engine_uri:{uri}")
+        # print(f"------get_db_engine_uri:{uri}")
         return uri
 
     def get_db_engine(self):

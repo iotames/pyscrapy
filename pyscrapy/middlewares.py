@@ -80,6 +80,7 @@ class PyscrapyDownloaderMiddleware:
         #   installed downloader middleware will be called
         proxy = conf.get_http_proxy()
         if proxy != "":
+            print(f"----process_request--url({request.url})--Using proxy:{proxy}---mata({request.meta})")
             request.meta["proxy"] = proxy
         return None
 

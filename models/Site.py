@@ -11,3 +11,9 @@ class Site(BaseModel):
     home_url = Column(String(128), default='https://gympluscoffee.com/', comment='网站首页')
     custom_short_name = Column(String(64), default='', comment='客户简称')
     state = Column(Boolean, default=True)
+
+    @classmethod
+    def debug(cls):
+        sites = cls.get_db_session().query(cls).all()
+        for site in sites:
+            print(site.name)

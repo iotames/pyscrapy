@@ -37,7 +37,7 @@ class UrlRequest(BaseModel):
     def saveUrlRequest(self, startAt):
         if self.id is None or self.id == 0:
             # DETAIL:  Key (id)=(1858205946162974721) already exists.
-            self.id = self.getSnowflake().get_next_id().get_next_id()
+            self.id = self.getSnowflake().get_next_id()
             self.get_db_session().add(self)
             self.get_db_session().commit()
             lg.debug(f"---------saveUrlRequest----create---requrl({self.url})-{self.id}---data({self.data_format})--")

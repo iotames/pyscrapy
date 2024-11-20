@@ -45,6 +45,7 @@ class BaseProductItem(Item):
     
     image_urls = Field()
     image_paths = Field()
+    # failed_urls = Field()
     
     # model = Field()
     # category_name = Field()

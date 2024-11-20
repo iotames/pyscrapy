@@ -54,6 +54,9 @@ class DbMiddleware:
                 # 看已有的数据。不再发送请求
                 if request.meta['FromKey'] == FromPage.FROM_PAGE_PRODUCT_DETAIL:
                     # 直接从数据库赋值
+                    if 'failed_urls' in d:
+                        del d['failed_urls']
+                        # d.pop('failed_urls')
                     request.meta['dd'] = BaseProductItem(d)
                     request.meta['dd']['StartAt'] = request.meta['StartAt']
                     request.meta['dd']['SkipRequest'] = True
