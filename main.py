@@ -1,4 +1,4 @@
-from service import Config, DB
+from service import Config, DB, Exporter
 from models import Run
 import os, sys
 
@@ -18,7 +18,6 @@ def debug():
     print("------cf1-----", cf1)
     cf2 = Config.get_instance()
     print("------cf2-----", cf2)
-
 
 if __name__ == '__main__':
     # debug()

@@ -36,6 +36,9 @@ class Config(Singleton):
     def get_logs_dir(self):
         return os.path.join(self.__root_path, "runtime", "logs")
     
+    def get_export_dir(self):
+        return os.path.join(self.__root_path, "runtime", "exporter")
+    
     def get_images_path(self):
         return self.__images_path
 
