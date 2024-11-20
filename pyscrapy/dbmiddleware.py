@@ -16,7 +16,19 @@ class DbMiddleware:
         # - or return a Request object
         # - or raise IgnoreRequest: process_exception() methods of
         #   installed downloader middleware will be called
-        
+        if 'FromKey' not in request.meta:
+            return None
+        return self.dbmiddle(request, spider)
+    
+    def process_response(self, request, response, spider):
+        # Called with the response returned from the downloader.
+        # Must either;
+        # - return a Response object
+        # - return a Request object
+        # - or raise IgnoreRequest
+        return response
+
+    def dbmiddle(self, request, spider):
         request.meta['StartAt'] = datetime.now()
         # 使用 request.url 和 request.body 的组合作为缓存的键
         ur = UrlRequest.getByRequest(request)
@@ -60,12 +72,4 @@ class DbMiddleware:
             if request.meta['FromKey'] == FromPage.FROM_PAGE_PRODUCT_DETAIL:
                 request.meta['dd']['UrlRequest'] = request.meta['UrlRequest']
                 request.meta['dd']['StartAt'] = request.meta['StartAt']
-            return None
-    
-    def process_response(self, request, response, spider):
-        # Called with the response returned from the downloader.
-        # Must either;
-        # - return a Response object
-        # - return a Request object
-        # - or raise IgnoreRequest
-        return response
+            return None        

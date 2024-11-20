@@ -35,6 +35,7 @@ class BaseProductItem(Item):
     OldPrice = Field()
     PriceText = Field()
     FinalPrice = Field()
+    GroupName = Field()
     Category = Field()
     TotalInventoryQuantity = Field()
     Material= Field()
