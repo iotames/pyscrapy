@@ -6,11 +6,14 @@ import json
 import re
 
 
+# 爬取representclo.com
+# 2024-11-21 爬虫已失效
 class RepresentcloSpider(BaseSpider):
+    # https://row.representclo.com/collections/discover-all-products
     name = "representclo"
     base_url = "https://row.representclo.com"
     allowed_domains = ["representclo.com", "row.representclo.com", "sfycdn.speedsize.com"]
-    start_urls = ["https://row.representclo.com/collections/discover-all-products?page=1&section_id=template--18673259839705__main"]
+    start_urls = ["https://row.representclo.com/collections/discover-all-products?page=1&section_id=template--18704583000281__main"]
 
     # 该属性cls静态调用 无法继承覆盖
     custom_settings = {
@@ -21,9 +24,10 @@ class RepresentcloSpider(BaseSpider):
         'COOKIES_ENABLED': False,
         'CONCURRENT_REQUESTS_PER_IP': 5,  # default 8
         'CONCURRENT_REQUESTS': 5,  # default 16 recommend 5-8
-        'FEED_URI': 'representclo.csv',
-        'FEED_FORMAT': 'csv',
         'FEED_EXPORT_FIELDS': ['Thumbnail', 'Category', 'Title',  'Color', 'PriceText', 'FinalPrice', 'SizeList', 'SizeNum', 'Material', 'Url', 'Image']
+        # 下面内容注释掉，爬虫自动导出数据到xlsx文件的功能，会默认关闭。请在命令行使用 -o 参数，指定导出的文件名。
+        # 'FEED_URI': 'representclo.xlsx',
+        # 'FEED_FORMAT': 'xlsx'
     }
 
     def start_requests(self):
