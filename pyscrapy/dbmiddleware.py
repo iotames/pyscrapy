@@ -45,13 +45,13 @@ class DbMiddleware:
             d = ur.data_format
             d['FromKey'] = request.meta['FromKey']
             d['UrlRequest'] = request.meta['UrlRequest']
-            if request.meta['FromKey'] == FromPage.FROM_PAGE_PRODUCT_LIST:
-                request.meta['dl'] = d
-                if 'ProductList' not in d:
-                    raise ValueError('ProductList not in data_format')
             # 如果最近12小时内已发送过相同的请求，则从数据库读取
             if ur.collected_at > datetime.now() - timedelta(hours=12):
                 # 看已有的数据。不再发送请求
+                if request.meta['FromKey'] == FromPage.FROM_PAGE_PRODUCT_LIST:
+                    request.meta['dl'] = d
+                    if 'ProductList' not in d:
+                        raise ValueError('ProductList not in data_format')
                 if request.meta['FromKey'] == FromPage.FROM_PAGE_PRODUCT_DETAIL:
                     # 直接从数据库赋值
                     if 'failed_urls' in d:

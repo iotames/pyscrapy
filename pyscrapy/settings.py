@@ -73,7 +73,7 @@ DOWNLOADER_MIDDLEWARES = {
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
     'pyscrapy.dbpipeline.ProductDetail': 100,
-    'pyscrapy.filepipeline.ImagePipeline': 200,
+    # 'pyscrapy.filepipeline.ImagePipeline': 200, # 默认不启用
 }
 
 FEED_EXPORTERS_BASE = {
