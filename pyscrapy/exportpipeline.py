@@ -77,11 +77,15 @@ class XlsxExporter(BaseItemExporter):
         return row
 
     @staticmethod
-    def get_cell_value(k: str, v):
-        if k == 'SizeList':
-            if isinstance(v, list):
-                return ",".join(v)
-            return ""
+    def to_str(v):
+        if isinstance(v, list):
+            return ",".join(v)
+        return ""
+
+    @classmethod
+    def get_cell_value(cls, k: str, v):
+        if k == 'Tags' or k == 'SizeList':
+            return cls.to_str(v)
         if k == 'OldPrice' or k == 'FinalPrice':
             return float(v)
         return v

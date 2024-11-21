@@ -19,11 +19,15 @@ class PyscrapyItem(Item):
 
 class BaseProductItem(Item):
     NOT_SAVE_FILEDS = ['image_urls', 'image_paths', 'UrlRequest', 'FromKey', 'SkipRequest', 'StartAt', 'DataRaw']
+    
     DataRaw = Field()
     StartAt = Field()
     SkipRequest = Field()
     UrlRequest = Field()
     FromKey = Field()
+
+    Code = Field()
+    Brand = Field()
     SizeNum = Field()
     SizeList = Field()
     Thumbnail = Field()
@@ -37,6 +41,7 @@ class BaseProductItem(Item):
     FinalPrice = Field()
     GroupName = Field()
     Category = Field()
+    PageIndex = Field()
     TotalInventoryQuantity = Field()
     Material= Field()
     Description = Field()
@@ -47,26 +52,7 @@ class BaseProductItem(Item):
     image_paths = Field()
     # failed_urls = Field()
     
-    # model = Field()
-    # category_name = Field()
-    # category_id = Field()
-
-    # code = Field()
-    # spu = Field()
-
-    # status = Field()
-    # title = Field()
-    # url = Field()
-    # original_price = Field()
-    # price = Field()
-    # price_text = Field()
-    # image = Field()
-    # detail = Field()
-    # variants_num = Field()
     # reviews_num = Field()
     # sales_num = Field()
     # quantity = Field()
     # collected_at = Field()
-    
-    # local_image = Column(String(255), comment='本地图片地址')
-    # sales_num_last_month = Column(Integer, default=0, comment='上月销量')
