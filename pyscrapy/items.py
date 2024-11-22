@@ -27,8 +27,10 @@ class BaseProductItem(Item):
     FromKey = Field()
 
     Code = Field()
+    UrlKey = Field()
     Brand = Field()
     SizeNum = Field()
+    SkuNum = Field()
     SizeList = Field()
     Thumbnail = Field()
     Image = Field()

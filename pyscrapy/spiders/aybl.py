@@ -30,7 +30,7 @@ class AyblSpider(BaseSpider):
 
 
     def start_requests(self):
-        self.pageSize = 24
+        self.page_size = 24
         for requrl in self.start_urls:
             print('------start_requests----', requrl)
             # mustin = ['step', 'page', 'group', 'FromKey']

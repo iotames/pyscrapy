@@ -37,7 +37,7 @@ class NoseridersurfSpider(BaseSpider):
     # start_urls = []
     
     def start_requests(self):
-        self.pageSize = 11
+        self.page_size = 11
         for gp in self.start_urls_group:
             requrl = gp['url']
             groupName = gp['title']
