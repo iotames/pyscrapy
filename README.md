@@ -118,6 +118,20 @@ scrapy genspider itcast "itcast.cn"
 scrapy crawl itcast -o itcast.xlsx
 ```
 
+
+## JS渲染服务
+
+某些网站可能开启JS渲染，以此反爬虫。使用 `JS渲染服务`，代理网络请求，可以获取正确的返回结果。
+
+[Splash](https://splash.readthedocs.io/en/stable/install.html) 可提供专业的`JS渲染服务`。
+
+```
+# 下载 splash 镜像
+sudo docker pull scrapinghub/splash
+# 启动 splash 容器。因需要使用宿主机的HTTP代理服务。故添加 --net host 参数
+sudo docker run -it --net host -p 8050:8050 --rm scrapinghub/splash
+```
+
 --------------------------
 
 > Scrapy安装指南：https://docs.scrapy.org/en/latest/intro/install.html#using-a-virtual-environment-recommended

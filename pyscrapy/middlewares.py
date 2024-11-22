@@ -5,6 +5,7 @@
 
 from service import Config
 from scrapy import signals
+from urllib.parse import quote
 
 conf = Config.get_instance()
 
@@ -78,11 +79,56 @@ class PyscrapyDownloaderMiddleware:
         # - or return a Request object
         # - or raise IgnoreRequest: process_exception() methods of
         #   installed downloader middleware will be called
+
+        # 走splash请求。仅支持GET
+        splash_process = self.process_splash_request(request, spider)
+        if splash_process is not None:
+            return splash_process
+
+        # 走普通请求
         proxy = conf.get_http_proxy()
         if proxy != "":
-            print(f"----process_request--url({request.url})--Using proxy:{proxy}---mata({request.meta})")
+            print(f"----process_request--UsingProxy({proxy})---url({request.url})--mata({request.meta})")
             request.meta["proxy"] = proxy
         return None
+
+    # 仅支持GET请求
+    def process_splash_request(self, request, spider):
+        splash_url = spider.settings.get("SPLASH_URL", "")
+        user_agent = spider.settings.get("USER_AGENT", "")
+        http_proxy = conf.get_http_proxy()
+        port_split = http_proxy.split(":")
+        proxy_port = port_split[-1]
+        print(f"------process_request--UsingSplash({splash_url})--proxy_port({proxy_port})--")
+        if splash_url == "" or 'splash' not in request.meta:
+            return None
+        lua_source_fmt = """
+        splash:set_user_agent("{}")
+        assert(splash:go("{}"))
+        assert(splash:wait(1.5))
+        return splash:html()
+        """
+        lua_source = lua_source_fmt.format(user_agent, request.url)
+        if proxy_port != "":
+            lua_source_fmt = """
+            splash:on_request(function(request)
+                request:set_proxy{{"0.0.0.0",{}}}
+            end)
+            splash:set_user_agent("{}")
+            assert(splash:go("{}"))
+            assert(splash:wait(1.5))
+            return splash:html()
+            """
+            lua_source = lua_source_fmt.format(proxy_port, user_agent, request.url)
+        print(f"-------process_splash_request---lua_source({lua_source})")
+        q = quote(lua_source)
+        reqobj = request.replace(url=f"{splash_url}/run?lua_source={q}")
+        if 'proxy' in reqobj.meta:
+            del reqobj.meta['proxy']
+        if 'splash' in reqobj.meta:
+            # 防止出现死循环
+            del reqobj.meta['splash']
+        return reqobj
 
     def process_response(self, request, response, spider):
         # Called with the response returned from the downloader.

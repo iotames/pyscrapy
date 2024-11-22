@@ -28,7 +28,7 @@ NEWSPIDER_MODULE = 'pyscrapy.spiders'
 # LOG_FORMAT = '%(asctime)s [%(name)s] %(levelname)s: %(message)s'
 # LOG_FILE = f'{cf.get_root_path()}/runtime/logs/scrapy.log'
 
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36"
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
 
 # Obey robots.txt rules. Default True
 ROBOTSTXT_OBEY = False
@@ -56,12 +56,39 @@ ROBOTSTXT_OBEY = False
 #   'Accept-Language': 'en',
 #}
 
+# https://github.com/scrapy-plugins/scrapy-splash
+# Use Splash Config 1
+# docker run -p 8050:8050 scrapinghub/splash
+SPLASH_URL = 'http://127.0.0.1:8050'
+
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
     'pyscrapy.dbmiddleware.DbMiddleware': 530,
-    'pyscrapy.middlewares.PyscrapyDownloaderMiddleware': 543,
+    # # Use Splash Config 2
+    # 'scrapy_splash.SplashCookiesMiddleware': 723,
+    # 'scrapy_splash.SplashMiddleware': 725,
+
+    'pyscrapy.middlewares.PyscrapyDownloaderMiddleware': 730,
+
+    # 此HttpProxyMiddleware中间件不配置也是默认开启的。
+    # 通过传递 request.mata['proxy'] = "http://127.0.0.1:8050" 的方式使用
+    'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': 750, 
+
+    # 'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware': 810,
 }
+
+# Use Splash Config 3
+# SPIDER_MIDDLEWARES = {
+#     'scrapy_splash.SplashDeduplicateArgsMiddleware': 100,
+# }
+
+# Use Splash Config 4
+# DUPEFILTER_CLASS = 'scrapy_splash.SplashAwareDupeFilter'
+
+# Use Splash Config 5
+# HTTPCACHE_STORAGE = 'scrapy_splash.SplashAwareFSCacheStorage'
+
 
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html

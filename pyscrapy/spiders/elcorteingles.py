@@ -1,4 +1,5 @@
 from scrapy.http import TextResponse
+# from scrapy_splash import SplashRequest
 from pyscrapy.spiders import BaseSpider
 from scrapy import Request
 from models import UrlRequest, UrlRequestSnapshot
@@ -9,7 +10,7 @@ import json
 class NoseridersurfSpider(BaseSpider):
     name = "elcorteingles"
     base_url = "https://www.elcorteingles.es"
-    allowed_domains = ["www.elcorteingles.es"]
+    allowed_domains = ["www.elcorteingles.es", '127.0.0.1']
 
     # 该属性cls静态调用 无法继承覆盖
     custom_settings = {
@@ -42,7 +43,10 @@ class NoseridersurfSpider(BaseSpider):
             groupName = gp['title']
             groupIndex = gp['index']
             print('------start_requests----', groupIndex, groupName, requrl)
-            yield Request(requrl, callback=self.parse_list, headers={"Accept": "application/json, text/plain, */*"}, meta=dict(page=1, step=1, group=groupIndex, GroupName=groupName, FromKey=FromPage.FROM_PAGE_PRODUCT_LIST))            
+            hdrs = {"Accept": "application/json, text/plain, */*"}
+            meta = dict(page=1, step=1, group=groupIndex, GroupName=groupName, FromKey=FromPage.FROM_PAGE_PRODUCT_LIST)
+            yield Request(requrl, callback=self.parse_list, headers=hdrs, meta=meta)
+            # yield SplashRequest(requrl, callback=self.parse_list, headers=hdrs, meta=meta)            
 
     def parse_list(self, response: TextResponse):
         meta = response.meta
