@@ -71,6 +71,7 @@ DOWNLOADER_MIDDLEWARES = {
 
     'pyscrapy.splashmiddleware.SplashMiddleware': 730,
     'pyscrapy.proxymiddleware.ProxyMiddleware': 731,
+    # 'pyscrapy.browsermiddleware.SeleniumMiddleware': 732,
 
     # 此HttpProxyMiddleware中间件不配置也是默认开启的。
     # 通过传递 request.mata['proxy'] = "http://127.0.0.1:8050" 的方式使用
