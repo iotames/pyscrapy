@@ -14,7 +14,7 @@ class UrlRequest(BaseModel):
 
     site_id = Column(BigInteger, default=0, nullable=False)
     request_hash = Column(String(64), nullable=False, unique=True)
-    url = Column(String(5000), nullable=False)
+    url = Column(String(9000), nullable=False)
     method = Column(String(32), nullable=False)
     status_code = Column(Integer, nullable=False)
     request_body = Column(Text, nullable=False)
@@ -35,18 +35,22 @@ class UrlRequest(BaseModel):
         self.data_raw = data
         
     def saveUrlRequest(self, startAt):
-        if self.id is None or self.id == 0:
-            # DETAIL:  Key (id)=(1858205946162974721) already exists.
-            self.id = self.getSnowflake().get_next_id()
-            self.get_db_session().add(self)
-            self.get_db_session().commit()
-            lg.debug(f"---------saveUrlRequest----create---requrl({self.url})-{self.id}---data({self.data_format})--")
-        else:
-            data = {'data_format': self.data_format, 'data_raw':self.data_raw, 'collected_at':datetime.now()}
-            # print("---------UrlRequest------save-----", data)
-            self.get_db_session().query(UrlRequest).filter(UrlRequest.request_hash==self.request_hash).update(data)
-            self.get_db_session().commit()
-            lg.debug(f"---------saveUrlRequest---update--requrl({self.url})-({self.id})---data({data['data_format']})--")
+        try:
+            if self.id is None or self.id == 0:
+                # DETAIL:  Key (id)=(1858205946162974721) already exists.
+                self.id = self.getSnowflake().get_next_id()
+                self.get_db_session().add(self)
+                self.get_db_session().commit()
+                lg.debug(f"---------saveUrlRequest----create---requrl({self.url})-{self.id}---data({self.data_format})--")
+            else:
+                data = {'data_format': self.data_format, 'data_raw':self.data_raw, 'collected_at':datetime.now()}
+                # print("---------UrlRequest------save-----", data)
+                self.get_db_session().query(UrlRequest).filter(UrlRequest.request_hash==self.request_hash).update(data)
+                self.get_db_session().commit()
+                lg.debug(f"---------saveUrlRequest---update--requrl({self.url})-({self.id})---data({data['data_format']})--")
+        except Exception as e:
+            lg.debug(f"---------saveUrlRequest----error--url.len({len(self.url)})--({self.url})----")
+            raise e
 
     @classmethod
     def getbyRequestHash(cls, requestHash: str):

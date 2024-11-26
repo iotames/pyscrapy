@@ -49,7 +49,7 @@ class XlsxExporter(BaseItemExporter):
         lg = Logger()
         lg.debug(f"----------XlsxExporter---process_item----------item{item}--")
     def export_item(self, item):
-        lg = Logger()
+        # lg = Logger()
         # lg.debug(f"-----XlsxExporter---export_item---__fields_to_export({self.__fields_to_export})--")
         # lg.debug(f"----------XlsxExporter---export_item------item({item})--")
         if not item:
@@ -59,18 +59,18 @@ class XlsxExporter(BaseItemExporter):
             # self.ws.append(list(item.keys()))
             self.ws.append(list(self.__fields_to_export))
             self.header_written = True
-        lg.debug(f"-----XlsxExporter---process_item---row({row})---")
+        # lg.debug(f"-----XlsxExporter---process_item---row({row})---")
         self.ws.append(list(row))
         return item
 
     def get_row_data(self, item) -> list:
-        lg = Logger()
+        # lg = Logger()
         row = []
         for k in self.__fields_to_export:
             cellvalue = ""
             if k in item:
                 v = item[k]
-                lg.debug(f"-----XlsxExporter---export_item--fields_to_export---k({k})--v({v})--")
+                # lg.debug(f"-----XlsxExporter---export_item--fields_to_export---k({k})--v({v})--")
                 if v:
                     cellvalue = self.get_cell_value(k, v)
             row.append(cellvalue)

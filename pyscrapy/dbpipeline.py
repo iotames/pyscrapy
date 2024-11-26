@@ -1,4 +1,4 @@
-from pyscrapy.items import  BaseProductItem
+from pyscrapy.items import  BaseProductItem, FromPage
 from pyscrapy.spiders import BaseSpider
 from models import UrlRequest, UrlRequestSnapshot
 from datetime import datetime
@@ -38,6 +38,8 @@ class ProductDetail(Base):
         # print('========dbpipeline==ProductDetail===process_item=', spider.name, item)        
         if 'FromKey' not in item:
             raise RuntimeError('======item key: FromKey is empty==')
+        if item['FromKey'] == FromPage.FROM_PAGE_PRODUCT_LIST:
+            return item
         if 'UrlRequest' not in item:
             errmsg = f"-----item key: UrlRequest is empty--FromKey({item['FromKey']})---requrl({item['Url']})---"
             lg.debug(errmsg)
@@ -46,7 +48,7 @@ class ProductDetail(Base):
             print("---------Skip--Save----urlRequest---ProductDetail----SkipRequest:", item['SkipRequest'])
             return item
 
-        checkSpider(spider)        
+        checkSpider(spider)
         dataFormat = {}
         
         for key, value in item.items():
