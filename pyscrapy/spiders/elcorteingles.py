@@ -44,7 +44,7 @@ class NoseridersurfSpider(BaseSpider):
             groupIndex = gp['index']
             print('------start_requests----', groupIndex, groupName, requrl)
             hdrs = {"Accept": "application/json, text/plain, */*"}
-            meta = dict(page=1, step=1, group=groupIndex, GroupName=groupName, FromKey=FromPage.FROM_PAGE_PRODUCT_LIST)
+            meta = dict(browser=True, page=1, step=1, group=groupIndex, GroupName=groupName, FromKey=FromPage.FROM_PAGE_PRODUCT_LIST)
             yield Request(requrl, callback=self.parse_list, headers=hdrs, meta=meta)
             # yield SplashRequest(requrl, callback=self.parse_list, headers=hdrs, meta=meta)            
 
@@ -52,7 +52,7 @@ class NoseridersurfSpider(BaseSpider):
         meta = response.meta
         page = meta['page']
         groupName = meta['GroupName']
-        self.lg.debug(f"-------parse_list---requrl:{response.url}--page={page}--")
+        self.lg.debug(f"----parse_list--group({groupName})--page={page}---requrl:{response.url}--")
 
         if 'dl' in meta:
             self.lg.debug(f"----Skiped------parse_list--requrl({response.url})--page:{page}")
@@ -60,13 +60,15 @@ class NoseridersurfSpider(BaseSpider):
             prods = dl['ProductList']
         else:
             prods = []
-            result = response.json()
+            result_txt = response.xpath("//pre/text()").get()
+            result = json.loads(result_txt)
+            # result = response.json()
             if not result['success']:
                 return
-            total_page = result['pagination']['_total']
-            page_index = result['pagination']['_current']
-            total_count = result['pagination']['count']
-            page_size = result['pagination']['itemsPerPage']
+            total_page = result['data']['pagination']['_total']
+            page_index = result['data']['pagination']['_current']
+            total_count = result['data']['pagination']['count']
+            page_size = result['data']['pagination']['itemsPerPage']
             products = result['data']['products']
             for pdd in products:
                 dd = BaseProductItem()
@@ -78,9 +80,12 @@ class NoseridersurfSpider(BaseSpider):
                 dd['Url'] = self.get_site_url(produrl)
                 dd['Code'] = pdd['id']
                 dd['Brand'] = pdd['brand']['name']
-                dd['Color'] = pdd['image']['color']
-                dd['Image'] = pdd['image']['sources']['big']
-                dd['Thumbnail'] = pdd['image']['sources']['small']
+                if 'image' in pdd:
+                    if 'color' in pdd['image']:
+                        dd['Color'] = pdd['image']['color']
+                    if 'sources' in pdd['image']:
+                        dd['Image'] = pdd['image']['sources']['big']
+                        dd['Thumbnail'] = pdd['image']['sources']['small']
                 dd['Tags'] = [pdd['group_by']]
                 prod = {}
                 for key, value in dd.items():
@@ -97,11 +102,11 @@ class NoseridersurfSpider(BaseSpider):
             UrlRequestSnapshot.create_url_request_snapshot(ur, meta['StartAt'], ur.status_code)
         for dd in prods:
             dd['FromKey'] = FromPage.FROM_PAGE_PRODUCT_DETAIL
-            yield Request(dd['Url'], self.parse_detail, meta=dict(dd=dd, step=0, group=meta['group'], FromKey=FromPage.FROM_PAGE_PRODUCT_DETAIL))
+            yield Request(dd['Url'], self.parse_detail, meta=dict(page=page, dd=dd, step=0, group=meta['group'], FromKey=FromPage.FROM_PAGE_PRODUCT_DETAIL))
 
         if dl['NextPageUrl'] != "":
             print(f"------------next_page-{dl['NextPageUrl']}---")
-            yield Request(dl['NextPageUrl'], callback=self.parse_list, headers={"Accept": "application/json, text/plain, */*"}, meta=dict(page=page+1, step=meta['step'], group=meta['group'], GroupName=groupName, FromKey=FromPage.FROM_PAGE_PRODUCT_LIST))
+            yield Request(dl['NextPageUrl'], callback=self.parse_list, headers={"Accept": "application/json, text/plain, */*"}, meta=dict(browser=True, page=page+1, step=meta['step'], group=meta['group'], GroupName=groupName, FromKey=FromPage.FROM_PAGE_PRODUCT_LIST))
 
     def parse_detail(self, response: TextResponse):         
         meta = response.meta

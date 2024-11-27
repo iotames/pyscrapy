@@ -36,7 +36,7 @@ class DebugSpider(BaseSpider):
         text = response.text
         url = response.url
         print(f'----------currenturl{url}-----')
-        filename = 'debug.html'
+        filename = 'runtime/debug.html'
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(text)
         return
