@@ -55,7 +55,8 @@ class NoseridersurfSpider(BaseSpider):
         self.lg.debug(f"----parse_list--group({groupName})--page={page}---requrl:{response.url}--")
 
         if 'dl' in meta:
-            self.lg.debug(f"----Skiped------parse_list--requrl({response.url})--page:{page}")
+            dlur = meta['UrlRequest']
+            self.lg.debug(f"----Skiped------parse_list--requrl({response.url})--page:{page}---ur.id({dlur.id})")
             dl = meta['dl']
             prods = dl['ProductList']
         else:
@@ -80,12 +81,22 @@ class NoseridersurfSpider(BaseSpider):
                 dd['Url'] = self.get_site_url(produrl)
                 dd['Code'] = pdd['id']
                 dd['Brand'] = pdd['brand']['name']
+                if '_my_colors' in pdd:
+                    if len(pdd['_my_colors']) > 0:
+                        vars = pdd['_my_colors'][0].get('variants')
+                        if len(vars) > 0:
+                            dd['OldPrice'] = vars[0]['price']
+                            dd['FinalPrice'] = dd['OldPrice']
+                            if 'sale_price' in vars[0]:
+                                dd['FinalPrice'] = vars[0]['sale_price']
+                            # dd['PrictText'] = vars[0]['sale_price_text']
                 if 'image' in pdd:
                     if 'color' in pdd['image']:
                         dd['Color'] = pdd['image']['color']
                     if 'sources' in pdd['image']:
                         dd['Image'] = pdd['image']['sources']['big']
                         dd['Thumbnail'] = pdd['image']['sources']['small']
+                        dd['image_urls'] = [dd['Thumbnail']]
                 dd['Tags'] = [pdd['group_by']]
                 prod = {}
                 for key, value in dd.items():
@@ -97,36 +108,37 @@ class NoseridersurfSpider(BaseSpider):
             dl = {'PageSize': page_size, 'TotalCount': total_count, 'TotalPage': total_page, 'ProductList': prods, 'NextPageUrl': nextPageUrl, 'FromKey':FromPage.FROM_PAGE_PRODUCT_LIST}
             ur: UrlRequest = meta['UrlRequest']
             ur.setDataFormat(dl)
-            ur.setDataRaw(response.text)
+            ur.setDataRaw(result_txt)
             ur.saveUrlRequest(meta['StartAt'])
             UrlRequestSnapshot.create_url_request_snapshot(ur, meta['StartAt'], ur.status_code)
         for dd in prods:
-            dd['FromKey'] = FromPage.FROM_PAGE_PRODUCT_DETAIL
-            yield Request(dd['Url'], self.parse_detail, meta=dict(page=page, dd=dd, step=0, group=meta['group'], FromKey=FromPage.FROM_PAGE_PRODUCT_DETAIL))
+            # dd['FromKey'] = FromPage.FROM_PAGE_PRODUCT_DETAIL
+            yield dd
+            # yield Request(dd['Url'], self.parse_detail, meta=dict(browser=True, page=page, dd=dd, step=0, group=meta['group'], FromKey=FromPage.FROM_PAGE_PRODUCT_DETAIL))
 
         if dl['NextPageUrl'] != "":
             print(f"------------next_page-{dl['NextPageUrl']}---")
             yield Request(dl['NextPageUrl'], callback=self.parse_list, headers={"Accept": "application/json, text/plain, */*"}, meta=dict(browser=True, page=page+1, step=meta['step'], group=meta['group'], GroupName=groupName, FromKey=FromPage.FROM_PAGE_PRODUCT_LIST))
 
-    def parse_detail(self, response: TextResponse):         
-        meta = response.meta
-        dd = meta['dd']
-        if 'SkipRequest' in dd:
-            # self.lg.debug(f"----Skiped----typedd({type(dd)})---parse_detail--requrl:{response.url}---dd:{dd}-")
-            yield dd
-        else:
-            script_text = response.xpath("//script[@type='application/ld+json'][contains(text(), 'priceCurrency')]/text()").get()
-            pdd = json.loads(script_text.strip())
-            dd['Title'] = pdd['name']
-            dd['Description'] = pdd['description']
-            dd['Url']=pdd['url']
-            dd['Images'] = pdd['image']
-            dd['PriceText'] = str(pdd['offers']['price']) + pdd['offers']['priceCurrency']
-            dd['OldPrice'] = pdd['offers']['hightPrice']
-            dd['FinalPrice'] = pdd['offers']['price']
-            dd['Brand'] = pdd['brand']
-            dd['image_urls'] = [dd['Thumbnail']]
-            self.lg.debug(f"------parse_detail--yield--dd--to--SAVE--requrl:{response.url}----dd:{dd}-")
-            yield dd
+    # def parse_detail(self, response: TextResponse):         
+    #     meta = response.meta
+    #     dd = meta['dd']
+    #     if 'SkipRequest' in dd:
+    #         # self.lg.debug(f"----Skiped----typedd({type(dd)})---parse_detail--requrl:{response.url}---dd:{dd}-")
+    #         yield dd
+    #     else:
+    #         script_text = response.xpath("//script[@type='application/ld+json'][contains(text(), 'priceCurrency')]/text()").get()
+    #         pdd = json.loads(script_text.strip())
+    #         dd['Title'] = pdd['name']
+    #         dd['Description'] = pdd['description']
+    #         dd['Url']=pdd['url']
+    #         dd['Images'] = pdd['image']
+    #         dd['PriceText'] = str(pdd['offers']['price']) + pdd['offers']['priceCurrency']
+    #         dd['OldPrice'] = pdd['offers']['hightPrice']
+    #         dd['FinalPrice'] = pdd['offers']['price']
+    #         dd['Brand'] = pdd['brand']
+    #         dd['image_urls'] = [dd['Thumbnail']]
+    #         self.lg.debug(f"------parse_detail--yield--dd--to--SAVE--requrl:{response.url}----dd:{dd}-")
+    #         yield dd
 
 
