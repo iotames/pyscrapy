@@ -50,6 +50,7 @@ class DbMiddleware:
                 # 看已有的数据。不再发送请求
                 if request.meta['FromKey'] == FromPage.FROM_PAGE_PRODUCT_LIST:
                     request.meta['dl'] = d
+                    request.meta['page'] = ur.start
                     if 'ProductList' not in d:
                         raise ValueError('ProductList not in data_format')
                 if request.meta['FromKey'] == FromPage.FROM_PAGE_PRODUCT_DETAIL:

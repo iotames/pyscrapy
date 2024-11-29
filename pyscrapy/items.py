@@ -45,6 +45,8 @@ class BaseProductItem(Item):
     Category = Field()
     PageIndex = Field()
     TotalInventoryQuantity = Field()
+    TotalReviewsText = Field()
+    TotalReviews = Field()
     Material= Field()
     Description = Field()
     PublishedAt = Field()

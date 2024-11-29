@@ -17,6 +17,7 @@ class Config(Singleton):
         self.__http_proxy = os.getenv("HTTP_PROXY", "")
         # runtime/downloads/images"
         self.__images_path = os.getenv("IMAGES_PATH", os.path.join(self.__root_path, "runtime", "downloads", "images"))
+        print(f"----Init--Config---HTTP_PROXY({self.__http_proxy})---get_database({self.get_database()})--")
         super(Config, self).__init__(rootpath)
     
     def get_root_path(self) -> str:

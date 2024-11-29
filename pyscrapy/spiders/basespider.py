@@ -96,12 +96,21 @@ class BaseSpider(Spider):
         self.base_url = "{}//{}".format(protocol, full_domain)
     
     @staticmethod
+    def get_text_by_path(nd, xpath: str) -> str:
+        ndd = nd.xpath(xpath)
+        return ndd.get().strip() if ndd else None
+    @staticmethod
     def get_price_by_text(price_text: str) -> float:
         price = 0.0
         if price_text:
             info = price_text.split('$')
             if len(info) > 1:
                 price = info[1].strip().replace(",", "")
+        if price == 0.0:
+            # 399 kr
+            info = price_text.split("kr")
+            if len(info) > 1:
+                price = info[0].strip().replace(",", "")
         if price == 0.0:
             info = price_text.split("£")
             if len(info) > 1:

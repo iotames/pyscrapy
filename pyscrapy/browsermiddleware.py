@@ -33,7 +33,27 @@ class BrowserMiddleware:
                 print("浏览器启动成功")
             # 获取标签页对象
             tab = self.browser.latest_tab
-            tab.get(request.url)
+            if 'do_not_request' in request.meta:
+                pass
+            else:
+                tab.get(request.url)
+            if 'scroll_down' in request.meta:
+                if 'scroll_times' in request.meta:
+                    for i in range(0, request.meta['scroll_times']):
+                        print(f"----scroll_down--{i}---")
+                        tab.wait(1)
+                        tab.scroll.down(request.meta['scroll_down'])
+                else:
+                    tab.wait(1)
+                    tab.scroll.down(request.meta['scroll_down'])
+            if 'wait_element' in request.meta:
+                tab.ele(request.meta['wait_element']).wait.displayed()
+            if 'click_element' in request.meta:
+                print("点击元素：", request.meta['click_element'])
+                # tab.ele('xpath://button[@class="btn btn-icon-only btn-nav"][2]').click()
+                tab.ele(request.meta['click_element']).click()
+            if 'scroll_down' in request.meta:
+                tab.scroll.down(request.meta['scroll_down'])
             return HtmlResponse(url=request.url, body=tab.html, request=request, status=200, encoding='utf-8')
 
     def process_response(self, request, response, spider):

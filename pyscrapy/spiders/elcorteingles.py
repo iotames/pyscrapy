@@ -7,7 +7,7 @@ from pyscrapy.items import BaseProductItem, FromPage
 import json
 
 
-class NoseridersurfSpider(BaseSpider):
+class ElcorteinglesSpider(BaseSpider):
     name = "elcorteingles"
     base_url = "https://www.elcorteingles.es"
     allowed_domains = ["www.elcorteingles.es", '127.0.0.1']
