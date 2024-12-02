@@ -17,7 +17,7 @@ class DebugSpider(BaseSpider):
     }
 
     def __init__(self, name=None, **kwargs):
-        self.allowed_domains = ['httpbin.org', 'baidu.com', '127.0.0.1', "google.com"]
+        self.allowed_domains = ['httpbin.org', 'baidu.com', '127.0.0.1', "google.com", "4tharq.com", "www.aybl.com"]
         self.base_url = "https://httpbin.org"
         self.domain = "httpbin.org"
         super(DebugSpider, self).__init__(name=name, **kwargs)
@@ -28,7 +28,9 @@ class DebugSpider(BaseSpider):
         sitemap_url = {
             'httpbin': "https://httpbin.org/get",
             'google': 'https://www.google.com/',
-            'baidu': "https://www.baidu.com/"
+            'baidu': "https://www.baidu.com/",
+            "4tharq": "https://4tharq.com/collections/all",
+            "aybl":"https://www.aybl.com/collections/all-products",
         }
         
         # start_url = "https://www.google.com/"
