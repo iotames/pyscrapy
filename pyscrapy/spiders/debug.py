@@ -1,9 +1,10 @@
 from scrapy.http import TextResponse
 from pyscrapy.spiders import BaseSpider
 from scrapy import Request
-import os
 
 
+# scrapy crawl debug -a sitename=4tharq
+# scrapy crawl debug -a sitename=aybl
 class DebugSpider(BaseSpider):
     name: str = 'debug'
 
@@ -25,23 +26,8 @@ class DebugSpider(BaseSpider):
 
 
     def start_requests(self):
-        sitemap_url = {
-            'httpbin': "https://httpbin.org/get",
-            'google': 'https://www.google.com/',
-            'baidu': "https://www.baidu.com/",
-            "4tharq": "https://4tharq.com/collections/all",
-            "aybl":"https://www.aybl.com/collections/all-products",
-        }
-        
         # start_url = "https://www.google.com/"
-        start_url = "https://httpbin.org/get"
-        if self.sitename:
-            if self.sitename in sitemap_url:
-                start_url = sitemap_url[self.sitename]
-            else:
-                errmsg = f"----debug--start_requests--sitename({self.sitename}) not in sitemap_url({sitemap_url})----"
-                print(errmsg)
-                raise Exception(errmsg)
+        start_url = self.get_siteurl()
         yield Request(
             start_url,
             callback=self.parse,
@@ -54,10 +40,29 @@ class DebugSpider(BaseSpider):
         text = response.text
         url = response.url
         print(f'----------currenturl{url}-----')
-        filename = 'runtime/debug.html'
+        sitename = self.get_sitename()
+        filename = f'runtime/{sitename}.html'
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(text)
         print(f'---------response---text({text})')
         return
 
-
+    def get_siteurl(self) -> str:  
+        start_url = "https://httpbin.org/get"
+        sitemap_url = {
+            'httpbin': "https://httpbin.org/get",
+            'google': 'https://www.google.com/',
+            'baidu': "https://www.baidu.com/",
+            "4tharq": "https://4tharq.com/collections/all",
+            "aybl":"https://www.aybl.com/collections/all-products",
+        }
+        if self.sitename:
+            if self.sitename in sitemap_url:
+                start_url = sitemap_url[self.sitename]
+            else:
+                errmsg = f"----debug--get_siteurl--sitename({self.sitename}) not in sitemap_url({sitemap_url})----"
+                print(errmsg)
+                raise Exception(errmsg)
+        return start_url
+    def get_sitename(self) -> str:
+        return self.sitename if self.sitename else "httpbin"
