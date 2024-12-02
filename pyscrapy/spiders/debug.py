@@ -21,9 +21,25 @@ class DebugSpider(BaseSpider):
         self.base_url = "https://httpbin.org"
         self.domain = "httpbin.org"
         super(DebugSpider, self).__init__(name=name, **kwargs)
+        print(f"----debug--init---kwargs({kwargs})-----")
+
 
     def start_requests(self):
-        start_url = "https://www.google.com/"
+        sitemap_url = {
+            'httpbin': "https://httpbin.org/get",
+            'google': 'https://www.google.com/',
+            'baidu': "https://www.baidu.com/"
+        }
+        
+        # start_url = "https://www.google.com/"
+        start_url = "https://httpbin.org/get"
+        if self.sitename:
+            if self.sitename in sitemap_url:
+                start_url = sitemap_url[self.sitename]
+            else:
+                errmsg = f"----debug--start_requests--sitename({self.sitename}) not in sitemap_url({sitemap_url})----"
+                print(errmsg)
+                raise Exception(errmsg)
         yield Request(
             start_url,
             callback=self.parse,
@@ -39,6 +55,7 @@ class DebugSpider(BaseSpider):
         filename = 'runtime/debug.html'
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(text)
+        print(f'---------response---text({text})')
         return
 
 
