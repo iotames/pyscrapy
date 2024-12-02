@@ -6,7 +6,7 @@ from pyscrapy.items import BaseProductItem, FromPage
 import re
 
 
-class IntersportSpider(BaseSpider):
+class IntersportseSpider(BaseSpider):
     name = "intersportse"
     base_url = "https://www.intersport.se"
     allowed_domains = ["www.intersport.se", '127.0.0.1']
