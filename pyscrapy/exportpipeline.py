@@ -88,4 +88,7 @@ class XlsxExporter(BaseItemExporter):
             return cls.to_str(v)
         if k == 'OldPrice' or k == 'FinalPrice':
             return float(v)
+        if k == 'Thumbnail':
+            if v and v.startswith("//"):
+                return "https:" + v
         return v

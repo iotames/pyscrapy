@@ -3,10 +3,9 @@ from pyscrapy.spiders import BaseSpider
 from scrapy import Request
 from models import UrlRequest, UrlRequestSnapshot
 from pyscrapy.items import BaseProductItem, FromPage
-import re
 
 
-class IntersportseSpider(BaseSpider):
+class IntersportfrSpider(BaseSpider):
     name = "intersportfr"
     base_url = "https://www.intersport.fr"
     allowed_domains = ["www.intersport.fr", '127.0.0.1']
@@ -20,7 +19,7 @@ class IntersportseSpider(BaseSpider):
         'COOKIES_ENABLED': False,
         'CONCURRENT_REQUESTS_PER_IP': 5,  # default 8
         'CONCURRENT_REQUESTS': 5,  # default 16 recommend 5-8
-        'FEED_EXPORT_FIELDS': ['Thumbnail', 'GroupName', 'Category', 'Brand', 'Title', 'PriceText', 'OldPrice', 'FinalPrice', 'TotalReviews', 'Tags', 'SizeList', 'SizeNum', 'Url'],
+        'FEED_EXPORT_FIELDS': ['Thumbnail', 'GroupName', 'Category', 'Brand', 'Title', 'PriceText', 'OldPrice', 'FinalPrice', 'TotalReviews', 'Url'],
         # 下面内容注释掉，爬虫自动导出数据到xlsx文件的功能，会默认关闭。请在命令行使用 -o 参数，指定导出的文件名。
         # 'FEED_URI': 'intersportfr.xlsx',
         # 'FEED_FORMAT': 'xlsx'
@@ -42,7 +41,7 @@ class IntersportseSpider(BaseSpider):
             print('------start_requests----', groupIndex, groupName, requrl)
             meta = dict(browser=True, page=1, step=1, group=groupIndex, GroupName=groupName, FromKey=FromPage.FROM_PAGE_PRODUCT_LIST)
             yield Request(requrl, callback=self.parse_list, meta=meta)
-            # yield SplashRequest(requrl, callback=self.parse_list, headers=hdrs, meta=meta)            
+            # yield SplashRequest(requrl, callback=self.parse_list, headers=hdrs, meta=meta)
 
     def parse_list(self, response: TextResponse):
         meta = response.meta
@@ -61,52 +60,49 @@ class IntersportseSpider(BaseSpider):
             if len(nds) == 0:
                 return
             totalStr = self.get_text_by_path(response, '//div[@class="section-header-page__title"]/small/text()')
-            self.lg.debug(f"--------------TotalStr:{totalStr}------")
-            total_count = int(totalStr.replace(' produits', '').replace(' ', '')) if totalStr else 0
+            self.lg.debug(f"----------parse_list----TotalStr:({totalStr})------")
+            # ----------parse_list----TotalStr:(1 882 produits)------
+            total_count = int(totalStr.replace(' produits', '').replace(' ', '')) if totalStr else 0
             iii = 0
             for nd in nds:
+                prodnd = nd.xpath('div[@class="product-box"]')
+                if not prodnd:
+                    # raise Exception("No product found")
+                    continue
                 iii = iii+1
-                print(f"---------parse_list__nd({iii})-----")
-                # /
+                
                 dd = BaseProductItem()
                 dd['FromKey'] = FromPage.FROM_PAGE_PRODUCT_LIST
                 dd['GroupName'] = groupName
-                prodnd = nd.xpath('div[@class="product-box"]')
-                if not prodnd:
-                    raise Exception("No product found")
-        
-                # brand = nd.xpath()  # brand.get().strip() if brand else ''
                 dd['Brand'] = self.get_text_by_path(nd, './/div[@class="product-box__brand"]/text()')
                 dd['Title'] = self.get_text_by_path(nd, './/div[@class="product-box__name"]/text()')
                 produrl = self.get_text_by_path(nd, './/a[@class="product-box__title"]/@href')
+                # --produrl(/sneakers_homme_derby-le_coq_sportif-p-242284542E/)-
                 urlsplit = produrl.split('_')
                 if len(urlsplit) > 1:
                     dd['Category'] = urlsplit[0].replace('/', ' ')
                 dd['Url'] = self.get_site_url(produrl)
-                # dd['Thumbnail'] = nd.xpath('.//img/@src').get()
-                # reviewstr = self.get_text_by_path(nd, './/div[@class="rating-v2"]/span[2]/text()')
-                # dd['TotalReviewsText'] = reviewstr if reviewstr else None
-                # dd['TotalReviews'] = int(reviewstr.replace('(', '').replace(')', '').replace(',', '').replace(' ', '')) if reviewstr else 0  # (103)
-                # dd['PriceText'] = self.get_text_by_path(nd, './/span[@class="price-tag price-tag-current"]/text()')
-                # pricestr = self.get_text_by_path(nd, './/span[@class="price-tag price-tag-current"]/text()')
-                # # 299 kr
-                # if pricestr:
-                #     if pricestr.find('kr') > 0:
-                #         pricestr = pricestr.replace(' kr', '')
-                #     dd['FinalPrice'] = float(pricestr) if pricestr else 0
-                # oldPricestr = self.get_text_by_path(nd, './/span[@class="price-tag price-tag-original"]/text()')
-                # if oldPricestr:
-                #     if oldPricestr.find('kr') > 0:
-                #         oldPricestr = oldPricestr.replace(' kr', '')
-                #     dd['OldPrice'] = float(oldPricestr) if oldPricestr else dd['FinalPrice']
-                # # self.lg.debug(f"-----reviewstr({reviewstr})---pricestr---{pricestr}---oldPrice-{oldPricestr}")
-                # tagstr = self.get_text_by_path(nd, './/div[@class="product-card__category"]/text()')
-                # dd['Tags'] = [item.strip() for item in tagstr.strip().split(',')] if tagstr else []
-                # bdgs = nd.xpath('.//div[@data-testid="product-badge"]')
-                # for bd in bdgs:
-                #     bd_text = bd.xpath('text()').extract_first()
-                #     if bd_text:
-                #         dd['Tags'].append(bd_text.strip())
+                img = self.get_text_by_path(nd, './/img/@src') # nd.xpath('.//img/@src').get()
+                dd['Thumbnail'] = self.get_site_url(img) if img else None
+                reviewstr = self.get_text_by_path(nd, './/div[@class="product-box__avis"]/text()[normalize-space()]')
+                dd['TotalReviewsText'] = reviewstr if reviewstr else None
+                # self.lg.debug(f"--------parse_list__nd({iii})--reviewstr({reviewstr})--")
+                dd['TotalReviews'] = int(reviewstr.replace(' avis', '').replace(' ', '').replace(' ', '')) if reviewstr else 0
+                pricetext = self.get_text_by_path(nd, './/span[@class="product-box__price--normal"]/text()')
+                oldpricetext = ""
+                if pricetext:
+                    oldpricetext = pricetext
+                else:
+                    pricetext = self.get_text_by_path(nd, './/span[@class="product-box__price--alert"]/text()')
+                    oldpricetext = self.get_text_by_path(nd, './/span[@class="product-box__price--crossed"]/del/text()')
+                dd['PriceText'] = pricetext
+                dd['OldPriceText'] = oldpricetext
+                self.lg.debug(f"-----parse_list---item---produrl({produrl})--urlsplit({urlsplit})---reviewstr({reviewstr})---pricetext({pricetext})---oldpricetext({oldpricetext})--")
+                dd['FinalPrice'] = float(pricetext.replace('€', '').replace(' ', '').replace(',', '.')) if pricetext else 0   # self.get_price(pricetext)
+                dd['OldPrice'] = float(oldpricetext.replace('€', '').replace(' ', '').replace(',', '.')) if oldpricetext else 0 # self.get_price(oldpricetext)
+                if ['OldPrice'] == 0:
+                    dd['OldPrice'] = dd['FinalPrice']
+                # self.lg.debug(f"-----parse_list---item---dd({dd})---")
                 prod = {}
                 for key, value in dd.items():
                     prod[key] = value
@@ -114,9 +110,11 @@ class IntersportseSpider(BaseSpider):
             requrl = ""
             if page * self.page_size < total_count:
                 requrl = response.request.url
-                if "?p=" in requrl:
-                    requrl = requrl.replace(f"?page={page-1}", f"?p={page}")
+                if "?page=" in requrl:
+                    requrl = requrl.replace(f"?page={page-1}", f"?page={page}")
                 else:
+                    if page > 1:
+                        raise Exception("error page > 1 requrl:"+requrl)
                     requrl = requrl + "?page=1"
             dl = {'PageSize': self.page_size, 'TotalCount': total_count, 'ProductList': prods, 'NextPageUrl': requrl, 'FromKey':FromPage.FROM_PAGE_PRODUCT_LIST}
             ur: UrlRequest = meta['UrlRequest']
@@ -132,8 +130,8 @@ class IntersportseSpider(BaseSpider):
             self.lg.debug(f"---Begin--Request--next_page--{dl['NextPageUrl']}---")
             nextmeta = dict(browser=True, 
                             # do_not_request=True,
-                            scroll_down=500, wait_element='xpath://div[@data-sentry-source-file="ProductsGroup.tsx"]/article[4]//div[@class="product-card__title"]//a[2]', 
+                            scroll_down=500, wait_element='xpath://div[@id="product__container"]/article[1]', 
                             scroll_times=8,
-                            click_element='xpath://button[@class="btn btn-icon-only btn-nav"][2]', 
+                            # click_element='xpath://a[@aria-label="Page suivante"]', 
                             page=page+1, step=meta['step'], group=meta['group'], GroupName=groupName, FromKey=FromPage.FROM_PAGE_PRODUCT_LIST)
             yield Request(dl['NextPageUrl'], callback=self.parse_list, meta=nextmeta)
