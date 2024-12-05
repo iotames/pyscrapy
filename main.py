@@ -18,6 +18,7 @@ def runarg(args: list):
         Run.truncate_all_tables(db.get_db_engine())
     if runarg == "script":
         if len(sys.argv) > 2:
+            # python main.py script vqfit
             RunScript(sys.argv[2])
 
 def debug():
