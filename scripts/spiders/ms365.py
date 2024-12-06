@@ -32,20 +32,25 @@ class Ms365:
         vendor_list = self.get_vendor_list()
         vii = 0
         for v in vendor_list:
+            vii += 1
             vendor_urlkey = v.get('urlkey')
             vendor_name =  v.get('name')
+            subdirname = "Inspection Reports"
             filedirpath = os.path.join(self.download_path, vendor_name)
             fullfilepath = os.path.join(filedirpath, subdirname+".zip")
             if os.path.exists(fullfilepath):
                 self.lg.debug("---file_exists---vendor_name=({})---fullfilepath({})---".format(vendor_name, fullfilepath))
                 continue
+            fulldirpath = os.path.join(filedirpath, subdirname)
+            if os.path.isdir(fulldirpath):
+                self.lg.debug("---dir_exists---vendor_name=({})---fulldirpath({})---".format(vendor_name, fulldirpath))
+                raise Exception("dir_exists:"+fulldirpath)
+   
             self.lg.debug("---index({})--vendor_name=({})--vendor_urlkey({})--url({})".format(vii, vendor_name, vendor_urlkey, v.get('url')))
-            vii += 1
             self.tab.get(v.get('url'))
             self.tab.wait(2)
-            subdirname = self.click_to_inspection_reports()
-            if subdirname == "Inspection Reports":
-                self.lg.debug("---click_to_inspection_reports.success---vendor_name=({})---url({})".format(v.get('name'), v.get('url')))
+            if self.click_to_dirname(subdirname):
+                self.lg.debug("---click_to_dirname.success---vendor_name=({})---url({})".format(v.get('name'), v.get('url')))
                 filedirpath = os.path.join(self.download_path, vendor_name)
                 fullfilepath = os.path.join(filedirpath, subdirname+".zip")
                 if os.path.exists(fullfilepath):
@@ -80,18 +85,20 @@ class Ms365:
                 #         self.exporter.append_row([vendor_name, vendor_urlkey, btntxt, url])
                 # https://cottononcomau.sharepoint.com/sites/COTTONONQUALITYCOMPLIANCE/_layouts/15/download.aspx?SourceUrl=/sites/COTTONONQUALITYCOMPLIANCE/SUPPLIER Z/Inspection Reports/PASS-CHAOZHOU HUICHENG SHOES - Style  4592957 - FOOTWEAR - FI1-20Aug2024.pdf
             else:
-                self.lg.debug("---click_to_inspection_reports.error---vendor_name=({})---Inspection Reports".format(vendor_name))
+                self.lg.debug("---click_to_dirname.error---vendor_name=({})---Inspection Reports".format(vendor_name))
         self.exporter.save()
 
-    def click_to_inspection_reports(self) ->str:
-        btn = self.tab.ele('xpath://button[contains(text(),"Inspection Reports")]')
+    def click_to_dirname(self, dirname: str) ->bool:
+        btn = self.tab.ele('xpath://button[contains(text(),"{}")]'.format(dirname))
         try:
             btn.click()
-            return btn.text.strip()
+            # return btn.text.strip()
+            return True
         except Exception as e:
             # from DrissionPage.errors import ElementNotFoundError
-            self.lg.debug("-----click_to_inspection_reports.error({})".format(e))
-            return ""
+            self.lg.debug("-----click_to_dirname.error({})".format(e))
+            # return ""
+            return False
 
     def get_vendor_list(self):
         self.tab.get(self.start_url)
