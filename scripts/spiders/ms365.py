@@ -15,7 +15,7 @@ class Ms365:
     # https://cottononcomau.sharepoint.com/sites/COTTONONQUALITYCOMPLIANCE/SUPPLIER%20X/Forms/AllItems.aspx
 
     custom_settings = {
-        'FEED_EXPORT_FIELDS': ["VendorName", "VendorUrlkey", "Filename",  "Url"]
+        'FEED_EXPORT_FIELDS': ["序号", "供应商", "文件路径", "文件大小",  "链接地址"]
     }
 
     def __init__(self):
@@ -23,9 +23,9 @@ class Ms365:
         self.exporter.append_row(self.custom_settings['FEED_EXPORT_FIELDS'])
         self.tab = Chromium().latest_tab
         self.lg = Logger.get_instance()
+        self.lg.echo_msg = True
         downpath = Config.get_instance().get_root_path()
         self.download_path = os.path.join(downpath, 'runtime', 'downloads', 'pdf')
-        self.lg.echo_msg = True
 
     def run(self):
         print("Start Run", self.name)
@@ -34,39 +34,38 @@ class Ms365:
         for v in vendor_list:
             vii += 1
             vendor_urlkey = v.get('urlkey')
+            vendor_url = v.get('url')
             vendor_name =  v.get('name')
             subdirname = "Inspection Reports"
             filedirpath = os.path.join(self.download_path, vendor_name)
             fullfilepath = os.path.join(filedirpath, subdirname+".zip")
+            zipsize = 0
             if os.path.exists(fullfilepath):
-                self.lg.debug("---file_exists---vendor_name=({})---fullfilepath({})---".format(vendor_name, fullfilepath))
+                zipsize = os.path.getsize(fullfilepath)
+                self.lg.debug("---index({})--file_exists---vendor_name=({})---fullfilepath({})--zipsize({})--".format(vii, vendor_name, fullfilepath, zipsize))
+                self.exporter.append_row([vii, vendor_name, fullfilepath, zipsize, vendor_url])
                 continue
             fulldirpath = os.path.join(filedirpath, subdirname)
             if os.path.isdir(fulldirpath):
-                self.lg.debug("---dir_exists---vendor_name=({})---fulldirpath({})---".format(vendor_name, fulldirpath))
+                self.lg.debug("---index({})--dir_exists---vendor_name=({})---fulldirpath({})---".format(vii, vendor_name, fulldirpath))
                 raise Exception("dir_exists:"+fulldirpath)
    
-            self.lg.debug("---index({})--vendor_name=({})--vendor_urlkey({})--url({})".format(vii, vendor_name, vendor_urlkey, v.get('url')))
-            self.tab.get(v.get('url'))
+            self.lg.debug("---index({})--vendor_name=({})--vendor_urlkey({})--to--url({})".format(vii, vendor_name, vendor_urlkey, vendor_url))
+            self.tab.get(vendor_url)
             self.tab.wait(2)
             if self.click_to_dirname(subdirname):
-                self.lg.debug("---click_to_dirname.success---vendor_name=({})---url({})".format(v.get('name'), v.get('url')))
-                filedirpath = os.path.join(self.download_path, vendor_name)
-                fullfilepath = os.path.join(filedirpath, subdirname+".zip")
-                if os.path.exists(fullfilepath):
-                    self.lg.debug("---file_exists---vendor_name=({})---fullfilepath({})---".format(vendor_name, fullfilepath))
-                else:
-                    self.lg.debug("---download_file---vendor_name=({})---fullfilepath({})---".format(vendor_name, fullfilepath))
-                    try:
-                        # os.makedirs(filedirpath, exist_ok=True)
-                        self.tab.set.download_path(filedirpath)
-                        self.tab.set.download_file_name(subdirname)
-                        self.tab.ele('xpath://div[@role="group"]//button[@name="下载"]').click() # 该元素没有位置及大小。
-                        self.tab.wait.download_begin()  # 等待下载开始
-                        self.tab.wait.downloads_done()  # 等待所有任务结束
-                    except Exception as e:
-                        self.lg.debug("------download_file_-err-vendor_name=({})---fullfilepath({})--({})-".format(vendor_name, fullfilepath, e))
-
+                self.lg.debug("----index({})--click_to_dirname.success---vendor_name=({})---url({})".format(vii, v.get('name'), vendor_url))
+                try:
+                    # os.makedirs(filedirpath, exist_ok=True)
+                    self.lg.debug("---index({})--download_file---vendor_name=({})---fullfilepath({})---".format(vii, vendor_name, fullfilepath))
+                    self.tab.set.download_path(filedirpath)
+                    self.tab.set.download_file_name(subdirname)
+                    self.tab.ele('xpath://div[@role="group"]//button[@name="下载"]').click() # 该元素没有位置及大小。
+                    self.tab.wait.download_begin()  # 等待下载开始
+                    self.tab.wait.downloads_done()  # 等待所有任务结束
+                    self.exporter.append_row([vii, vendor_name, fullfilepath, os.path.getsize(fullfilepath), vendor_url])
+                except Exception as e:
+                    self.lg.debug("----index({})----download_file_-err-vendor_name=({})---fullfilepath({})--({})-".format(vii, vendor_name, fullfilepath, e))
 
                 # elebtns = self.tab.eles('xpath://button[@data-automationid="FieldRenderer-name"]')
                 # for elebtn in elebtns:
@@ -124,6 +123,6 @@ class Ms365:
                 urlkey = vendorurl.replace('/Forms/AllItems.aspx', '').replace('https://cottononcomau.sharepoint.com/sites/COTTONONQUALITYCOMPLIANCE/', '')
                 vendor_list.append({'name': vele2.text.strip(), 'url': vendorurl, 'urlkey': urlkey})
         self.lg.debug("---------vendor_list.len={}".format(len(vendor_list)))
-        for v in vendor_list:
-            self.lg.debug("---------vendor_info=({})".format(v))
+        # for v in vendor_list:
+        #     self.lg.debug("---------vendor_info=({})".format(v))
         return vendor_list
