@@ -102,6 +102,7 @@ class BaseSpider(Spider):
     @staticmethod
     def get_price_by_text(price_text: str) -> float:
         price = 0.0
+        # $59.990
         # currency_list = ['€', '$', '£', 'kr']
         if price_text:
             info = price_text.split('$')
@@ -120,7 +121,7 @@ class BaseSpider(Spider):
             info = price_text.split("€")
             if len(info) > 1:
                 price = info[1].strip().replace(",", "")
-        return price
+        return float(price)
 
     def closed(self, reason):
         print("============Close Base Spider : " + self.name)
