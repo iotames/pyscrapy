@@ -57,19 +57,24 @@ def get_classes_in_package(package_name):
 
     return classes
 
+def debug():
+    for cls_name, cls in get_classes_in_package('pyscrapy.spiders'):
+        print("-----cls_name({})---cls({})---".format(cls_name, cls))
+
 def get_attr_to_cls(attr_name: str, pkgpath: str) ->dict:
     cls_list = get_classes_in_package(pkgpath)
     clsdict = {}
     for cls_name, cls in cls_list:
+        print("-----cls_name({})---cls({})---".format(cls_name, cls))
         if hasattr(cls, attr_name):
             k = getattr(cls, attr_name)
             if k:
                 clsdict[k] = cls
     return clsdict
 
-def get_attr_val_by_spider_name(attr_name: str, spider_name: str):
-    spidercls = get_attr_to_cls('name', 'pyscrapy.spiders').get(spider_name)
-    return getattr(spidercls, attr_name)
+# def get_attr_val_by_spider_name(attr_name: str, spider_name: str):
+#     spidercls = get_attr_to_cls('name', 'pyscrapy.spiders').get(spider_name)
+#     return getattr(spidercls, attr_name)
 
 # # 示例用法
 # package_name = "pyscrapy.spiders"  # 替换为你的包路径

@@ -2,6 +2,7 @@ from scrapy.exporters import BaseItemExporter
 import os, openpyxl
 from scrapy import signals
 from service import Logger
+import exporter as exporterdata
 # from pyscrapy.items import  BaseProductItem
 
 class XlsxExporter(BaseItemExporter):
@@ -15,7 +16,7 @@ class XlsxExporter(BaseItemExporter):
         self.file = file
         self.wb = openpyxl.Workbook()
         self.ws = self.wb.active
-        self.ws.title = "Scraped Data"
+        self.ws.title = "ScrapedData"
         self.header_written = False
         super().__init__(dont_fail=True, **kwargs)
 
@@ -54,41 +55,11 @@ class XlsxExporter(BaseItemExporter):
         # lg.debug(f"----------XlsxExporter---export_item------item({item})--")
         if not item:
             return item
-        row = self.get_row_data(item)
         if not self.header_written:
             # self.ws.append(list(item.keys()))
             self.ws.append(list(self.__fields_to_export))
             self.header_written = True
-        # lg.debug(f"-----XlsxExporter---process_item---row({row})---")
+        row = exporterdata.get_row_data(self.__fields_to_export, item)
         self.ws.append(list(row))
+        # lg.debug(f"-----XlsxExporter---process_item---row({row})---")
         return item
-
-    def get_row_data(self, item) -> list:
-        # lg = Logger()
-        row = []
-        for k in self.__fields_to_export:
-            cellvalue = ""
-            if k in item:
-                v = item[k]
-                # lg.debug(f"-----XlsxExporter---export_item--fields_to_export---k({k})--v({v})--")
-                if v:
-                    cellvalue = self.get_cell_value(k, v)
-            row.append(cellvalue)
-        return row
-
-    @staticmethod
-    def to_str(v):
-        if isinstance(v, list):
-            return ",".join(v)
-        return ""
-
-    @classmethod
-    def get_cell_value(cls, k: str, v):
-        if k == 'Tags' or k == 'SizeList':
-            return cls.to_str(v)
-        if k == 'OldPrice' or k == 'FinalPrice':
-            return float(v)
-        if k == 'Thumbnail':
-            if v and v.startswith("//"):
-                return "https:" + v
-        return v

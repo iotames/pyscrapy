@@ -154,3 +154,7 @@ class AyblSpider(BaseSpider):
             # print("-----------parse_detail--------", dd)
             self.lg.debug(f"------parse_detail--yield--dd--to--SAVE--requrl:{response.url}----dd:{dd}-")
             yield dd
+
+    @classmethod
+    def export(cls):
+        print("export({})".format(cls.name))

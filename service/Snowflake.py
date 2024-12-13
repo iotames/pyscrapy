@@ -8,7 +8,7 @@ EPOCH_TIMESTAMP = 1288834974657
 class Snowflake(Singleton):
 
     def __init__(self, dc, worker):
-        print("--------Snowflake--init-----count:")
+        print("--------Snowflake--init-------")
         self.dc = dc
         self.worker = worker
         self.node_id = ((dc & 0x03)<< 8) | (worker & 0xff)

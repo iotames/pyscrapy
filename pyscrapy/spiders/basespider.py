@@ -122,6 +122,9 @@ class BaseSpider(Spider):
             if len(info) > 1:
                 price = info[1].strip().replace(",", "")
         return float(price)
+    
+    # def export():
+    #     raise NotImplementedError()
 
     def closed(self, reason):
         print("============Close Base Spider : " + self.name)
