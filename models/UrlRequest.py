@@ -65,7 +65,7 @@ class UrlRequest(BaseModel):
         method = method.upper()
         shastr = method + url
         if method == "POST":
-            shastr += request_body.strip()
+            shastr += request_body.decode("utf-8").strip()
         return get_sha256(shastr)
     
     @classmethod

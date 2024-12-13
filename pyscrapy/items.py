@@ -28,6 +28,7 @@ class BaseProductItem(Item):
 
     Code = Field()
     UrlKey = Field()
+    Gender = Field()
     Brand = Field()
     SizeNum = Field()
     SkuNum = Field()
@@ -36,6 +37,7 @@ class BaseProductItem(Item):
     Image = Field()
     Url = Field()
     Title = Field()
+    SubTitle = Field()
     Color = Field()
     OldPriceText = Field()
     OldPrice = Field()

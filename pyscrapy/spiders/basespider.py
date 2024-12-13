@@ -10,7 +10,7 @@ from models import Site
 class BaseSpider(Spider):
 
     image_referer = None
-    page_size: str
+    page_size: int
     name: str
     domain: str
     base_url: str
