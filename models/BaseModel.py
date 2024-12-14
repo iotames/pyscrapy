@@ -39,12 +39,7 @@ class BaseModel(AlchemyBase):
         return DB.get_instance(Config.get_database()).get_db_session()
 
     @classmethod
-    def get_model(cls, db_session, args: dict):
-        model = db_session.query(cls).filter_by(**args).first()
-        return model
-
-    @classmethod
-    def get_self(cls, args: dict):
+    def get_one(cls, args: dict):
         return cls.get_db_session().query(cls).filter_by(**args).first()
 
     @classmethod
@@ -62,8 +57,14 @@ class BaseModel(AlchemyBase):
         db_session.commit()
 
     @classmethod
-    def get_all_model(cls, db_session: Session, args=None) -> list:
-        return db_session.query(cls).filter_by(**args).all()
+    def get_all(cls, args=None) -> list:
+        return cls.get_db_session().query(cls).filter_by(**args).all()
+    
+    @classmethod
+    def query(cls, args=None):
+        if args is None:
+            return cls.get_db_session().query(cls)
+        return cls.get_db_session().query(*args)
     
     @staticmethod
     def getSnowflake():

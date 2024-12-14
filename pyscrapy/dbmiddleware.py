@@ -1,5 +1,4 @@
 from models import UrlRequest
-from datetime import datetime
 from datetime import datetime, timedelta
 from scrapy.http import HtmlResponse
 from pyscrapy.items import FromPage, BaseProductItem
@@ -46,7 +45,7 @@ class DbMiddleware:
             d['FromKey'] = request.meta['FromKey']
             d['UrlRequest'] = request.meta['UrlRequest']
             # 如果最近12小时内已发送过相同的请求，则从数据库读取
-            if ur.collected_at > datetime.now() - timedelta(hours=12):
+            if ur.collected_at > (datetime.now() - timedelta(hours=12)):
                 # 看已有的数据。不再发送请求
                 if request.meta['FromKey'] == FromPage.FROM_PAGE_PRODUCT_LIST:
                     request.meta['dl'] = d

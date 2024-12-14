@@ -6,8 +6,6 @@ import os
 import time, mimetypes
 from openpyxl.drawing.image import Image
 from openpyxl.utils import get_column_letter
-import hashlib
-# from scrapy.utils.python import to_bytes
 
 # 手动添加 .webp 文件扩展名的 MIME 类型映射
 mimetypes.add_type('image/webp', '.webp')
@@ -47,22 +45,15 @@ class Exporter:
     def append_row(self, row: list):
         self.sheet.append(list(row))
     
-    def get_image_by_url(self, url: str, dirname: str) -> Image:
-        if not url.startswith('http'):
-            return None
-        try:
-            if not dirname or dirname == '':
-                raise ValueError("dirname参数不能为空")
-            return self.get_image_by_path(self.get_md5_by_string(url)+".jpg", dirname)
-        except PIL.UnidentifiedImageError as e:
-            raise e
-    
     def add_image(self, img: Image, column_index, row_index):
         img.anchor = get_column_letter(column_index) + str(row_index)
         self.sheet.add_image(img)
 
+    def get_image_filepath(self, filename: str, dirname: str) -> str:
+        return os.path.join(self.images_dir, dirname, filename)
+
     def get_image_by_filename(self, filename: str, dirname: str) -> Image:
-        fpath = os.path.join(self.images_dir, dirname, filename)
+        fpath = self.get_image_filepath(filename, dirname)
         try:
             if not os.path.isfile(fpath):
                 raise ValueError("图片{}不存在".format(fpath))
@@ -139,14 +130,6 @@ class Exporter:
                 sheet.cell(row_index, start_col, cell_value)
             start_col += 1
         return start_col
-
-    @staticmethod
-    def get_md5_by_string(input_string: str) -> str:
-        md5_hash = hashlib.md5()
-        md5_hash.update(input_string.encode('utf-8'))
-        encrypted_string = md5_hash.hexdigest()
-        # encrypted_string = hashlib.md5(to_bytes(input_string)).hexdigest()
-        return encrypted_string
 
     @staticmethod
     def timestamp_to_str(timestamp=None, format_str="%Y-%m-%d %H:%M") -> str:

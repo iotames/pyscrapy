@@ -1,6 +1,32 @@
 from utils.pyfile import get_attr_to_cls
 from service.Exporter import Exporter
+from models import UrlRequest
+from datetime import datetime, timedelta
+from sqlalchemy import and_
+from utils.crypto import get_md5
+import os
 
+
+def get_spider_data(site_id: int, step: int) ->list:
+    data_list = []
+    select_fields = [UrlRequest.data_format, UrlRequest.collected_at]
+    print("site_id:", site_id)
+    reqs = UrlRequest.query(select_fields).filter(and_(
+        UrlRequest.site_id == site_id,
+        UrlRequest.updated_at > (datetime.now() - timedelta(hours=12)),
+        UrlRequest.step == step
+        )).all()
+    if step == 0:
+        for req in reqs:
+            data_list.append(req.data_format)
+    if step == 1:
+        for req in reqs:
+            dl = req.data_format.get('ProductList', None)
+            if dl is None:
+                raise Exception("ProductList could not be None")
+            for dd in dl:
+                data_list.append(dd)
+    return data_list
 
 def export_spider_data(spider_name: str):
     print("-----exporting data from spider: " + spider_name)
@@ -9,23 +35,37 @@ def export_spider_data(spider_name: str):
     get_export_data = getattr(spidercls, 'get_export_data', None)
     data_list = []
     if get_export_data is None:
-        print("No get_export_data function found in spider({}). use common function to export. FEED_EXPORT_FIELDS is ({})".format(spider_name, fields))
-        # TODO
+        # print("No get_export_data function found in spider({}). use common function to export. FEED_EXPORT_FIELDS is ({})".format(spider_name, fields))
+        step = 1
+        if hasattr(spidercls, 'parse_detail'):
+            step = 0
+        data_list = get_spider_data(spidercls.get_site_id(), step)
     else:
         data_list = get_export_data()
+    # 导出数据为空时，抛出异常。避免生成空文件。
     if len(data_list) == 0:
         raise Exception("No data to export")
+    # 准备导出数据
     exp = Exporter(spider_name)
     exp.append_row(fields)
-    for row_data in data_list:
+    rowi = 2
+    for dt in data_list:
+        row_data = []
+        if isinstance(dt, list):
+            row_data = dt
+        if isinstance(dt, dict):
+            row_data = get_row_data(fields, dt)
+        if len(row_data) != len(fields):
+            raise Exception("Data length is not equal to fields length")
+        imgurl = row_data[0]
+        row_data[0] = ""
         exp.append_row(row_data)
-    # imgs = [exp.get_image_by_filename("0a5890653dd80b014a9a010deecd7ba2.jpg", "4tharq")]
-    # id = 2
-    # for img in imgs:
-    #     exp.add_image(img, 1, id)
-    #     id += 1
+        if imgurl is not None or imgurl != "":
+            imgfilename = "{}.jpg".format(get_md5(imgurl))
+            if os.path.isfile(exp.get_image_filepath(imgfilename, spider_name)):
+                exp.add_image(exp.get_image_by_filename(imgfilename, spider_name), 1, rowi)
+        rowi += 1
     exp.save()
-
 
 def to_str(v):
     if isinstance(v, list):

@@ -80,6 +80,13 @@ class BaseSpider(Spider):
         self.site_id = site.id
         print("----------site.id", self.site_id)
 
+    @classmethod
+    def get_site_id(cls):
+        site = Site.get_one({'name': cls.name})
+        if site:
+            return site.id
+        return None
+
     def get_images_dirname(self):
         imgdir = self.name
         if imgdir in ["eyda"]:

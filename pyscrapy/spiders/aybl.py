@@ -155,6 +155,7 @@ class AyblSpider(BaseSpider):
             self.lg.debug(f"------parse_detail--yield--dd--to--SAVE--requrl:{response.url}----dd:{dd}-")
             yield dd
 
-    @classmethod
-    def get_export_data(cls):
-        print("get_export_data({})".format(cls.name))
+    # @classmethod
+    # def get_export_data(cls) -> list:
+    #     print("get_export_data({})".format(cls.name))
+    #     return []

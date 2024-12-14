@@ -54,7 +54,7 @@ class UrlRequest(BaseModel):
 
     @classmethod
     def getbyRequestHash(cls, requestHash: str):
-        return cls.get_self(dict(request_hash=requestHash))
+        return cls.get_one(dict(request_hash=requestHash))
     
     @classmethod
     def getByRequest(cls, request: Request) -> 'UrlRequest':

@@ -2,10 +2,9 @@
 from itemadapter import ItemAdapter
 from scrapy import Request
 from scrapy.pipelines.images import ImagesPipeline
-import hashlib
-from scrapy.utils.python import to_bytes
 import os
 from service import Config
+from utils.crypto import get_md5
 # from pyscrapy.process.product import ProcessProductBase
 
 cf = Config.get_instance()
@@ -21,11 +20,6 @@ class ImagePipeline(ImagesPipeline):
         # 必须返回item。ImagesPipeline是特殊的管道，记得继承父类的方法
         return super().process_item(item, spider)
 
-    @staticmethod
-    def get_guid_by_url(url: str) -> str:
-        print(url)
-        return hashlib.md5(to_bytes(url)).hexdigest()
-
     def file_path(self, request, response=None, info: ImagesPipeline.SpiderInfo = None, *, item=None): 
         filepath = self.get_local_file_path_by_url(request.url, info.spider.get_images_dirname())
         print("-----ImagePipeline.file_path--request.url({})--filepath({})--".format(request.url, filepath))
@@ -34,7 +28,7 @@ class ImagePipeline(ImagesPipeline):
     @classmethod
     def get_local_file_path_by_url(cls, url, dirname: str):
         dirpath = os.path.join(cf.get_images_path(), dirname)
-        filepath = os.path.join(dirpath, cls.get_guid_by_url(url) + ".jpg")
+        filepath = os.path.join(dirpath, "{}.jpg".format(get_md5(url)))
         print("------get_local_file_path_by_url---dirpath=", dirpath, filepath)
         return filepath
         # return "runtime/downloads/images/{}.jpg".format(cls.get_guid_by_url(url))
