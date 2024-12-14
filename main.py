@@ -11,6 +11,9 @@ DB.get_instance(Config.get_database())
 def runarg(args: list):
     runarg = args[1]
     db = DB.get_instance()
+    if runarg == "config":
+        conf = Config.get_instance()
+        show_config(conf)
     if runarg == "debug":
         debug()    
     if runarg == "init":
@@ -31,6 +34,13 @@ def debug():
     # Exporter.debug()
     # Site.debug()
     pyfile.debug()
+
+def show_config(conf: Config):
+    print("root_path:", conf.get_root_path())
+    print("database:", conf.get_database())
+    print("http_proxy:", conf.get_http_proxy())
+    print("export_dir:", conf.get_export_dir())
+    print("images_path:", conf.get_images_path())
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:

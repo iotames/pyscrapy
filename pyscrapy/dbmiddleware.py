@@ -33,7 +33,7 @@ class DbMiddleware:
         # 使用 request.url 和 request.body 的组合作为缓存的键
         ur = UrlRequest.getByRequest(request)
         
-        lg.debug(f"-----DbMiddleware--process_request--FromKey({request.meta['FromKey']})--requrl:{request.url}--ur({ur})--request.meta:{request.meta}")
+        # lg.debug(f"-----DbMiddleware--process_request--FromKey({request.meta['FromKey']})--requrl:{request.url}--ur({ur})--request.meta:{request.meta}")
 
         mustin = ['step', 'page', 'group', 'FromKey']
         for k in mustin:

@@ -17,7 +17,7 @@ def to_str(v):
     return ""
 
 def get_field_value_to_excel(k: str, v):
-    if k == 'Tags' or k == 'SizeList':
+    if k == 'Tags' or k == 'SizeList' or k == 'Gender':
         return to_str(v)
     if k == 'OldPrice' or k == 'FinalPrice':
         return float(v)

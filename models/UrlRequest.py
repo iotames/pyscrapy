@@ -41,13 +41,13 @@ class UrlRequest(BaseModel):
                 self.id = self.getSnowflake().get_next_id()
                 self.get_db_session().add(self)
                 self.get_db_session().commit()
-                lg.debug(f"---------saveUrlRequest----create---requrl({self.url})-{self.id}---data({self.data_format})--")
+                # lg.debug(f"---------saveUrlRequest----create---requrl({self.url})-{self.id}---data({self.data_format})--")
             else:
                 data = {'data_format': self.data_format, 'data_raw':self.data_raw, 'collected_at':datetime.now()}
                 # print("---------UrlRequest------save-----", data)
                 self.get_db_session().query(UrlRequest).filter(UrlRequest.request_hash==self.request_hash).update(data)
                 self.get_db_session().commit()
-                lg.debug(f"---------saveUrlRequest---update--requrl({self.url})-({self.id})---data({data['data_format']})--")
+                # lg.debug(f"---------saveUrlRequest---update--requrl({self.url})-({self.id})---data({data['data_format']})--")
         except Exception as e:
             lg.debug(f"---------saveUrlRequest----error--url.len({len(self.url)})--({self.url})----")
             raise e
