@@ -123,7 +123,7 @@ class BaseSpider(Spider):
                 price = info[1].strip().replace(",", "")
         return float(price)
     
-    # def export():
+    # def get_export_data():
     #     raise NotImplementedError()
 
     def closed(self, reason):

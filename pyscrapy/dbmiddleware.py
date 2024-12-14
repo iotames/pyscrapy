@@ -61,7 +61,7 @@ class DbMiddleware:
                     request.meta['dd'] = BaseProductItem(d)
                     request.meta['dd']['StartAt'] = request.meta['StartAt']
                     request.meta['dd']['SkipRequest'] = True
-                lg.debug(f'---------skip---DbMiddleware--process_request--requrl:{request.url}---')
+                lg.debug(f'------Skiped--DbMiddleware--process_request--requrl({request.url})---')
                 return HtmlResponse(url=request.url, body=ur.data_raw, encoding='utf-8', request=request)
             else:
                 if request.meta['FromKey'] == FromPage.FROM_PAGE_PRODUCT_DETAIL:

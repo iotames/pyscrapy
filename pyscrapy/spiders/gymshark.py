@@ -23,7 +23,7 @@ class GymsharkSpider(BaseSpider):
         'CONCURRENT_REQUESTS': 5,  # default 16 recommend 5-8
         # 取消 URL 长度限制
         'URLLENGTH_LIMIT': None,
-        'FEED_EXPORT_FIELDS': ['Thumbnail', 'GroupName', 'Category', 'Gender', 'Code', 'Title',  'Color', 'OldPrice', 'FinalPrice', 'Discount', 'TotalInventoryQuantity', 'TotalReviews', 'SkuNum', 'SizeList', 'Tags', 'Image', 'Url'],
+        'FEED_EXPORT_FIELDS': ['Thumbnail', 'GroupName', 'Category', 'Gender', 'Code', 'Title',  'Color', 'OldPrice', 'FinalPrice', 'Discount', 'TotalInventoryQuantity', 'TotalReviews', 'SizeNum', 'SizeList', 'Tags', 'Image', 'Url'],
         # 下面内容注释掉，爬虫自动导出数据到xlsx文件的功能，会默认关闭。请在命令行使用 -o 参数，指定导出的文件名。
         # 'FEED_URI': 'gymshark.xlsx',
         # 'FEED_FORMAT': 'xlsx'
@@ -65,7 +65,7 @@ class GymsharkSpider(BaseSpider):
         gp: dict = meta['gp']
         page = meta['page']
         groupName = gp.get('title')
-        self.lg.debug(f"-------parse_list--page={page}----requrl({response.url})---")
+        self.lg.debug(f"-------parse_list--group({groupName})--page={page}----requrl({response.url})---")
         has_next_page = False
 
         if 'dl' in meta:

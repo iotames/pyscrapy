@@ -156,5 +156,5 @@ class AyblSpider(BaseSpider):
             yield dd
 
     @classmethod
-    def export(cls):
-        print("export({})".format(cls.name))
+    def get_export_data(cls):
+        print("get_export_data({})".format(cls.name))
