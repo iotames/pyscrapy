@@ -3,7 +3,6 @@ from service.Exporter import Exporter
 from models import UrlRequest
 from datetime import datetime, timedelta
 from sqlalchemy import and_
-from utils.crypto import get_md5
 import os
 
 
@@ -13,7 +12,7 @@ def get_spider_data(site_id: int, step: int) ->list:
     print("site_id:", site_id)
     reqs = UrlRequest.query(select_fields).filter(and_(
         UrlRequest.site_id == site_id,
-        UrlRequest.updated_at > (datetime.now() - timedelta(hours=12)),
+        UrlRequest.updated_at > (datetime.now() - timedelta(hours=23)),
         UrlRequest.step == step
         )).all()
     if step == 0:
@@ -61,9 +60,8 @@ def export_spider_data(spider_name: str):
         row_data[0] = ""
         exp.append_row(row_data)
         if imgurl is not None or imgurl != "":
-            imgfilename = "{}.jpg".format(get_md5(imgurl))
-            if os.path.isfile(exp.get_image_filepath(imgfilename, spider_name)):
-                exp.add_image(exp.get_image_by_filename(imgfilename, spider_name), 1, rowi)
+            if os.path.isfile(exp.get_image_filepath_by_url(imgurl, spider_name)):
+                exp.add_image(exp.get_image_by_url(imgurl, spider_name), 1, rowi)
         rowi += 1
     exp.save()
 

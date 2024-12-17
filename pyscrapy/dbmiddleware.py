@@ -18,7 +18,7 @@ class DbMiddleware:
         if 'FromKey' not in request.meta:
             return None
         return self.dbmiddle(request, spider)
-    
+
     def process_response(self, request, response, spider):
         # Called with the response returned from the downloader.
         # Must either;
@@ -44,8 +44,8 @@ class DbMiddleware:
             d = ur.data_format
             d['FromKey'] = request.meta['FromKey']
             d['UrlRequest'] = request.meta['UrlRequest']
-            # 如果最近12小时内已发送过相同的请求，则从数据库读取
-            if ur.collected_at > (datetime.now() - timedelta(hours=12)):
+            # 如果最近23小时内已发送过相同的请求，则从数据库读取
+            if ur.collected_at > (datetime.now() - timedelta(hours=23)):
                 # 看已有的数据。不再发送请求
                 if request.meta['FromKey'] == FromPage.FROM_PAGE_PRODUCT_LIST:
                     request.meta['dl'] = d

@@ -5,6 +5,7 @@ from . import Config
 import os
 import time, mimetypes
 from openpyxl.drawing.image import Image
+from utils.crypto import get_md5
 from openpyxl.utils import get_column_letter
 
 # 手动添加 .webp 文件扩展名的 MIME 类型映射
@@ -49,11 +50,19 @@ class Exporter:
         img.anchor = get_column_letter(column_index) + str(row_index)
         self.sheet.add_image(img)
 
-    def get_image_filepath(self, filename: str, dirname: str) -> str:
-        return os.path.join(self.images_dir, dirname, filename)
+    def get_image_filepath_by_url(self, imgurl: str, dirname: str) -> str:
+        file_ext = ".jpg"
+        filename = get_md5(imgurl) + file_ext
+        # file_ext = mimetypes.guess_extension(mimetypes.guess_type(url)[0])
+        return self.get_imagepath_by_filename(filename, dirname)
 
-    def get_image_by_filename(self, filename: str, dirname: str) -> Image:
-        fpath = self.get_image_filepath(filename, dirname)
+    def get_imagepath_by_filename(self, filename: str, dirname: str) -> Image:
+        return self.get_image_by_filepath(os.path.join(self.images_dir, dirname, filename))
+    
+    def get_image_by_url(self, imgurl: str, dirname: str) -> Image:
+        return self.get_image_by_filepath(self.get_image_filepath_by_url(imgurl, dirname))
+
+    def get_image_by_filepath(self, fpath: str) -> Image:
         try:
             if not os.path.isfile(fpath):
                 raise ValueError("图片{}不存在".format(fpath))
@@ -144,8 +153,8 @@ class Exporter:
         exp.append_row(["", '2222', '3333', '4', '5', '6', '7', '8', '9'])
         exp.append_row(["", '2222', '3333', '4', '5', '6', '7', '8', '9'])
         imgs = [
-            exp.get_image_by_filename("0a5890653dd80b014a9a010deecd7ba2.jpg", "4tharq"),
-            exp.get_image_by_filename("0b023b2ae23b5af4dad335f7aba9e8f8.jpg", "4tharq")
+            exp.get_imagepath_by_filename("0a5890653dd80b014a9a010deecd7ba2.jpg", "4tharq"),
+            exp.get_imagepath_by_filename("0b023b2ae23b5af4dad335f7aba9e8f8.jpg", "4tharq")
         ]
         id = 2
         for img in imgs:
