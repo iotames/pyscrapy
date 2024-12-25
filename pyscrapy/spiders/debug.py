@@ -56,13 +56,13 @@ class DebugSpider(BaseSpider):
             "4tharq": "https://4tharq.com/collections/all",
             "aybl":"https://www.aybl.com/collections/all-products",
         }
-        if self.sitename:
-            if self.sitename in sitemap_url:
-                start_url = sitemap_url[self.sitename]
-            else:
-                errmsg = f"----debug--get_siteurl--sitename({self.sitename}) not in sitemap_url({sitemap_url})----"
-                print(errmsg)
-                raise Exception(errmsg)
+        sitename = self.get_sitename()
+        if sitename in sitemap_url:
+            start_url = sitemap_url[sitename]
+        else:
+            errmsg = f"----debug--get_siteurl--err--sitename({sitename}) not in sitemap_url({sitemap_url})----"
+            print(errmsg)
+            raise Exception(errmsg)
         return start_url
     def get_sitename(self) -> str:
-        return self.sitename if self.sitename else "httpbin"
+        return self.sitename if hasattr(self, "sitename") else "httpbin"
