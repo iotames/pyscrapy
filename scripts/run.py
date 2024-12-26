@@ -1,12 +1,14 @@
 from scripts.spiders.vqfit import Vqfit
 from scripts.spiders.ms365 import Ms365
 from scripts.spiders.vuoriclothing import Vuoriclothing
+from scripts.spiders.manduka import Manduka
 
 
 run_map = {
     "vqfit": Vqfit,
     "ms365": Ms365,
-    "vuoriclothing": Vuoriclothing
+    "vuoriclothing": Vuoriclothing,
+    "manduka": Manduka
     }
 
 def Run(name: str):
