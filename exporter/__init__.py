@@ -57,11 +57,12 @@ def export_spider_data(spider_name: str):
         if len(row_data) != len(fields):
             raise Exception("Data length is not equal to fields length")
         imgurl = row_data[0]
-        row_data[0] = ""
-        exp.append_row(row_data)
         if imgurl is not None or imgurl != "":
-            if os.path.isfile(exp.get_image_filepath_by_url(imgurl, spider_name)):
+            imgfilepath = exp.get_image_filepath_by_url(imgurl, spider_name)
+            if os.path.isfile(imgfilepath):
+                row_data[0] = ""
                 exp.add_image(exp.get_image_by_url(imgurl, spider_name), 1, rowi)
+        exp.append_row(row_data)
         rowi += 1
     exp.save()
 

@@ -67,7 +67,7 @@ class DbMiddleware:
                     request.meta['dd']['StartAt'] = request.meta['StartAt']
                     request.meta['dd']['UrlRequest'] = request.meta['UrlRequest']
                     request.meta['dd']['FromKey'] = request.meta['FromKey']
-                    lg.debug(f'-----last_collectedat > 8hours---DbMiddleware--process_request--requrl:{request.url}---')
+                    lg.debug(f'-----last_collectedat < 12hours---DbMiddleware--process_request--requrl:{request.url}---')
             return None
         else:
             request.meta['UrlRequest'] = UrlRequest.createUrlRequest(request, spider.site_id, request.meta['step'], request.meta['page'], request.meta['group'])

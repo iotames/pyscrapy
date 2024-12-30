@@ -48,7 +48,8 @@ class Exporter:
     
     def add_image(self, img: Image, column_index, row_index):
         img.anchor = get_column_letter(column_index) + str(row_index)
-        self.sheet.add_image(img)
+        if img is not None:
+            self.sheet.add_image(img)
 
     def get_image_filepath_by_url(self, imgurl: str, dirname: str) -> str:
         file_ext = ".jpg"
@@ -57,7 +58,7 @@ class Exporter:
         return self.get_imagepath_by_filename(filename, dirname)
 
     def get_imagepath_by_filename(self, filename: str, dirname: str) -> Image:
-        return self.get_image_by_filepath(os.path.join(self.images_dir, dirname, filename))
+        return os.path.join(self.images_dir, dirname, filename)
     
     def get_image_by_url(self, imgurl: str, dirname: str) -> Image:
         return self.get_image_by_filepath(self.get_image_filepath_by_url(imgurl, dirname))
