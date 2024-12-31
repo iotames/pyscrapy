@@ -1,9 +1,12 @@
 from utils.pyfile import get_attr_to_cls
 from service.Exporter import Exporter
+from service import Config
 from models import UrlRequest
 from datetime import datetime, timedelta
 from sqlalchemy import and_
 import os
+import requests
+import shutil
 
 
 def get_spider_data(site_id: int, step: int) ->list:
@@ -31,6 +34,10 @@ def export_spider_data(spider_name: str):
     print("-----exporting data from spider: " + spider_name)
     spidercls = get_attr_to_cls('name', 'pyscrapy.spiders').get(spider_name)
     fields = getattr(spidercls, 'custom_settings').get('FEED_EXPORT_FIELDS')
+    referer = getattr(spidercls, 'base_url', None)
+    if referer is not None:
+        referer = referer + "/"
+    http_proxy = Config.get_instance().get_http_proxy()
     get_export_data = getattr(spidercls, 'get_export_data', None)
     data_list = []
     if get_export_data is None:
@@ -59,6 +66,12 @@ def export_spider_data(spider_name: str):
         imgurl = row_data[0]
         if imgurl is not None or imgurl != "":
             imgfilepath = exp.get_image_filepath_by_url(imgurl, spider_name)
+            if not os.path.isfile(imgfilepath):
+                # 如果图片文件不存在，下载并保存图片
+                if download_image(imgurl, imgfilepath, referer, http_proxy):
+                    print(f"Success: Image downloaded and saved to {imgfilepath}")
+                else:
+                    print(f"Failed: to download image from {imgurl}")
             if os.path.isfile(imgfilepath):
                 row_data[0] = ""
                 exp.add_image(exp.get_image_by_url(imgurl, spider_name), 1, rowi)
@@ -95,3 +108,32 @@ def get_row_data(fields: list, item) -> list:
         row.append(cellvalue)
     return row
 
+def download_image(url, filepath, referer=None, http_proxy=None):
+    """下载图片并保存到指定路径，支持 referer 和 proxy 参数"""
+    try:
+        # 设置请求头，添加 referer
+        headers = {}
+        if referer is not None and referer != "":
+            headers['Referer'] = referer
+
+        # 设置代理
+        proxies = {}
+        if http_proxy is not None and http_proxy != "":
+            proxies['http'] = http_proxy
+            proxies['https'] = http_proxy
+
+        # 发送请求下载图片
+        response = requests.get(url, headers=headers, proxies=proxies, stream=True)
+        if response.status_code == 200:
+            # 确保目录存在
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+            # 保存图片
+            with open(filepath, 'wb') as out_file:
+                shutil.copyfileobj(response.raw, out_file)
+            return True
+        else:
+            print(f"Failed to download image from {url}. Status code: {response.status_code}")
+            return False
+    except Exception as e:
+        print(f"Error downloading image from {url}: {e}")
+        return False

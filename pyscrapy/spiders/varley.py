@@ -3,7 +3,6 @@ from pyscrapy.spiders import BaseSpider
 from scrapy import Request
 from models import UrlRequest, UrlRequestSnapshot
 from pyscrapy.items import BaseProductItem, FromPage
-# from service import Config
 # import os
 import re
 import json
@@ -26,7 +25,7 @@ class VarleySpider(BaseSpider):
         # 取消 URL 长度限制
         'URLLENGTH_LIMIT': None,
         'FEED_EXPORT_FIELDS': ['Thumbnail', 'GroupName', 'Category', 'PublishedAt', 'Title', 
-                                'PriceText', 'FinalPrice', 'TotalInventoryQuantity', 'SizeNum', 'SizeList', 'Tags', 'Image', 'Description', 'Url'],
+                                'PriceText', 'FinalPrice', 'TotalInventoryQuantity', 'SizeNum', 'SizeList', 'Material', 'Tags', 'Image', 'Description', 'Url'],
         # 下面内容注释掉，爬虫自动导出数据到xlsx文件的功能，会默认关闭。请在命令行使用 -o 参数，指定导出的文件名。
         # 'FEED_URI': 'varley.xlsx',
         # 'FEED_FORMAT': 'xlsx'
@@ -36,18 +35,6 @@ class VarleySpider(BaseSpider):
         {'index': 1, 'title': 'All', 'name':'all', 'url': 'https://www.varley.com/collections/all'},
     ]
     # start_urls = []
-
-    def get_prods_by_text(self, body: str) ->list:
-        # 使用正则表达式提取 JSON 数据
-        match = re.search(r'window\.__remixContext\s*=\s*({.*?});', body, re.DOTALL)
-        if match:
-            json_data = match.group(1)
-            # 将 JSON 字符串转换为 Python 字典
-            data = json.loads(json_data)
-            prods = data.get("state").get("loaderData").get("routes/($lang).collections.$handle").get("products")
-            return prods
-        else:
-            raise ValueError("JSON data not found in the HTML")
 
     def request_list_by_group(self, gp: dict, pageindex: int):
         if pageindex > 1:
@@ -160,7 +147,8 @@ class VarleySpider(BaseSpider):
         for dd in prods:
             # yield dd
             dd['FromKey'] = FromPage.FROM_PAGE_PRODUCT_DETAIL
-            requrl = "{}/api/products/{}".format(self.base_url, dd['UrlKey'])
+            # requrl = "{}/api/products/{}".format(self.base_url, dd['UrlKey'])
+            requrl = dd['Url']
             hdr = {
                 'accept': '*/*',
                 'accept-language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
@@ -179,9 +167,35 @@ class VarleySpider(BaseSpider):
             # self.lg.debug(f"----Skiped----typedd({type(dd)})---parse_detail--requrl:{response.url}---dd:{dd}-")
             yield dd
         else:
-            dd['DataRaw'] = response.text
-            jsdt = response.json()
-            data = jsdt['product']
+            # 使用XPath查找包含 'window.__remixContext' 的 <script> 标签
+            script_tag = response.xpath('//script[contains(text(), "window.__remixContext")]')
+            if script_tag is None:
+                print("000未找到包含 'window.__remixContext' 的 <script> 标签")
+            
+            # 提取 <script> 标签内的文本内容
+            script_text = script_tag.xpath('string()').get()
+
+            # 打印或处理提取的文本
+            if script_text:
+                dd['DataRaw'] = self.get_json_raw(script_text)
+            else:
+                print("111未找到包含 'window.__remixContext' 的 <script> 标签")
+                raise ValueError("333未找到包含 'window.__remixContext' 的 <script> 标签")
+
+            jsdt = self.get_page_json(dd['DataRaw'])
+            selected_variant = jsdt.get("state").get("loaderData").get("routes/($lang).products.$handle").get("selectedVariant")
+            varprod = selected_variant.get("product")
+            if 'productType' in varprod:
+                dd['Category'] = varprod['productType']
+            data = jsdt.get("state").get("loaderData").get("routes/($lang).products.$handle").get("product")
+            material = ""
+            for mfd in data.get("metafields", []):
+                if mfd is None:
+                    continue
+                if mfd.get("key") == "fabric":
+                    material = mfd.get("value")
+            dd['Material'] = material
+
             dd['Brand'] = data.get("vendor")
             dd['Title'] = data['title']
             dd['PublishedAt'] = data['publishedAt']
@@ -192,3 +206,26 @@ class VarleySpider(BaseSpider):
             dd['image_urls'] = [dd['Thumbnail']]
             self.lg.debug(f"------parse_detail--yield--dd--to--SAVE--requrl:{response.url}----dd:{dd}-")
             yield dd
+
+    def get_json_raw(self, body: str) -> str:
+        # 使用正则表达式提取 JSON 数据
+        match = re.search(r'window\.__remixContext\s*=\s*({.*?});', body, re.DOTALL)
+        if match:
+            json_data = match.group(1)
+            return json_data
+        else:
+            if body.startswith("{"):
+                return body
+            with open("./varley_js.js", "w", encoding="utf-8") as file:
+                file.write(body)
+            raise ValueError("JSON data not found in the HTML")
+
+    def get_page_json(self, body: str) -> dict:
+        json_data = self.get_json_raw(body)
+        # 将 JSON 字符串转换为 Python 字典
+        return json.loads(json_data)
+
+    def get_prods_by_text(self, body: str) ->list:
+        data = self.get_page_json(body)
+        prods = data.get("state").get("loaderData").get("routes/($lang).collections.$handle").get("products")
+        return prods
