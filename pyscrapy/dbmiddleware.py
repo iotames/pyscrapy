@@ -71,7 +71,7 @@ class DbMiddleware:
             return None
         else:
             request.meta['UrlRequest'] = UrlRequest.createUrlRequest(request, spider.site_id, request.meta['step'], request.meta['page'], request.meta['group'])
-            lg.debug(f'-------Request---DbMiddleware--process_request--requrl:{request.url}-----request.meta:{request.meta}')
+            # lg.debug(f'-------Request---DbMiddleware--process_request--requrl:{request.url}-----request.meta:{request.meta}')
             if request.meta['FromKey'] == FromPage.FROM_PAGE_PRODUCT_DETAIL:
                 request.meta['dd']['UrlRequest'] = request.meta['UrlRequest']
                 request.meta['dd']['StartAt'] = request.meta['StartAt']

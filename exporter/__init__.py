@@ -66,12 +66,12 @@ def export_spider_data(spider_name: str):
         imgurl = row_data[0]
         if imgurl is not None or imgurl != "":
             imgfilepath = exp.get_image_filepath_by_url(imgurl, spider_name)
-            if not os.path.isfile(imgfilepath):
-                # 如果图片文件不存在，下载并保存图片
-                if download_image(imgurl, imgfilepath, referer, http_proxy):
-                    print(f"Success: Image downloaded and saved to {imgfilepath}")
-                else:
-                    print(f"Failed: to download image from {imgurl}")
+            # if not os.path.isfile(imgfilepath):
+            #     # 如果图片文件不存在，下载并保存图片
+            #     if download_image(imgurl, imgfilepath, referer, http_proxy):
+            #         print(f"Success: Image downloaded and saved to {imgfilepath}")
+            #     else:
+            #         print(f"Failed: to download image from {imgurl}")
             if os.path.isfile(imgfilepath):
                 row_data[0] = ""
                 exp.add_image(exp.get_image_by_url(imgurl, spider_name), 1, rowi)
@@ -81,7 +81,14 @@ def export_spider_data(spider_name: str):
 
 def to_str(v):
     if isinstance(v, list):
-        return ",".join(v)
+        vvv = []
+        for vv in v:
+            if vv is None:
+                vvv.append("null")
+            else:
+                vvv.append(str(vv).strip())
+        return ",".join(vvv)
+        # return ",".join(v)
     return ""
 
 def get_field_value_to_excel(k: str, v):
@@ -121,7 +128,7 @@ def download_image(url, filepath, referer=None, http_proxy=None):
         if http_proxy is not None and http_proxy != "":
             proxies['http'] = http_proxy
             proxies['https'] = http_proxy
-
+        print("----download_image--headers({})---proxies{}-".format(referer, proxies))
         # 发送请求下载图片
         response = requests.get(url, headers=headers, proxies=proxies, stream=True)
         if response.status_code == 200:

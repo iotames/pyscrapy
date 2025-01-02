@@ -27,9 +27,11 @@ class BaseProductItem(Item):
     FromKey = Field()
 
     Code = Field()
+    Spu = Field()
     UrlKey = Field()
     Gender = Field()
     Brand = Field()
+    ColorNum = Field()
     SizeNum = Field()
     SkuNum = Field()
     Variants = Field()
