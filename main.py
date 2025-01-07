@@ -26,7 +26,12 @@ def runarg(args: list):
             RunScript(sys.argv[2])
         if runarg == "export":
             # python main.py export aybl
-            export_spider_data(sys.argv[2])
+            # python main.py export aybl image
+            if len(sys.argv) == 3:
+                export_spider_data(sys.argv[2], False)
+            if len(sys.argv) == 4:
+                if sys.argv[3] == "image":
+                    export_spider_data(sys.argv[2], True)
 
 def debug():
     from utils import pyfile

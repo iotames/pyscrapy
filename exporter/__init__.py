@@ -30,7 +30,7 @@ def get_spider_data(site_id: int, step: int) ->list:
                 data_list.append(dd)
     return data_list
 
-def export_spider_data(spider_name: str):
+def export_spider_data(spider_name: str, image_enable: bool):
     print("-----exporting data from spider: " + spider_name)
     spidercls = get_attr_to_cls('name', 'pyscrapy.spiders').get(spider_name)
     fields = getattr(spidercls, 'custom_settings').get('FEED_EXPORT_FIELDS')
@@ -66,12 +66,12 @@ def export_spider_data(spider_name: str):
         imgurl = row_data[0]
         if imgurl is not None or imgurl != "":
             imgfilepath = exp.get_image_filepath_by_url(imgurl, spider_name)
-            # if not os.path.isfile(imgfilepath):
-            #     # 如果图片文件不存在，下载并保存图片
-            #     if download_image(imgurl, imgfilepath, referer, http_proxy):
-            #         print(f"Success: Image downloaded and saved to {imgfilepath}")
-            #     else:
-            #         print(f"Failed: to download image from {imgurl}")
+            if not os.path.isfile(imgfilepath) and image_enable:
+                # 如果图片文件不存在，下载并保存图片
+                if download_image(imgurl, imgfilepath, referer, http_proxy):
+                    print(f"Success: Image downloaded and saved to {imgfilepath}")
+                else:
+                    print(f"Failed: to download image from {imgurl}")
             if os.path.isfile(imgfilepath):
                 row_data[0] = ""
                 exp.add_image(exp.get_image_by_url(imgurl, spider_name), 1, rowi)
@@ -119,7 +119,9 @@ def download_image(url, filepath, referer=None, http_proxy=None):
     """下载图片并保存到指定路径，支持 referer 和 proxy 参数"""
     try:
         # 设置请求头，添加 referer
-        headers = {}
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+        }
         if referer is not None and referer != "":
             headers['Referer'] = referer
 
@@ -128,7 +130,7 @@ def download_image(url, filepath, referer=None, http_proxy=None):
         if http_proxy is not None and http_proxy != "":
             proxies['http'] = http_proxy
             proxies['https'] = http_proxy
-        print("----download_image--headers({})---proxies{}-".format(referer, proxies))
+        print("----download_image--headers({})---proxies{}-".format(headers, proxies))
         # 发送请求下载图片
         response = requests.get(url, headers=headers, proxies=proxies, stream=True)
         if response.status_code == 200:
