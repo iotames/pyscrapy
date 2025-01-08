@@ -30,7 +30,7 @@ def runarg(args: list):
             if len(sys.argv) == 3:
                 export_spider_data(sys.argv[2], False)
             if len(sys.argv) == 4:
-                if sys.argv[3] == "image":
+                if sys.argv[3] in ["image", "images", "--image", "img", "--img"]:
                     export_spider_data(sys.argv[2], True)
 
 def debug():

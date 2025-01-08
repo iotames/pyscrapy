@@ -3,7 +3,9 @@ from pyscrapy.spiders import BaseSpider
 from scrapy import Request
 from models import UrlRequest, UrlRequestSnapshot
 from pyscrapy.items import BaseProductItem, FromPage
-from urllib.parse import quote
+import json
+from utils.strfind import get_material
+# from urllib.parse import quote
 
 
 class GymsharkSpider(BaseSpider):
@@ -23,7 +25,7 @@ class GymsharkSpider(BaseSpider):
         'CONCURRENT_REQUESTS': 5,  # default 16 recommend 5-8
         # 取消 URL 长度限制
         'URLLENGTH_LIMIT': None,
-        'FEED_EXPORT_FIELDS': ['Thumbnail', 'GroupName', 'Category', 'Gender', 'Code', 'Title', 'Color', 'SubTitle', 'OldPrice', 'FinalPrice', 'Discount', 'TotalInventoryQuantity', 'TotalReviews', 'SizeNum', 'SizeList', 'Tags', 'Image', 'Url'],
+        'FEED_EXPORT_FIELDS': ['Thumbnail', 'GroupName', 'Category', 'Gender', 'Code', 'Title', 'Color', 'SubTitle', 'OldPrice', 'FinalPrice', 'Discount', 'TotalInventoryQuantity', 'TotalReviews', 'SizeNum', 'SizeList', 'Tags', 'Material', 'Description', 'Image', 'Url'],
         # 下面内容注释掉，爬虫自动导出数据到xlsx文件的功能，会默认关闭。请在命令行使用 -o 参数，指定导出的文件名。
         # 'FEED_URI': 'gymshark.xlsx',
         # 'FEED_FORMAT': 'xlsx'
@@ -38,11 +40,19 @@ class GymsharkSpider(BaseSpider):
 
     def request_list_by_group(self, gp: dict, pageindex: int):
         group_name = gp.get('name')
-        requrl = "https://www.gymshark.com/_next/data/Psy_XnMTtHvR0neRcBb5w/en-US/collections/all-products/{}.json?collectionSlug=all-products&genderSlug={}&page={}".format(group_name, group_name, pageindex-1)
-        if group_name == "accessories":
-            requrl = "https://www.gymshark.com/_next/data/Psy_XnMTtHvR0neRcBb5w/en-US/collections/{}.json?collectionSlug={}&page={}".format(group_name, group_name, pageindex-1)
+        apikey = "Psy_XnMTtHvR0neRcBb5w"
+        requrl = ""
+        if group_name in ['womens', 'mens']:
+            requrl = "https://www.gymshark.com/_next/data/{}/en-US/collections/all-products/{}.json?collectionSlug=all-products&genderSlug={}&page={}".format(apikey, group_name, group_name, pageindex-1)
             if pageindex == 1:
-                requrl = "https://www.gymshark.com/_next/data/Psy_XnMTtHvR0neRcBb5w/en-US/collections/accessories.json?slug=accessories"
+                requrl = "https://www.gymshark.com/_next/data/{}/en-US/collections/all-products/{}.json?slug=all-products&gender={}".format(apikey, group_name, group_name)
+        if group_name in ["accessories"]:
+            requrl = "https://www.gymshark.com/_next/data/{}/en-US/collections/{}.json?collectionSlug={}&page={}".format(apikey, group_name, group_name, pageindex-1)
+            if pageindex == 1:
+                requrl = "https://www.gymshark.com/_next/data/{}/en-US/collections/{}.json?slug={}".format(apikey, group_name, group_name)
+        if requrl == "":
+            raise ValueError("requrl is empty")
+
         groupIndex = gp.get('index')
         logmsg = f"----request_list_by_group--group({gp['title']})--pageindex={pageindex}--url:{requrl}--"
         print(logmsg)
@@ -151,29 +161,33 @@ class GymsharkSpider(BaseSpider):
             ur.saveUrlRequest(meta['StartAt'])
             UrlRequestSnapshot.create_url_request_snapshot(ur, meta['StartAt'], ur.status_code)
         for prod in prods:
-            yield prod
-            # dd['FromKey'] = FromPage.FROM_PAGE_PRODUCT_DETAIL
-            # yield Request(dd['Url'], self.parse_detail, meta=dict(dd=dd, page=page, step=0, group=meta['group'], FromKey=FromPage.FROM_PAGE_PRODUCT_DETAIL))
+            # yield prod
+            prod['FromKey'] = FromPage.FROM_PAGE_PRODUCT_DETAIL
+            yield Request(prod['Url'], self.parse_detail, meta=dict(dd=prod, page=page, step=0, group=meta['group'], FromKey=FromPage.FROM_PAGE_PRODUCT_DETAIL))
         if has_next_page:
             self.lg.debug(f"-----parse_list--goto({gp.get('title')})--next_page({dl['PageIndex']+1})--")
             yield self.request_list_by_group(gp, page+1)
 
-
-    # def parse_detail(self, response: TextResponse):
-    #     meta = response.meta
-    #     dd = meta['dd']
-    #     if 'SkipRequest' in dd:
-    #         # self.lg.debug(f"----Skiped----typedd({type(dd)})---parse_detail--requrl:{response.url}---dd:{dd}-")
-    #         yield dd
-    #     else:
-    #         # 获取标题 <h1 class="product-info__title h2" >Empower Seamless Leggings</h1>
-    #         dd['Title'] = response.xpath('//h1[@class="product-info__title h2"]/text()').get()
-
-    #         # 提取面料信息
-    #         # fabric_info = response.xpath('//span[@class="description"]/p[strong[contains(text(), "Fabric Composition:")]]/following-sibling::p[1]/text()').get()
-    #         # dd['Material'] = fabric_info.strip() if fabric_info else None
-    #         # desc_nd = response.xpath('//div[@class="product__description rte quick-add-hidden"]/text()').get()
-    #         # dd['Description'] = desc_nd.strip() if desc_nd else None
-    #         # print("-----------parse_detail--------", dd)
-    #         self.lg.debug(f"------parse_detail--yield--dd--to--SAVE--requrl:{response.url}----dd:{dd}-")
-    #         yield dd
+    def parse_detail(self, response: TextResponse):
+        meta = response.meta
+        dd = meta['dd']
+        if 'SkipRequest' in dd:
+            # self.lg.debug(f"----Skiped----typedd({type(dd)})---parse_detail--requrl:{response.url}---dd:{dd}-")
+            yield dd
+        else:
+            jsonstr = self.get_text_by_path(response, '//script[@type="application/ld+json"]/text()')
+            if jsonstr is not None:
+                dd['DataRaw'] = jsonstr
+                jsonobj = json.loads(jsonstr)
+                desc = jsonobj.get('description', '')
+                dd['Description'] = desc
+                mtlist = get_material(desc)
+                if len(mtlist) > 0:
+                    dd['Material'] = ";".join(mtlist)
+                aggregateRating = jsonobj.get('aggregateRating', None)
+                if aggregateRating is not None:
+                    dd['TotalReviews'] = aggregateRating.get('reviewCount', 0)
+                    dd['ReviewRating'] = aggregateRating.get('ratingValue', 0)
+            # print("-----------parse_detail--------", dd)
+            # self.lg.debug(f"------parse_detail--yield--dd--to--SAVE--requrl:{response.url}--desc({dd['Description']})--")
+            yield dd

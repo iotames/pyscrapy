@@ -65,7 +65,7 @@ def get_attr_to_cls(attr_name: str, pkgpath: str) ->dict:
     cls_list = get_classes_in_package(pkgpath)
     clsdict = {}
     for cls_name, cls in cls_list:
-        print("-----cls_name({})---cls({})---".format(cls_name, cls))
+        # print("-----cls_name({})---cls({})---".format(cls_name, cls))
         if hasattr(cls, attr_name):
             k = getattr(cls, attr_name)
             if k:

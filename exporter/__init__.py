@@ -130,7 +130,7 @@ def download_image(url, filepath, referer=None, http_proxy=None):
         if http_proxy is not None and http_proxy != "":
             proxies['http'] = http_proxy
             proxies['https'] = http_proxy
-        print("----download_image--headers({})---proxies{}-".format(headers, proxies))
+        print("----download_image--url({})--http_proxy({})--headers({})--".format(url, http_proxy, headers))
         # 发送请求下载图片
         response = requests.get(url, headers=headers, proxies=proxies, stream=True)
         if response.status_code == 200:
