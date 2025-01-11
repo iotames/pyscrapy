@@ -6,6 +6,7 @@ class Vuoriclothing:
     name = "vuoriclothing"
     base_url = "https://vuoriclothing.com"
     lg: Logger
+    total_url_list = []
 
     custom_settings = {
         'FEED_EXPORT_FIELDS': ["Thumbnail", "Code", "CategoryName",
@@ -23,6 +24,9 @@ class Vuoriclothing:
     def get_row_data(self, dd) ->list:
         urlKey = dd.get("handle")
         produrl = f"{self.base_url}/products/{urlKey}"
+        if produrl in self.total_url_list:
+            return []
+        self.total_url_list.append(produrl)
         image = dd.get("image")
         thumbnail = image+"&width=200"
         size_num = len(dd.get("variants"))
@@ -55,14 +59,16 @@ class Vuoriclothing:
         # self.tab.listen.start("https://p2mlbkgfds-1.algolianet.com/1/indexes/*/queries")
 
         url_list = [
-            "https://vuoriclothing.com/collections/womens",
-            "https://vuoriclothing.com/collections/mens"
+            # "https://vuoriclothing.com/collections/womens",
+            # "https://vuoriclothing.com/collections/mens",
+            "https://vuoriclothing.com/collections/womens-hoodies-and-sweatshirts",
+            "https://vuoriclothing.com/collections/mens-hoodies-and-sweatshirts",
         ]
-        self.tab.get(url_list[1])            
-        self.listen_xhr_data()
+        self.tab.get(url_list[1])
+        self.listen_xhr_data(37)
         self.exporter.save()
 
-    def listen_xhr_data(self):
+    def listen_xhr_data(self, total_total):
         currenturl = self.tab.url
         groupname = currenturl.split("/")[-1]
         i = 0
@@ -81,25 +87,33 @@ class Vuoriclothing:
             i += 1
             if 'results' in result:
                 if 'requests' not in postdata:
-                    continue
+                    continue                
                 if len(postdata['requests']) != len(result['results']):
                     self.lg.debug("------request--param--url({})".format(packet.request.url))
                     continue
-                if len(result['results']) == 2:
+                reqlen = len(postdata['requests'])
+                if reqlen > 0:
                     # self.lg.debug("------request--params-url({})--params({})".format(packet.request.url, postdata['requests'][1]['params']))
-                    if r'AND%20NOT%20named_tags.gated%3Ainternal-influencer-accepted' in postdata['requests'][1]['params'] and 'page' in result['results'][1]:
+                    lastindex = reqlen-1
+                    if postdata['requests'][lastindex]['params'].startswith('attributesToRetrieve=') and 'page' in result['results'][lastindex]:
                         # if result['results'][1]['page'] == j:
-                        page_index = result['results'][1]['page']
-                        total_page = result['results'][1]['nbPages']
-                        dds = result.get("results")[1].get("hits")
+                        # nbHits: 64
+                        total_count = result['results'][lastindex]['nbHits']
+                        if total_count != total_total:
+                            continue
+                        page_index = result['results'][lastindex]['page']
+                        total_page = result['results'][lastindex]['nbPages']
+                        dds = result.get("results")[lastindex].get("hits")
                         for dd in dds:
                             rowdata = self.get_row_data(dd)
+                            if len(rowdata) == 0:
+                                continue
                             # self.lg.debug(f"-----rowdata({dd})---rowdata({rowdata})---")
                             self.exporter.append_row(rowdata)
-                        self.lg.debug(f"-----listen_xhr_data----i({i})-j({j})--page_index({page_index})--total_page({total_page})--dds.len({len(dds)})--groupname({groupname})---Method({packet.request.method})---")
+                        self.lg.debug(f"-----listen_xhr_data----i({i})-j({j})--total({total_count})--page_index({page_index})--total_page({total_page})--dds.len({len(dds)})--groupname({groupname})---Method({packet.request.method})---")
                         j +=1
-                        if page_index < (total_page - 3):
-                            continue
+                        # if page_index < (total_page - 3):
+                        #     continue
                         if page_index >= (total_page-1):
                             break
                         # if groupname == "mens" and page_index > 3: # page_index >= total_page:

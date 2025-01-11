@@ -7,4 +7,3 @@ pillow
 openpyxl
 mitmproxy
 DrissionPage
-beautifulsoup4
