@@ -33,8 +33,8 @@ class VuoriclothingSpider(BaseSpider):
     }
 
     start_urls_group = [
-        {'index': 1, 'title': "Women's Hoodies and Sweatshirts", 'name': 'womens-hoodies-and-sweatshirts', 'url': 'https://vuoriclothing.com/collections/womens-hoodies-and-sweatshirts'},
-        {'index': 2, 'title': "Men's Hoodies and Sweatshirts", 'name': 'mens-hoodies-and-sweatshirts', 'url': 'https://vuoriclothing.com/collections/mens-hoodies-and-sweatshirts'},
+        {'index': 1, 'title': "Women's Hoodies and Sweatshirts", 'name': 'womens-hoodies-and-sweatshirts', 'url': 'https://vuoriclothing.com/collections/womens-hoodies-and-sweatshirts', 'total': 61},
+        {'index': 2, 'title': "Men's Hoodies and Sweatshirts", 'name': 'mens-hoodies-and-sweatshirts', 'url': 'https://vuoriclothing.com/collections/mens-hoodies-and-sweatshirts', 'total': 37},
     ]
     # start_urls = []
 
@@ -76,7 +76,7 @@ class VuoriclothingSpider(BaseSpider):
         facets = '["named_tags.category","named_tags.color-group","named_tags.fabric","named_tags.fit","named_tags.gender","named_tags.inseam","named_tags.length","named_tags.lined","named_tags.prod-usage","named_tags.support","options_available_online.Size"]'
         filters = f"(requires_shipping:false OR online_inventory_available:true OR tags:back-in-stock-enabled) AND NOT tags:findify-remove AND collections:{gpname} AND NOT named_tags.gated:internal-influencer-accepted AND NOT named_tags.gated:influencer-accepted"
         params2 = 'attributesToRetrieve={}&clickAnalytics=true&facets={}&filters={}&highlightPostTag=__/ais-highlight__&highlightPreTag=__ais-highlight__&hitsPerPage=48&maxValuesPerFacet=50&page=1&userToken={}'.format(self.urlencode(attributesToRetrieve), self.urlencode(facets), self.urlencode(filters), user_token)
-        postdata = '{"requests":[{"indexName":"us_products","params":"{}"}, {"indexName":"us_products","params":""}]}'.format(params1, params2)
+        postdata = '{"requests":[{"indexName":"us_products","params":"' + params1 + '"}, {"indexName":"us_products","params":"' + params2 + '"}]}'
         meta = dict(gp=gp, page=pageindex, step=1, group=groupIndex, FromKey=FromPage.FROM_PAGE_PRODUCT_LIST)
         return Request(requrl, callback=self.parse_list, method='POST', meta=meta, headers=hdr, body=postdata)
 
@@ -85,8 +85,8 @@ class VuoriclothingSpider(BaseSpider):
         for gp in self.start_urls_group:
             yield self.request_list_by_group(gp, 1)
 
-    def check_next_page(self, page_index, total_page):
-        return page_index < total_page
+    def check_next_page(self, page_index, total_count):
+        return page_index * self.page_size < total_count
 
     def parse_list(self, response: TextResponse):
         meta = response.meta
@@ -101,18 +101,20 @@ class VuoriclothingSpider(BaseSpider):
             prods = dl['ProductList']
             dd_list = prods
             total_page = dl['TotalPage']
+            total_count = dl['TotalCount']
             page_index = dl['PageIndex']
-            has_next_page = self.check_next_page(page_index, total_page)
+            has_next_page = self.check_next_page(page_index, total_count)
         else:
-            result = response.json()
-            resultlen = len(result.get('results', []))
+            resultraw = response.json()
+            resultlen = len(resultraw.get('results', []))
             if resultlen == 0:
                 raise ValueError("results is empty")
-
             okresult = False
-            for rev in result.get('results', []):
+            result = {}
+            for rev in resultraw.get('results', []):
                 if rev.get('index') == 'us_products':
-                    if rev.get('params', '').startswith("attributesToRetrieve="):
+                    if gp.get('total', 0) == rev.get('nbHits', 0):
+                    # if rev.get('params', '').startswith("attributesToRetrieve="):
                         okresult = True
                         result = rev
             if okresult == False:
@@ -120,13 +122,17 @@ class VuoriclothingSpider(BaseSpider):
             # result = result['results'][resultlen-1]
             total_count = result['nbHits']
             page_index = result['page']+1
+            # hitsPerPage pageSize
             total_page = result['nbPages']
-            if page_index != page:
-                raise ValueError("page index not match")
-            has_next_page = self.check_next_page(page_index, total_page)
+            # if page_index != page:
+            #     self.lg.debug(f"-------parse_list--page_index({page_index})--page({page})----resultraw({resultraw})--------result({result})--")
+            #     raise ValueError("page index not match")
+            has_next_page = self.check_next_page(page_index, total_count)
             dl = {'Url': gp.get('url'), 'TotalCount': total_count, 'TotalPage': total_page, 'PageIndex': page, 'PageSize': self.page_size, 'FromKey':FromPage.FROM_PAGE_PRODUCT_LIST}
             hits = result['hits']
             if hits is None or len(hits) == 0:
+                with open("{}.list.json".format(self.name), "w", encoding="utf-8") as file:
+                    file.write(response.text)
                 raise ValueError("hits is empty")
             prods = []
             dd_list = []
