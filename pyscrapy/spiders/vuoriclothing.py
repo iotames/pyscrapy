@@ -5,13 +5,14 @@ from models import UrlRequest, UrlRequestSnapshot
 from pyscrapy.items import BaseProductItem, FromPage
 from urllib.parse import quote
 import json
+from utils.os import save_file
 
 
 class VuoriclothingSpider(BaseSpider):
 
     name = "vuoriclothing"
     base_url = "https://vuoriclothing.com"
-    allowed_domains = ["vuoriclothing.com","p2mlbkgfds-dsn.algolia.net"]
+    allowed_domains = ["vuoriclothing.com","p2mlbkgfds-2.algolianet.com"]
 
     # 该属性cls静态调用 无法继承覆盖
     custom_settings = {
@@ -33,8 +34,8 @@ class VuoriclothingSpider(BaseSpider):
     }
 
     start_urls_group = [
-        {'index': 1, 'title': "Women's Hoodies and Sweatshirts", 'name': 'womens-hoodies-and-sweatshirts', 'url': 'https://vuoriclothing.com/collections/womens-hoodies-and-sweatshirts', 'total': 61},
-        {'index': 2, 'title': "Men's Hoodies and Sweatshirts", 'name': 'mens-hoodies-and-sweatshirts', 'url': 'https://vuoriclothing.com/collections/mens-hoodies-and-sweatshirts', 'total': 37},
+        {'index': 1, 'title': "Women's Hoodies and Sweatshirts", 'name': 'womens-hoodies-and-sweatshirts', 'url': 'https://vuoriclothing.com/collections/womens-hoodies-and-sweatshirts'},
+        {'index': 2, 'title': "Men's Hoodies and Sweatshirts", 'name': 'mens-hoodies-and-sweatshirts', 'url': 'https://vuoriclothing.com/collections/mens-hoodies-and-sweatshirts'},
     ]
     # start_urls = []
 
@@ -43,8 +44,7 @@ class VuoriclothingSpider(BaseSpider):
 
     def request_list_by_group(self, gp: dict, pageindex: int):
         x_algolia_agent="Algolia for JavaScript (4.24.0); Browser; instantsearch.js (4.73.1); react (18.3.1); react-instantsearch (7.12.1); react-instantsearch-core (7.12.1); next.js (14.2.15); JS Helper (3.22.2)"
-        requrl = "https://p2mlbkgfds-dsn.algolia.net/1/indexes/*/queries?x-algolia-agent={}".format(quote(x_algolia_agent, safe="().-"))
-
+        requrl = "https://p2mlbkgfds-2.algolianet.com/1/indexes/*/queries?x-algolia-agent={}".format(quote(x_algolia_agent, safe="().-"))  
         groupIndex = gp.get('index')
         logmsg = f"----request_list_by_group--group({gp['title']})--pageindex={pageindex}--url:{requrl}--"
         print(logmsg)
@@ -53,7 +53,7 @@ class VuoriclothingSpider(BaseSpider):
         hdr = {
             'Accept': '*/*',
             'Accept-Language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
-            'Connection': 'keep-alive',
+            # 'Connection': 'keep-alive',
             'Origin': self.base_url,
             'Referer': "{}/".format(self.base_url),
             'Sec-Fetch-Dest': 'empty',
@@ -72,11 +72,34 @@ class VuoriclothingSpider(BaseSpider):
         user_token = "anonymous-46d3de0a-f424-4f1d-8620-ca21745535c9"
         params1 = "clickAnalytics=true&userToken={}".format(user_token)
 
-        attributesToRetrieve = '["objectID","title","handle","image","variants_min_price","product_type","variants","online_inventory_available_by_option","tags","family_products","named_tags"]'
-        facets = '["named_tags.category","named_tags.color-group","named_tags.fabric","named_tags.fit","named_tags.gender","named_tags.inseam","named_tags.length","named_tags.lined","named_tags.prod-usage","named_tags.support","options_available_online.Size"]'
-        filters = f"(requires_shipping:false OR online_inventory_available:true OR tags:back-in-stock-enabled) AND NOT tags:findify-remove AND collections:{gpname} AND NOT named_tags.gated:internal-influencer-accepted AND NOT named_tags.gated:influencer-accepted"
-        params2 = 'attributesToRetrieve={}&clickAnalytics=true&facets={}&filters={}&highlightPostTag=__/ais-highlight__&highlightPreTag=__ais-highlight__&hitsPerPage=48&maxValuesPerFacet=50&page=1&userToken={}'.format(self.urlencode(attributesToRetrieve), self.urlencode(facets), self.urlencode(filters), user_token)
-        postdata = '{"requests":[{"indexName":"us_products","params":"' + params1 + '"}, {"indexName":"us_products","params":"' + params2 + '"}]}'
+        # Second request
+        facetFilters2 = "[[\"parents:{}\"]]".format(gpname)
+        filters2 = "NOT tags:findify-remove AND (NOT online_inventory_available:false OR tags:back-in-stock-enabled)"
+        highlightPostTag2 = "__/ais-highlight__"
+        params2 = "clickAnalytics=true&facetFilters={}&filters={}&highlightPostTag={}&highlightPreTag=__ais-highlight__&hitsPerPage=24&userToken={}".format(
+            self.urlencode(facetFilters2),
+            self.urlencode(filters2),
+            self.urlencode(highlightPostTag2),
+            user_token
+        )
+
+        attributesToRetrieve3 = '["objectID","title","handle","image","variants_min_price","product_type","variants","online_inventory_available_by_option","tags","family_products","named_tags"]'
+        facets3 = '["named_tags.category","named_tags.color-group","named_tags.fabric","named_tags.fit","named_tags.gender","named_tags.inseam","named_tags.length","named_tags.lined","named_tags.prod-usage","named_tags.support","options_available_online.Size"]'
+        filters3 = f"(requires_shipping:false OR online_inventory_available:true OR tags:back-in-stock-enabled) AND NOT tags:findify-remove AND collections:{gpname}"
+        params3 = 'attributesToRetrieve={}&clickAnalytics=true&facets={}&filters={}&highlightPostTag={}&highlightPreTag=__ais-highlight__&hitsPerPage=48&maxValuesPerFacet=50&page={}&userToken={}'.format(
+            self.urlencode(attributesToRetrieve3),
+            self.urlencode(facets3),
+            self.urlencode(filters3),
+            self.urlencode("__/ais-highlight__"),
+            pageindex - 1,  # Adjust if pageindex starts from 1
+            user_token
+        )
+
+        # Construct postdata with three requests
+        postdata = '''
+        {{"requests":[{{"indexName":"us_products","params":"{}"}},{{"indexName":"us_categories","params":"{}"}},{{"indexName":"us_products","params":"{}"}}]}}
+        '''.format(params1, params2, params3).strip()
+        self.lg.debug(f"---------group({gp['title']})--pageindex=({pageindex})---postdata({postdata})-------")
         meta = dict(gp=gp, page=pageindex, step=1, group=groupIndex, FromKey=FromPage.FROM_PAGE_PRODUCT_LIST)
         return Request(requrl, callback=self.parse_list, method='POST', meta=meta, headers=hdr, body=postdata)
 
@@ -113,26 +136,25 @@ class VuoriclothingSpider(BaseSpider):
             result = {}
             for rev in resultraw.get('results', []):
                 if rev.get('index') == 'us_products':
-                    if gp.get('total', 0) == rev.get('nbHits', 0):
-                    # if rev.get('params', '').startswith("attributesToRetrieve="):
+                    if rev.get('params', '').startswith("attributesToRetrieve="):
                         okresult = True
                         result = rev
             if okresult == False:
+                save_file("{}.list.json".format(self.name), response.text)
                 raise ValueError("result not fount")
             # result = result['results'][resultlen-1]
             total_count = result['nbHits']
             page_index = result['page']+1
             # hitsPerPage pageSize
             total_page = result['nbPages']
-            # if page_index != page:
-            #     self.lg.debug(f"-------parse_list--page_index({page_index})--page({page})----resultraw({resultraw})--------result({result})--")
-            #     raise ValueError("page index not match")
+            if page_index != page:
+                self.lg.debug(f"-------parse_list--page_index({page_index})--page({page})----resultraw({resultraw})--------result({result})--")
+                raise ValueError("page index not match")
             has_next_page = self.check_next_page(page_index, total_count)
             dl = {'Url': gp.get('url'), 'TotalCount': total_count, 'TotalPage': total_page, 'PageIndex': page, 'PageSize': self.page_size, 'FromKey':FromPage.FROM_PAGE_PRODUCT_LIST}
             hits = result['hits']
             if hits is None or len(hits) == 0:
-                with open("{}.list.json".format(self.name), "w", encoding="utf-8") as file:
-                    file.write(response.text)
+                save_file("{}.list.json".format(self.name), response.text)
                 raise ValueError("hits is empty")
             prods = []
             dd_list = []
