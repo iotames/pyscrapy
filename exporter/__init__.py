@@ -34,6 +34,13 @@ def export_spider_data(spider_name: str, image_enable: bool):
     print("-----exporting data from spider: " + spider_name)
     spidercls = get_attr_to_cls('name', 'pyscrapy.spiders').get(spider_name)
     fields = getattr(spidercls, 'custom_settings').get('FEED_EXPORT_FIELDS')
+    fields_dict = getattr(spidercls, 'custom_settings').get('FEED_EXPORT_FIELDS_DICT', {})
+    title_list = []
+    for fd in fields:
+        if fd in fields_dict:
+            title_list.append(fields_dict.get(fd))
+        else:
+            title_list.append(fd)
     referer = getattr(spidercls, 'base_url', None)
     if referer is not None:
         referer = referer + "/"
@@ -53,7 +60,7 @@ def export_spider_data(spider_name: str, image_enable: bool):
         raise Exception("No data to export")
     # 准备导出数据
     exp = Exporter(spider_name)
-    exp.append_row(fields)
+    exp.append_row(title_list)
     rowi = 2
     for dt in data_list:
         row_data = []
@@ -114,6 +121,10 @@ def get_row_data(fields: list, item) -> list:
         #         cellvalue = get_field_value_to_excel(k, v)
         row.append(cellvalue)
     return row
+
+def download_by_excel():
+    # TODO
+    pass
 
 def download_image(url, filepath, referer=None, http_proxy=None):
     """下载图片并保存到指定路径，支持 referer 和 proxy 参数"""

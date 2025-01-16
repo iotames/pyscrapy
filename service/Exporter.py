@@ -27,15 +27,17 @@ class Exporter:
     
     # 构造函数
     # filename参数为文件名。不包含文件后缀
-    def __init__(self, filename='output', sheet_title='Sheet1'):
+    def __init__(self, filename='output', sheet_title='Sheet1', filepath=""):
         cnf = Config.get_instance()
         self.images_dir = cnf.get_images_path()
-        self.output_file = os.path.join(cnf.get_export_dir(), "{}_{}.xlsx".format(filename, time.strftime("%Y%m%d%H%M%S", time.localtime())))
+        self.output_file = filepath
+        if self.output_file == "":
+            self.output_file = os.path.join(cnf.get_export_dir(), "{}_{}.xlsx".format(filename, time.strftime("%Y%m%d%H%M%S", time.localtime())))
         self.wb = Workbook()
         self.sheet = self.wb.create_sheet(index=0, title=sheet_title)        
         # self.sheet = self.wb.active
         # self.sheet.title = "Scraped Data"
-        if os.path.isfile(self.output_file):
+        if os.path.isfile(self.output_file) and filepath == "":
             raise RuntimeError("文件已存在，请先删除")
             # self.wb = load_workbook(self.output_file)
             # self.sheet = self.wb.worksheets[0]
@@ -76,12 +78,14 @@ class Exporter:
         except PIL.UnidentifiedImageError as e:
             raise e
 
-    def save(self):
+    def save(self, filepath=""):
         self.sheet.column_dimensions['A'].width = 13
         for row in self.sheet.iter_rows(min_row=1, max_row=self.sheet.max_row, min_col=1, max_col=1):
             for cell in row:
                 self.sheet.row_dimensions[cell.row].height = self.rowheight
-        self.wb.save(self.output_file)
+        if filepath == "":
+            filepath = self.output_file
+        self.wb.save(filepath)
 
     def to_xlsx(self):
         sheet = self.sheet
