@@ -9,7 +9,7 @@ class XexymixSpider(BaseSpider):
 
     name = "xexymix"
     base_url = "https://www.xexymix.com"
-    allowed_domains = ["www.xexymix.com"]
+    allowed_domains = ["www.xexymix.com", "cdn1-aka.makeshop.co.kr"]
 
     # 该属性cls静态调用 无法继承覆盖
     custom_settings = {
@@ -22,22 +22,62 @@ class XexymixSpider(BaseSpider):
         'CONCURRENT_REQUESTS': 5,  # default 16 recommend 5-8
         # 取消 URL 长度限制
         'URLLENGTH_LIMIT': None,
-        'FEED_EXPORT_FIELDS': ['Thumbnail', 'GroupName', 'Code', 'Spu', 'Title', 'SubTitle', 
+        'FEED_EXPORT_FIELDS': ['Thumbnail', 'ParentGroup','GroupName', 'Code', 'Spu', 'Title', 'SubTitle', 
                                'PriceText', 'OldPrice', 'FinalPrice', 'Url'
         ],
-        # 'FEED_EXPORT_FIELDS_DICT': {"SubTitle": "子标题"}
+        'FEED_EXPORT_FIELDS_DICT': {"ParentGroup": "大类", "GroupName": "小类"}
         # 下面内容注释掉，爬虫自动导出数据到xlsx文件的功能，会默认关闭。请在命令行使用 -o 参数，指定导出的文件名。
         # 'FEED_URI': 'xexymix.xlsx',
         # 'FEED_FORMAT': 'xlsx'
         }
 
+    # start_urls_group = [
+    #     # {'index': 1, 'title': 'WOMENS', 'name':'033', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=033&type=X'}, # 2486
+    #     # {'index': 2, 'title': 'MENS', 'name':'011', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=011&type=X'}, # 485
+    #     # {'index': 3, 'title': 'GOLF', 'name':'004', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=004&type=Y'}, # 442
+    #     # {'index': 4, 'title': 'SHOES & ACC', 'name':'035', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=035&type=X'}, # 289
+    #     # {'index': 5, 'title': 'KIDS', 'name':'001', 'url': 'https://www.xexymix.com/m/product_list.html?xcode=001&type=X'}, # 238
+    # ]
+
     start_urls_group = [
-        {'index': 1, 'title': 'WOMENS', 'name':'033', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=033&type=X'}, # 2486
-        {'index': 2, 'title': 'MENS', 'name':'011', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=011&type=X'}, # 485
-        {'index': 3, 'title': 'GOLF', 'name':'004', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=004&type=Y'}, # 442
-        # {'index': 4, 'title': 'KIDS', 'name':'001', 'url': 'https://www.xexymix.com/m/product_list.html?xcode=001&type=X'}, # 238
-        {'index': 4, 'title': 'SHOES & ACC', 'name':'035', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=035&type=X'}, # 289
-    ]
+    {'index': 1, 'title': '우먼즈-비즈니스웨어', 'name': '022', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=022&mcode=011&scode=001&type=Y'},  # 우먼즈-비즈니스웨어
+    {'index': 2, 'title': '우먼즈-레깅스', 'name': '034', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=034&mcode=001&type=Y'},  # 우먼즈-레깅스
+    {'index': 3, 'title': '우먼즈-조거팬츠', 'name': '034', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=034&mcode=002&type=Y'},  # 우먼즈-조거팬츠
+    {'index': 4, 'title': '우먼즈-상의', 'name': '033', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=033&mcode=001&type=X'},  # 우먼즈-상의
+    {'index': 5, 'title': '우먼즈-패드탑', 'name': '033', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=033&mcode=002&type=X'},  # 우먼즈-패드탑
+    {'index': 6, 'title': '우먼즈-아우터', 'name': '033', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=033&mcode=003&type=X'},  # 우먼즈-아우터
+    {'index': 7, 'title': '우먼즈-하의', 'name': '033', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=033&mcode=004&type=X'},  # 우먼즈-하의
+    {'index': 8, 'title': '우먼즈-이너웨어', 'name': '033', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=033&mcode=005&type=X'},  # 우먼즈-이너웨어
+    {'index': 9, 'title': '우먼즈-블랙라벨', 'name': '024', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=024&type=Y'},  # 우먼즈-블랙라벨
+    {'index': 10, 'title': '우먼즈-스윔웨어', 'name': '021', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=021&mcode=011&type=Y'},  # 우먼즈-스윔웨어
+    {'index': 11, 'title': '우먼즈-러닝라인', 'name': '007', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=007&mcode=001&type=Y'},  # 우먼즈-러닝라인
+
+    {'index': 12, 'title': '맨즈-비즈니스웨어', 'name': '022', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=022&mcode=011&scode=002&type=Y'},  # 맨즈-비즈니스웨어
+    {'index': 13, 'title': '맨즈-신상', 'name': '027', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=027&mcode=004&type=Y'},  # 맨즈-신상
+    {'index': 14, 'title': '맨즈-상의', 'name': '011', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=011&mcode=010&type=X'},  # 맨즈-상의
+    {'index': 15, 'title': '맨즈-아우터', 'name': '011', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=011&mcode=011&type=X'},  # 맨즈-아우터
+    {'index': 16, 'title': '맨즈-하의', 'name': '011', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=011&mcode=012&type=X'},  # 맨즈-하의
+    {'index': 17, 'title': '맨즈-슬랙스', 'name': '011', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=011&mcode=012&scode=001&type=X'},  # 맨즈-슬랙스
+    {'index': 18, 'title': '맨즈-조거팬츠', 'name': '011', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=011&mcode=012&scode=002&type=X'},  # 맨즈-조거팬츠
+    {'index': 19, 'title': '맨즈-탄성팬츠', 'name': '022', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=022&mcode=006&type=Y'},  # 맨즈-탄성팬츠
+    {'index': 20, 'title': '맨즈-이너웨어', 'name': '011', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=011&mcode=013&type=X'},  # 맨즈-이너웨어
+    {'index': 21, 'title': '맨즈-블랙라벨', 'name': '024', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=024&mcode=001&type=Y'},  # 맨즈-블랙라벨
+    {'index': 22, 'title': '맨즈-스윔웨어', 'name': '021', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=021&type=N&mcode=004'},  # 맨즈-스윔웨어
+    {'index': 23, 'title': '맨즈-짐웨어', 'name': '006', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=006&mcode=005&type=Y'},  # 맨즈-짐웨어
+    {'index': 24, 'title': '맨즈-러닝라인', 'name': '007', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=007&mcode=002&type=Y'},  # 맨즈-러닝라인
+
+    {'index': 25, 'title': '골프-우먼즈', 'name': '004', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=004&mcode=001&type=Y'},  # 골프-우먼즈
+    {'index': 26, 'title': '골프-맨즈', 'name': '004', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=004&mcode=002&type=Y'},  # 골프-맨즈
+    {'index': 27, 'title': '골프-용품', 'name': '004', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=004&mcode=003&type=Y'},  # 골프-용품
+
+    {'index': 28, 'title': '키즈-상의', 'name': '001', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=001&mcode=007&type=X'},  # 키즈-상의
+    {'index': 29, 'title': '키즈-아우터', 'name': '001', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=001&mcode=008&type=X'},  # 키즈-아우터
+    {'index': 30, 'title': '키즈-하의', 'name': '001', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=001&mcode=009&type=X'},  # 키즈-하의
+    {'index': 31, 'title': '키즈-슈즈&용품', 'name': '001', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=001&mcode=010&type=X'},  # 키즈-슈즈&용품
+    {'index': 32, 'title': '키즈-스윔웨어', 'name': '021', 'url': 'https://www.xexymix.com/shop/shopbrand.html?xcode=021&mcode=008&type=Y'},  # 키즈-스윔웨어
+]
+
+
     # start_urls = []
 
     def get_requrl_by_gp(self, gp: dict, pageindex: int):
@@ -111,7 +151,9 @@ class XexymixSpider(BaseSpider):
             for nd in nds:
                 dd = BaseProductItem()
                 dd['FromKey'] = FromPage.FROM_PAGE_PRODUCT_LIST
-                dd['GroupName'] = groupName
+                groupSplit = groupName.split('-')
+                dd['ParentGroup'] = groupSplit[0]
+                dd['GroupName'] = groupSplit[1]
                 dd['PageIndex'] = page_index
                 purl = self.get_text_by_path(nd, 'dt/a/@href')
                 if purl is None:

@@ -47,6 +47,7 @@ class BaseProductItem(Item):
     PriceText = Field()
     FinalPrice = Field()
     Discount = Field()
+    ParentGroup = Field()
     GroupName = Field()
     Category = Field()
     PageIndex = Field()

@@ -79,7 +79,7 @@ def export_spider_data(spider_name: str, image_enable: bool):
                     print(f"Success: Image downloaded and saved to {imgfilepath}")
                 else:
                     print(f"Failed: to download image from {imgurl}")
-            if os.path.isfile(imgfilepath):
+            if os.path.isfile(imgfilepath) and image_enable:
                 row_data[0] = ""
                 exp.add_image(exp.get_image_by_url(imgurl, spider_name), 1, rowi)
         exp.append_row(row_data)
