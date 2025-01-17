@@ -104,7 +104,7 @@ def get_field_value_to_excel(k: str, v):
     if k == 'OldPrice' or k == 'FinalPrice':
         return float(v)
     if k == 'Thumbnail':
-        if v and v.startswith("//"):
+        if v is not None and v.startswith("//"):
             return "https:" + v
     return v
 

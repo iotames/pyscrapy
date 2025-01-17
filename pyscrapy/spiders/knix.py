@@ -3,10 +3,8 @@ from pyscrapy.spiders import BaseSpider
 from scrapy import Request
 from models import UrlRequest, UrlRequestSnapshot
 from pyscrapy.items import BaseProductItem, FromPage
-import json
 from utils.strfind import get_material
 from urllib.parse import quote
-from utils.strfind import get_material
 
 
 class KnixSpider(BaseSpider):
