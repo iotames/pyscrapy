@@ -67,7 +67,8 @@ def export_spider_data(spider_name: str, image_enable: bool):
         if isinstance(dt, list):
             row_data = dt
         if isinstance(dt, dict):
-            row_data = get_row_data(fields, dt)
+            get_data_dict = getattr(spidercls, 'get_data_dict', None)
+            row_data = get_row_data(fields, dt, get_data_dict)
         if len(row_data) != len(fields):
             raise Exception("Data length is not equal to fields length")
         imgurl = row_data[0]
@@ -87,6 +88,8 @@ def export_spider_data(spider_name: str, image_enable: bool):
     exp.save()
 
 def to_str(v):
+    if isinstance(v, str):
+        return v.strip()
     if isinstance(v, list):
         vvv = []
         for vv in v:
@@ -108,17 +111,15 @@ def get_field_value_to_excel(k: str, v):
             return "https:" + v
     return v
 
-def get_row_data(fields: list, item) -> list:
+def get_row_data(fields: list, item: dict, get_data_dict=None) -> list:
     row = []
+    if get_data_dict is not None:
+        get_data_dict(item)
     for k in fields:
         cellvalue = ""
         v = item.get(k, None)
         if v is not None:
             cellvalue = get_field_value_to_excel(k, v)
-        # if k in item:
-        #     v = item[k]
-        #     if v is not None:
-        #         cellvalue = get_field_value_to_excel(k, v)
         row.append(cellvalue)
     return row
 
