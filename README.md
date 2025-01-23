@@ -116,6 +116,12 @@ scrapy genspider itcast "itcast.cn"
 
 # 运行爬虫并导出数据
 scrapy crawl itcast -o itcast.xlsx
+
+# 导出数据到Excel
+python main.py export itcast
+
+# 导出数据到Excel，并下载图片
+python main.py export itcast image
 ```
 
 
