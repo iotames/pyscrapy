@@ -28,6 +28,7 @@ class BaseProductItem(Item):
 
     Code = Field()
     Spu = Field()
+    MadeIn = Field()
     UrlKey = Field()
     Gender = Field()
     Brand = Field()
