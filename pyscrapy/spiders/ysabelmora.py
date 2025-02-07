@@ -5,7 +5,6 @@ from models import UrlRequest, UrlRequestSnapshot
 from pyscrapy.items import BaseProductItem, FromPage
 from utils.strfind import get_material
 import json
-import re
 
 
 class YsabelmoraSpider(BaseSpider):
@@ -14,9 +13,12 @@ class YsabelmoraSpider(BaseSpider):
     base_url = "https://ysabelmora.com"
     allowed_domains = ["ysabelmora.com"]
     start_urls_group = [
-        {'index': 1, 'title': 'Women', 'name':'mujer', 'code': '23801381519690', 'url': 'https://ysabelmora.com/collections/mujer'}, # 39
-        # {'index': 2, 'title': 'Man', 'name':'hombre', 'code': '23871704891722', 'url': 'https://ysabelmora.com/collections/hombre'}, # 33
-        # {'index': 3, 'title': 'Baby', 'name':'bebe', 'code': '23871499338058', 'url': 'https://ysabelmora.com/collections/bebe'}, # 326 products
+        {'index': 1, 'title': 'Women', 'name':'mujer', 'code': '23801381519690', 'url': 'https://ysabelmora.com/collections/mujer'},
+        {'index': 2, 'title': 'Man', 'name':'hombre', 'code': '23871704891722', 'url': 'https://ysabelmora.com/collections/hombre'},
+        {'index': 3, 'title': 'Baby', 'name':'bebe', 'code': '23871499338058', 'url': 'https://ysabelmora.com/collections/bebe'}, # 326 products
+        {'index': 4, 'title': 'Niña', 'name':'nina', 'code': '23878733398346', 'url': 'https://ysabelmora.com/collections/nina'},
+        {'index': 5, 'title': 'Niño', 'name':'nino', 'code': '23879504691530', 'url': 'https://ysabelmora.com/collections/nino'}, 
+        {'index': 6, 'title': 'Teen', 'name':'teen', 'code': '23931583529290', 'url': 'https://ysabelmora.com/collections/teen'},
     ]
     # start_urls = []
 
@@ -30,7 +32,7 @@ class YsabelmoraSpider(BaseSpider):
         'COOKIES_ENABLED': False,
         'CONCURRENT_REQUESTS_PER_IP': 5,  # default 8
         'CONCURRENT_REQUESTS': 5,  # default 16 recommend 5-8
-        'FEED_EXPORT_FIELDS': ['Thumbnail', 'Category', 'Title',  'Color', 'PriceText', 'FinalPrice', 'SizeList', 'SizeNum', 'Material', 'Url', 'Image']
+        'FEED_EXPORT_FIELDS': ['Thumbnail', 'GroupName', 'Brand', 'Category', 'Code', 'Title', 'PriceText', 'FinalPrice', 'OldPrice', 'SizeList', 'SizeNum', 'Material', 'Description', 'Url', 'Image']
         # 下面内容注释掉，爬虫自动导出数据到xlsx文件的功能，会默认关闭。请在命令行使用 -o 参数，指定导出的文件名。
         # 'FEED_URI': 'ysabelmora.xlsx',
         # 'FEED_FORMAT': 'xlsx'
@@ -107,27 +109,29 @@ class YsabelmoraSpider(BaseSpider):
                 dd['PageIndex'] = page_index
 
                 # 提取缩略图
-                img = self.get_text_by_path(nd, '//a[@class="product-card__media"]/img/@src')
+                img = self.get_text_by_path(nd, './/a[@class="product-card__media"]/img/@src')
                 if img is not None:
                     img = 'https:' + img
                     dd['Image'] = img
-                    dd['Thumbnail'] = img.replace('width=1533', 'width=400')
+                    dd['Thumbnail'] = img.replace('width=1533', 'width=400').replace('height=1534', 'height=400')
                 
                 # 提取商品URL  
-                url = self.get_text_by_path(nd, '//a[@class="product-card__media"]/@href')
+                url = self.get_text_by_path(nd, './/a[@class="product-card__media"]/@href')
                 dd['Url'] = self.base_url + url
 
-                title = self.get_text_by_path(nd, '//h2[@class="product-title  line-clamp"]/a/text()')
+                title = self.get_text_by_path(nd, './/h2[@class="product-title  line-clamp"]/a/text()')
                 dd['Title'] =title
 
-                # TODO 价格数据提取失败
-                sale_price_text = self.get_text_by_path(nd, '//price-list/sale-price/text()')
+                # 价格提取部分
+                sale_price_text = self.get_text_by_path(nd, './/price-list/sale-price/text()[2]')
                 dd['PriceText'] = sale_price_text
                 dd['FinalPrice'] = self.get_price_by_text(dd['PriceText']) if dd['PriceText'] else None
-                old_price_text = self.get_text_by_path(nd, '//price-list/compare-at-price/text()')
+
+                # 原价提取（如果有）
+                old_price_text = self.get_text_by_path(nd, './/price-list/compare-at-price/text()[2]')
                 dd['OldPriceText'] = old_price_text
                 dd['OldPrice'] = self.get_price_by_text(dd['OldPriceText']) if dd['OldPriceText'] else dd['FinalPrice']
-                print(f"----sale_price_text({sale_price_text})---old_price_text({old_price_text})-FinalPrice({dd['FinalPrice']})--OldPrice({dd['OldPrice']})--6,95 €------")
+                print(f"----sale_price_text({sale_price_text})---old_price_text({old_price_text})-FinalPrice({dd['FinalPrice']})--OldPrice({dd['OldPrice']})---({self.get_text_by_path(nd, './/price-list/sale-price/span/text()')})---")
 
                 prod = {}
                 for key, value in dd.items():
@@ -156,7 +160,7 @@ class YsabelmoraSpider(BaseSpider):
         dd['Code'] = sku_text.replace('SKU: ', '') if sku_text else None
 
         # 提取 JSON 字符串
-        script_text = self.get_text_by_path(response, '//script[@type="application/ld+json"]')
+        script_text = self.get_text_by_path(response, '//script[@type="application/ld+json"]/text()')
         if script_text is not None:
             dd['DataRaw'] = script_text
             jsdata = json.loads(script_text)
@@ -178,9 +182,14 @@ class YsabelmoraSpider(BaseSpider):
             dd['Brand'] = jsdata.get('brand', {}).get('name', '')
         yield dd
 
-    def get_price_by_text(self, price_text):
-        if price_text:
-            price = re.search(r'\$([\d,]+)', price_text)
-            if price:
-                return float(price.group(1).replace(',', '.'))
-        return None
+    def get_price_by_text(self, price_text: str) -> float:
+        if not price_text:
+            return 0.0
+        
+        # 处理欧洲价格格式（如：6,95 €）
+        price_str = price_text.replace('€', '').replace(',', '.').strip()
+        
+        try:
+            return float(price_str)
+        except ValueError:
+            return 0.0
