@@ -152,35 +152,40 @@ class YsabelmoraSpider(BaseSpider):
             self.lg.debug(f"-----parse_list--goto({gp.get('title')})--next_page({dl['PageIndex']+1})--")
             yield self.request_list_by_group(gp, page+1)
 
+
+
     def parse_detail(self, response: TextResponse):
         meta = response.meta
         dd = meta['dd']
-        # <variant-sku class="variant-sku text-sm text-subdued" form="product-form-8702137762122-template--23402249355594__main" >SKU: 90207SNEGRO</variant-sku>
-        sku_text = self.get_text_by_path(response, '//variant-sku/text()')
-        dd['Code'] = sku_text.replace('SKU: ', '') if sku_text else None
+        if 'SkipRequest' in dd:
+            # self.lg.debug(f"----Skiped----typedd({type(dd)})---parse_detail--requrl:{response.url}---dd:{dd}-")
+            yield dd
+        else:
+            sku_text = self.get_text_by_path(response, '//variant-sku/text()')
+            dd['Code'] = sku_text.replace('SKU: ', '') if sku_text else None
 
-        # 提取 JSON 字符串
-        script_text = self.get_text_by_path(response, '//script[@type="application/ld+json"]/text()')
-        if script_text is not None:
-            dd['DataRaw'] = script_text
-            jsdata = json.loads(script_text)
-            size_list = []
-            for off in jsdata['offers']:
-                size_list.append(off['name'])
-            dd['SizeList'] = size_list
-            dd['SizeNum'] = len(dd['SizeList'])
-            # dd['PublishedAt'] = jsdata['published_at']
-            desc = jsdata['description']
-            dd['Description'] = desc
-            mtlist = get_material(desc)
-            if len(mtlist) > 0:
-                dd['Material'] = ";".join(mtlist)
-            # dd['FinalPrice'] = float(jsdata['price']/100)
-            # dd['OldPrice'] = float(jsdata['compare_at_price']/100) if jsdata['compare_at_price'] else dd['FinalPrice']
-            dd['Category'] = jsdata['category']
-            dd['Title'] = jsdata['name']
-            dd['Brand'] = jsdata.get('brand', {}).get('name', '')
-        yield dd
+            # 提取 JSON 字符串
+            script_text = self.get_text_by_path(response, '//script[@type="application/ld+json"]/text()')
+            if script_text is not None:
+                dd['DataRaw'] = script_text
+                jsdata = json.loads(script_text)
+                size_list = []
+                for off in jsdata['offers']:
+                    size_list.append(off['name'])
+                dd['SizeList'] = size_list
+                dd['SizeNum'] = len(dd['SizeList'])
+                # dd['PublishedAt'] = jsdata['published_at']
+                desc = jsdata['description']
+                dd['Description'] = desc
+                mtlist = get_material(desc)
+                if len(mtlist) > 0:
+                    dd['Material'] = ";".join(mtlist)
+                # dd['FinalPrice'] = float(jsdata['price']/100)
+                # dd['OldPrice'] = float(jsdata['compare_at_price']/100) if jsdata['compare_at_price'] else dd['FinalPrice']
+                dd['Category'] = jsdata['category']
+                dd['Title'] = jsdata['name']
+                dd['Brand'] = jsdata.get('brand', {}).get('name', '')
+            yield dd
 
     def get_price_by_text(self, price_text: str) -> float:
         if not price_text:
