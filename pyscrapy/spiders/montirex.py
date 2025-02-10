@@ -3,7 +3,8 @@ from pyscrapy.spiders import BaseSpider
 from scrapy import Request
 from models import UrlRequest, UrlRequestSnapshot
 from pyscrapy.items import BaseProductItem, FromPage
-import json
+from utils.strfind import get_material
+import re
 
 
 class MontirexSpider(BaseSpider):
@@ -20,7 +21,9 @@ class MontirexSpider(BaseSpider):
         'COOKIES_ENABLED': False,
         'CONCURRENT_REQUESTS_PER_IP': 5,  # default 8
         'CONCURRENT_REQUESTS': 5,  # default 16 recommend 5-8
-        'FEED_EXPORT_FIELDS': ['Thumbnail', 'Category', 'Title',  'Color', 'PriceText', 'FinalPrice', 'SizeList', 'SizeNum', 'Material', 'Url', 'Image']
+
+        'FEED_EXPORT_FIELDS': ['Thumbnail', 'GroupName', 'Category', 'Title', 
+                               'PriceText', 'FinalPrice', 'OldPrice', 'Discount', 'Tags', 'SizeList', 'SizeNum', 'Material', 'Description', 'Url']
         # 下面内容注释掉，爬虫自动导出数据到xlsx文件的功能，会默认关闭。请在命令行使用 -o 参数，指定导出的文件名。
         # 'FEED_URI': 'montirex.xlsx',
         # 'FEED_FORMAT': 'xlsx'
@@ -29,30 +32,27 @@ class MontirexSpider(BaseSpider):
     start_urls_group = [
         # https://montirex.com/en-us/collections/all-products?page=4&section_id=template--24421232443769__main
         {'index': 1, 'title': "ALL MEN'S CLOTHING", 'name':'all-products', 'code': '24421232443769', 'url': 'https://montirex.com/en-us/collections/all-products'}, # 261 products 
-        # https://montirex.com/en-us/collections/all-womens-clothing?page=3&section_id=template--24421232542073__main
+        # # https://montirex.com/en-us/collections/all-womens-clothing?page=3&section_id=template--24421232542073__main
         {'index': 2, 'title': "ALL WOMEN'S CLOTHING", 'name':'all-womens-clothing', 'code': '24421232542073', 'url': 'https://montirex.com/en-us/collections/all-womens-clothing'}, # 143 products
-        # https://montirex.com/en-us/collections/boys-all-products?page=2&section_id=template--24421232312697__main
+        # # https://montirex.com/en-us/collections/boys-all-products?page=2&section_id=template--24421232312697__main
         {'index': 3, 'title': "ALL BOYS CLOTHING", 'name':'boys-all-products', 'code': '24421232312697', 'url': 'https://montirex.com/en-us/collections/boys-all-products'}, # 113 products
-        # {'index': 4, 'title': "ALL GIRLS CLOTHING", 'name':'all-girls-products', 'code': '', 'url': 'https://montirex.com/en-us/collections/all-girls-products'}, # 39 products
+        {'index': 4, 'title': "ALL GIRLS CLOTHING", 'name':'all-girls-products', 'code': '', 'url': 'https://montirex.com/en-us/collections/all-girls-products'}, # 39 products
     ]
 
     def request_list_by_group(self, gp: dict, pageindex: int):
         group_name = gp.get('name')
         group_code = gp.get('code')
         groupIndex = gp.get('index')
-        requrl = "https://montirex.com/collections/{}?section_id=template--{}__main".format(group_name, group_code)
-        referer = gp.get('url')
-        if pageindex > 1:
-            requrl = "https://montirex.com/collections/{}?page={}&section_id=template--{}__main".format(group_name, pageindex, group_code)
-            referer = "{}?page={}".format(gp.get('url'), pageindex)
+        requrl = "https://montirex.com/en-us/collections/{}?page={}&section_id=template--{}__main".format(group_name, pageindex, group_code)
+        referer = "{}?page={}".format(gp.get('url'), pageindex)
         logmsg = f"----request_list_by_group--group({gp['title']})--pageindex({pageindex})--url:{requrl}--"
         print(logmsg)
         meta = dict(gp=gp, page=pageindex, step=1, group=groupIndex, FromKey=FromPage.FROM_PAGE_PRODUCT_LIST)
         hdr = {
-            'accept': '*/*',
+            # 'accept': '*/*',
             'accept-language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
             'priority': 'u=1, i',
-            'referer': referer,
+            # 'referer': referer,
             'sec-ch-ua': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
             'sec-ch-ua-mobile': '?0',
             'sec-ch-ua-platform': '"Windows"',
@@ -61,6 +61,12 @@ class MontirexSpider(BaseSpider):
             'sec-fetch-site': 'same-origin',
             'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
         }
+        if group_name == "all-girls-products":
+            requrl = gp.get('url')
+            hdr['accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7'
+        else:
+            hdr['accept'] = '*/*'
+            hdr['referer'] = referer
         return Request(requrl, callback=self.parse_list, meta=meta, headers=hdr)
 
     def start_requests(self):
@@ -85,7 +91,7 @@ class MontirexSpider(BaseSpider):
             has_next_page = True if next_page_url is not None else False
         else:
             # 提取商品列表
-            nds = response.xpath('//product-list/product-wrapper')
+            nds = response.xpath('//product-item')
             next_url = self.get_text_by_path(response, '//a[@rel="next"]/@href')
        
             if next_url is not None:
@@ -107,29 +113,38 @@ class MontirexSpider(BaseSpider):
                 dd['PageIndex'] = page_index
 
                 # 提取缩略图
-                img = self.get_text_by_path(nd, './/a[@class="product-card__media"]/img/@src')
+                img = self.get_text_by_path(nd, './/img[@class="product-item__primary-image"]/@src')
                 if img is not None:
                     img = 'https:' + img
-                    dd['Image'] = img
-                    dd['Thumbnail'] = img.replace('width=1533', 'width=400').replace('height=1534', 'height=400')
+                    dd['Thumbnail'] = img
                 
                 # 提取商品URL  
-                url = self.get_text_by_path(nd, './/a[@class="product-card__media"]/@href')
-                dd['Url'] = self.base_url + url
+                purl = self.get_text_by_path(nd, './/a[@class="product-item-meta__title"]/@href')
+                dd['Url'] = self.base_url + purl
 
-                title = self.get_text_by_path(nd, './/h2[@class="product-title  line-clamp"]/a/text()')
+                tags = []
+                bdgnds = nd.xpath('.//div[@class="product-item__label-list label-list"]/span/text()')
+                if bdgnds is not None:
+                    labels = bdgnds.getall()
+                    if len(labels) > 0:
+                        for label in labels:
+                            tags.append(label)
+                dd['Tags'] = tags
+
+                title = self.get_text_by_path(nd, './/a[@class="product-item-meta__title"]/text()')
                 dd['Title'] =title
-
+                if title is not None:
+                    titlesplit = title.split(' - ')
+                    if len(titlesplit) > 1:
+                        dd['Category'] = titlesplit[0]
+                        dd['Tags'].append(titlesplit[0])
+                
                 # 价格提取部分
-                sale_price_text = self.get_text_by_path(nd, './/price-list/sale-price/text()[2]')
+                sale_price_text = self.get_text_by_path(nd, './/span[@class="price"]/text()[2]')
                 dd['PriceText'] = sale_price_text
                 dd['FinalPrice'] = self.get_price_by_text(dd['PriceText']) if dd['PriceText'] else None
 
-                # 原价提取（如果有）
-                old_price_text = self.get_text_by_path(nd, './/price-list/compare-at-price/text()[2]')
-                dd['OldPriceText'] = old_price_text
-                dd['OldPrice'] = self.get_price_by_text(dd['OldPriceText']) if dd['OldPriceText'] else dd['FinalPrice']
-                print(f"----sale_price_text({sale_price_text})---old_price_text({old_price_text})-FinalPrice({dd['FinalPrice']})--OldPrice({dd['OldPrice']})---({self.get_text_by_path(nd, './/price-list/sale-price/span/text()')})---")
+                print(f"----sale_price_text({sale_price_text})---FinalPrice({dd['FinalPrice']})----")
 
                 prod = {}
                 for key, value in dd.items():
@@ -157,39 +172,43 @@ class MontirexSpider(BaseSpider):
             # self.lg.debug(f"----Skiped----typedd({type(dd)})---parse_detail--requrl:{response.url}---dd:{dd}-")
             yield dd
         else:
-            sku_text = self.get_text_by_path(response, '//variant-sku/text()')
-            dd['Code'] = sku_text.replace('SKU: ', '') if sku_text else None
-
-            # 提取 JSON 字符串
-            script_text = self.get_text_by_path(response, '//script[@type="application/ld+json"]/text()')
-            if script_text is not None:
-                dd['DataRaw'] = script_text
-                jsdata = json.loads(script_text)
-                size_list = []
-                for off in jsdata['offers']:
-                    size_list.append(off['name'])
-                dd['SizeList'] = size_list
-                dd['SizeNum'] = len(dd['SizeList'])
-                # dd['PublishedAt'] = jsdata['published_at']
-                desc = jsdata['description']
-                dd['Description'] = desc
+            dd['Discount'] = 0
+            dd['OldPriceText'] = self.get_text_by_path(response, '//div[@class="price-list"]/span[@class="price price--compare"]/text()[2]')
+            if dd['OldPriceText'] is not None:
+                dd['OldPrice'] = self.get_price_by_text(dd['OldPriceText'])
+                dd['PriceText'] = self.get_text_by_path(response, '//div[@class="price-list"]/span[@class="price price--highlight price--large"]/text()[2]')
+                if dd['PriceText'] is not None:
+                    dd['FinalPrice'] = self.get_price_by_text(dd['PriceText'])
+                inputmsg = "--------OldPriceText({})----OldPrice({})---PriceText({})--FinalPrice({})---".format(dd['OldPriceText'], dd['OldPrice'], dd['PriceText'], dd['FinalPrice'])
+                print(inputmsg)
+                dd['Discount'] = round((dd['OldPrice'] - dd['FinalPrice']) / dd['OldPrice'] * 100, 2)
+            else:
+                dd['OldPrice'] = dd['FinalPrice']
+            desc = self.get_text_by_path(response, '//meta[@name="twitter:description"]/@content')
+            dd['Description'] = desc
+            if desc is not None:
                 mtlist = get_material(desc)
                 if len(mtlist) > 0:
                     dd['Material'] = ";".join(mtlist)
-                # dd['FinalPrice'] = float(jsdata['price']/100)
-                # dd['OldPrice'] = float(jsdata['compare_at_price']/100) if jsdata['compare_at_price'] else dd['FinalPrice']
-                dd['Category'] = jsdata['category']
-                dd['Title'] = jsdata['name']
-                dd['Brand'] = jsdata.get('brand', {}).get('name', '')
-            yield dd
+            sznds = response.xpath('//div[@class="block-swatch-list"]//label/text()')
+            if sznds is not None:
+                szlist = sznds.getall()
+                szlist111 = []
+                for sz in szlist:
+                    szlist111.append(sz.strip())
+                dd['SizeList'] = szlist111
+                dd['SizeNum'] = len(szlist111)
 
-    def get_price_by_text(self, price_text: str) -> float:
-        if not price_text:
-            return 0.0
-        # 处理欧洲价格格式（如：6,95 €）
-        price_str = price_text.replace('€', '').replace(',', '.').strip()
-        
-        try:
-            return float(price_str)
-        except ValueError:
-            return 0.0
+            # 原始字符串
+            s = response.text
+            # 使用正则表达式匹配
+            match = re.search(r',"category":"(.*?)",', s)
+            if match:
+                category = match.group(1)
+                dd['Tags'].append(category)
+                dd['Category'] = category
+                print("------找到匹配项---------", category)  # 输出：Men's T-Shirts
+
+            else:
+                print("------------未找到匹配项-------------------", dd['Url'])
+            yield dd
