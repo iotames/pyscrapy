@@ -113,8 +113,9 @@ class BaseSpider(Spider):
         # currency_list = ['€', '$', '£', 'kr']
         if price_text:
             info = price_text.split('$')
+            # $20.00 CAD
             if len(info) > 1:
-                price = info[1].strip().replace(",", "")
+                price = info[1].strip().replace(",", "").replace("CAD", "").strip()
         if price == 0.0:
             # 399 kr
             info = price_text.split("kr")
