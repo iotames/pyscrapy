@@ -15,7 +15,8 @@ def get_spider_data(site_id: int, step: int) ->list:
     print("site_id:", site_id)
     reqs = UrlRequest.query(select_fields).filter(and_(
         UrlRequest.site_id == site_id,
-        UrlRequest.updated_at > (datetime.now() - timedelta(hours=23)),
+        # UrlRequest.updated_at > (datetime.now() - timedelta(hours=23)),
+        UrlRequest.collected_at > (datetime.now() - timedelta(hours=23)),
         UrlRequest.step == step
         )).all()
     if step == 0:

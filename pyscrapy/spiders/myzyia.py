@@ -4,12 +4,15 @@ from scrapy import Request
 from models import UrlRequest, UrlRequestSnapshot
 from pyscrapy.items import BaseProductItem, FromPage
 from utils.strfind import get_material
+from datetime import datetime, timedelta
+from sqlalchemy import and_
+import json
 
 
 class MyzyiaSpider(BaseSpider):
     name = "myzyia"
-    base_url = "https://myzyia.com"
-    allowed_domains = ["myzyia.com"]
+    base_url = "https://new.myzyia.com"
+    allowed_domains = ["myzyia.com", "new.myzyia.com"]
 
     # 该属性cls静态调用 无法继承覆盖
     custom_settings = {
@@ -21,7 +24,7 @@ class MyzyiaSpider(BaseSpider):
         'CONCURRENT_REQUESTS_PER_IP': 8,  # default 8
         'CONCURRENT_REQUESTS': 8,  # default 16 recommend 5-8
 
-        'FEED_EXPORT_FIELDS': ['Thumbnail', 'GroupName', 'Category', 'Title', 'PriceText', 'FinalPrice', 'OldPrice', 'Material', 'Url']
+        'FEED_EXPORT_FIELDS': ['Thumbnail', 'GroupName', 'Category', 'Title', 'PriceText', 'FinalPrice', 'OldPrice', 'Discount', 'Material', 'CategoryUrl', 'Url']
         # 下面内容注释掉，爬虫自动导出数据到xlsx文件的功能，会默认关闭。请在命令行使用 -o 参数，指定导出的文件名。
         # 'FEED_URI': 'myzyia.xlsx',
         # 'FEED_FORMAT': 'xlsx'
@@ -158,15 +161,48 @@ class MyzyiaSpider(BaseSpider):
                         if len(mtlist) > 0:
                             dd['Material'] = ";".join(mtlist)
                             break
-            # sznds = response.xpath('//div[@class="block-swatch-list"]//label/text()')
-            # if sznds is not None:
-            #     szlist = sznds.getall()
-            #     szlist111 = []
-            #     for sz in szlist:
-            #         szlist111.append(sz.strip())
-            #     dd['SizeList'] = szlist111
-            #     dd['SizeNum'] = len(szlist111)
+            mgtinitnds = response.xpath('//script[@type="text/x-magento-init"]/text()')
+            if mgtinitnds is not None:
+                mgtinitxts = mgtinitnds.getall()
+                for mgtinitxt in mgtinitxts:
+                    mgtinitxt = mgtinitxt.strip()
+                    if 'categoryUrlSuffix' in mgtinitxt:
+                        mgtjson = json.loads(mgtinitxt)
+                        # -----mainCategoryUrl(https://new.myzyia.com/CORPORATE/en_CA/men/tops/jackets.html)---
+                        mainCategoryUrl = mgtjson.get('.breadcrumbs',{}).get('breadcrumbs', {}).get('mainCategoryUrl')
+                        if mainCategoryUrl is not None:
+                            dd['CategoryUrl'] = mainCategoryUrl
+                            catesplit = mainCategoryUrl.split('/')
+                            dd['Category'] = catesplit[len(catesplit)-2]
+                            print(f"-----mainCategoryUrl({mainCategoryUrl})----Category({dd['Category']})--")
+                        break
             yield dd
 
     def check_next_page(self, page_index, total_count):
         return page_index * self.page_size < total_count
+
+    @classmethod
+    def get_export_data(cls) -> list:
+        step = 0
+        data_list = []
+        select_fields = [UrlRequest.data_format, UrlRequest.collected_at]
+        reqs = UrlRequest.query(select_fields).filter(and_(
+            UrlRequest.site_id == cls.get_site_id(),
+            UrlRequest.collected_at > (datetime.now() - timedelta(hours=23)),
+            UrlRequest.step == step
+            )).all()
+        if step == 0:
+            for req in reqs:
+                dd = req.data_format
+                if dd['OldPrice'] is None:
+                    dd['OldPrice'] = dd['FinalPrice']
+                dd['Discount'] = float(dd['FinalPrice']/dd['OldPrice']) if dd['FinalPrice'] is not None else 1
+                data_list.append(dd)
+        if step == 1:
+            for req in reqs:
+                dl = req.data_format.get('ProductList', None)
+                if dl is None:
+                    raise Exception("ProductList could not be None")
+                for dd in dl:
+                    data_list.append(dd)
+        return data_list

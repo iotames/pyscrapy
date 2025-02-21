@@ -51,6 +51,7 @@ class BaseProductItem(Item):
     ParentGroup = Field()
     GroupName = Field()
     Category = Field()
+    CategoryUrl = Field()
     PageIndex = Field()
     TotalInventoryQuantity = Field()
     TotalReviewsText = Field()

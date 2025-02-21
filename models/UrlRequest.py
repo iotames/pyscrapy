@@ -43,7 +43,8 @@ class UrlRequest(BaseModel):
                 self.get_db_session().commit()
                 # lg.debug(f"---------saveUrlRequest----create---requrl({self.url})-{self.id}---data({self.data_format})--")
             else:
-                data = {'data_format': self.data_format, 'data_raw':self.data_raw, 'collected_at':datetime.now()}
+                now_time = datetime.now()
+                data = {'data_format': self.data_format, 'data_raw':self.data_raw, 'collected_at':now_time, 'updated_at':now_time}
                 # print("---------UrlRequest------save-----", data)
                 self.get_db_session().query(UrlRequest).filter(UrlRequest.request_hash==self.request_hash).update(data)
                 self.get_db_session().commit()

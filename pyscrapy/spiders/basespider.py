@@ -131,8 +131,11 @@ class BaseSpider(Spider):
                 price = info[1].strip().replace(",", "")
         return float(price)
     
-    # def get_export_data():
+    # @classmethod
+    # def get_export_data(cls) -> list:
     #     raise NotImplementedError()
+    #     print("get_export_data({})".format(cls.name))
+    #     return []
 
     def closed(self, reason):
         print("============Close Base Spider : " + self.name)
